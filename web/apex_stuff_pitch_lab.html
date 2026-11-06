@@ -1,0 +1,3205 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Apex v3.5 — High School-to-College Pitching Scout Card &amp; 3D Pitch Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #070b14;
+      color: #f1f5f9;
+      overflow-x: hidden;
+    }
+    .font-mono-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+    }
+    .glass-card-subtle {
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(51, 65, 85, 0.45);
+    }
+    input[type="range"] {
+      accent-color: #38bdf8;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+
+    /* ===================================================================== */
+    /* PRINTABLE 8.5x11 SCOUT DOSSIER STYLESHEET (@media print)              */
+    /* ===================================================================== */
+    @page {
+      size: letter portrait;
+      margin: 0.35in;
+    }
+    @media print {
+      :root {
+        color-scheme: light;
+      }
+      body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        font-size: 10pt;
+      }
+      .no-print,
+      header,
+      footer,
+      #section-pitchlab,
+      #uploadModal,
+      #toastBanner,
+      #webglCanvasWrapper {
+        display: none !important;
+      }
+      #printDossierHeader {
+        display: flex !important;
+        border-bottom: 2px solid #0f172a;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+      }
+      .tier-section {
+        display: block !important;
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        color: #0f172a !important;
+        padding: 10px !important;
+        margin-bottom: 10px !important;
+        break-inside: avoid;
+      }
+      .glass-card,
+      .glass-card-subtle {
+        background: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+      }
+      h1, h2, h3, span, p, div, td, th, li {
+        color: #0f172a !important;
+      }
+      canvas {
+        border: 1px solid #94a3b8 !important;
+        background: #0f172a !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+
+    /* In-Page Print Dossier Preview Mode (for sandboxed iframe testing) */
+    body.dossier-preview-mode #section-pitchlab,
+    body.dossier-preview-mode #webglCanvasWrapper {
+      display: none !important;
+    }
+    body.dossier-preview-mode #printDossierHeader {
+      display: flex !important;
+    }
+    body.dossier-preview-mode #tunnelCardsColumn {
+      grid-column: span 12 / span 12 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-sky-500 selection:text-slate-950">
+
+  <!-- Toast Notification -->
+  <div id="toastBanner" class="fixed bottom-5 right-5 z-50 hidden items-center gap-2.5 px-4 py-3 rounded-xl bg-sky-500 text-slate-950 font-semibold text-sm shadow-2xl transition-all duration-200">
+    <span id="toastMessage">Scouting report copied to clipboard</span>
+  </div>
+
+  <!-- TrackMan B1 CSV / JSON Ingestion Modal -->
+  <div id="uploadModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+    <div class="glass-card rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-sky-500/40 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <span class="text-[11px] font-mono-num uppercase tracking-widest text-sky-400 font-semibold">TrackMan Bullpen Import</span>
+          <h3 class="text-lg font-extrabold text-white">Upload TrackMan B1 CSV or JSON File</h3>
+        </div>
+        <button id="closeUploadModalBtn" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+          Close
+        </button>
+      </div>
+
+      <!-- Drag and Drop Zone -->
+      <div id="trackmanDropzone" class="border-2 border-dashed border-sky-500/40 hover:border-sky-400 rounded-xl p-6 text-center bg-slate-900/60 transition cursor-pointer">
+        <div class="text-sky-400 font-mono-num text-xs font-bold uppercase tracking-wider mb-1">Drag &amp; Drop TrackMan B1 Export Here</div>
+        <p class="text-xs text-slate-300 mb-3">
+          Automatically reads <span class="font-mono-num text-slate-200">Pitcher, Throws, TaggedPitchType, RelSpeed, SpinRate, SpinAxis, RelHeight, RelSide, Extension, InducedVertBreak, HorzBreak</span>
+        </p>
+        <input id="trackmanFileInput" type="file" accept=".csv,.json,.txt" class="hidden" />
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <button id="browseTrackmanFileBtn" type="button" class="px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold transition">
+            Select CSV / JSON File
+          </button>
+          <button id="loadSampleCsvBtn" type="button" class="px-3.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition">
+            Load Sample Showcase Bullpen CSV
+          </button>
+        </div>
+      </div>
+
+      <div id="uploadStatusBox" class="text-xs font-mono-num text-slate-400 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
+        Ready to load portable TrackMan B1 or stadium CSV/JSON files. Any missing columns are automatically filled using standard high school and college defaults.
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation & Control Bar -->
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md no-print">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 via-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-sky-500/20 font-mono-num font-extrabold text-white text-lg">
+          A+
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">PROJECT APEX</h1>
+            <span id="headerBadgeVersion" class="px-2 py-0.5 text-[11px] font-mono-num font-semibold uppercase tracking-wider rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
+              College Scouting &amp; 3D Pitch Lab
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">High School TrackMan Bullpen to NCAA Division 1 Scouting &amp; Development</p>
+        </div>
+      </div>
+
+      <!-- Global Controls: View Mode (Scout vs R&D), Pitcher Profile, Grade Mode, Pacing, Upload & Export -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Requirement 1: Global "Coach/Scout View" vs. "R&D Analyst View" Toggle -->
+        <div class="flex flex-col">
+          <label for="viewModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-sky-300 mb-0.5">Display Language</label>
+          <select id="viewModeSelect" class="bg-sky-950/70 border border-sky-500/50 text-sky-200 text-xs rounded-lg px-2.5 py-1.5 font-bold focus:outline-none focus:border-sky-400">
+            <option value="scout">View: Baseball / Scout (Simple)</option>
+            <option value="rnd">View: Pro Analytics (R&amp;D)</option>
+          </select>
+        </div>
+
+        <div class="flex flex-col">
+          <label for="pitcherSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Bullpen Session</label>
+          <select id="pitcherSelect" class="bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-2.5 py-1.5 font-medium focus:outline-none focus:border-sky-400">
+            <option value="rowland">Quinn Rowland (RHP — Coquitlam Reds)</option>
+            <option value="hutchings">Liam Hutchings (RHP — Coquitlam Reds)</option>
+            <option value="d1_ace">NCAA D1 Friday Starter (Benchmark)</option>
+          </select>
+        </div>
+
+        <div class="flex flex-col">
+          <label for="gradeModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-amber-300 mb-0.5">Grade Mode</label>
+          <select id="gradeModeSelect" class="bg-slate-900 border border-amber-500/50 text-amber-200 text-xs rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:border-amber-400">
+            <option value="present">Present D1 Reality (Current Velo)</option>
+            <option value="projected">3-Year College Growth Projection (+5 mph)</option>
+          </select>
+        </div>
+
+        <div class="flex flex-col">
+          <label for="pacingSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Effort Adjustment</label>
+          <select id="pacingSelect" class="bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-2.5 py-1.5 font-medium focus:outline-none focus:border-sky-400">
+            <option value="raw">Bullpen Max Effort (0.0 mph)</option>
+            <option value="starter">Starter Game Pacing (-1.5 mph)</option>
+            <option value="reliever">Reliever Game Pacing (-0.5 mph)</option>
+          </select>
+        </div>
+
+        <button id="openUploadModalBtn" type="button" class="mt-3.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition">
+          Upload TrackMan File
+        </button>
+
+        <button id="exportDossierBtn" type="button" class="mt-3.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 text-xs font-semibold transition">
+          Print Scout Sheet
+        </button>
+
+        <button id="copyReportBtn" type="button" class="mt-3.5 px-2.5 py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-xs font-semibold transition">
+          Copy Report
+        </button>
+      </div>
+    </div>
+
+    <!-- Requirement 2: Plain-English Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 pb-2 flex items-center justify-between gap-2 overflow-x-auto">
+      <div class="flex items-center gap-1.5">
+        <button type="button" data-tier-tab="all" class="tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition whitespace-nowrap">
+          Overview: All Sections
+        </button>
+        <button type="button" data-tier-tab="tier1" class="tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">
+          1. Player Scout Card
+        </button>
+        <button type="button" data-tier-tab="tier2" class="tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">
+          2. 3D Pitch Tunnel
+        </button>
+        <button type="button" data-tier-tab="tier3" class="tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">
+          3. Movement &amp; Spin Clock
+        </button>
+        <button type="button" data-tier-tab="tier4" class="tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">
+          4. Hitter Splits &amp; Range
+        </button>
+        <button type="button" data-tier-tab="pitchlab" class="tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30 transition whitespace-nowrap">
+          5. What-If Pitch Lab
+        </button>
+      </div>
+      <span id="dossierModeIndicator" class="hidden text-[11px] font-mono-num text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-md whitespace-nowrap">
+        8.5×11 Print View Active (Click "Print Scout Sheet" to exit)
+      </span>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl w-full mx-auto px-4 py-5 space-y-6 flex-1">
+
+    <!-- Printable 8.5x11 Scout Dossier Header -->
+    <div id="printDossierHeader" class="hidden items-center justify-between bg-slate-900/90 border border-slate-700 rounded-xl p-4">
+      <div>
+        <div class="text-xs font-mono-num font-bold uppercase tracking-widest text-sky-400">PROJECT APEX • OFFICIAL COLLEGE BASEBALL SCOUTING REPORT</div>
+        <h2 id="dossierTitleName" class="text-xl font-extrabold text-white mt-0.5">Quinn Rowland • RHP</h2>
+        <p id="dossierSubMeta" class="text-xs font-mono-num text-slate-400">TrackMan B1 Verified Bullpen • Evaluated Against NCAA Division 1 Hitters</p>
+      </div>
+      <div class="text-right font-mono-num">
+        <div class="text-xs text-slate-400">Report Date</div>
+        <div class="text-sm font-bold text-white">11/05/2026</div>
+        <div class="text-[11px] text-emerald-400">Scale: 100 = College D1 Average</div>
+      </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- SECTION 1: PLAYER SCOUT CARD (EXECUTIVE GLANCE)                         -->
+    <!-- ======================================================================= -->
+    <section id="section-tier1" class="tier-section glass-card rounded-2xl p-4 sm:p-6 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800">
+        <div>
+          <span id="tier1Eyebrow" class="text-[11px] font-mono-num uppercase tracking-widest text-sky-400 font-semibold">
+            1. Player Scout Card • How This Arsenal Stacks Up Against College Hitters
+          </span>
+          <h2 id="pitcherHeaderName" class="text-xl sm:text-2xl font-extrabold text-white mt-0.5">Quinn Rowland • RHP</h2>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-400 font-mono-num">
+          <span id="dualModeBannerBadge" class="px-2.5 py-1 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold">
+            Showing: Present College Grade
+          </span>
+          <span id="pitcherHeaderMeta" class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">Coquitlam Reds • 10/20/2026 • 15 Pitches • Low-3/4 Slot</span>
+        </div>
+      </div>
+
+      <!-- Top Row: Hero Metric Pill + NCAA D1 Distribution Gauge -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4 items-stretch">
+        <!-- Hero Arsenal+ Pill -->
+        <div class="lg:col-span-5 rounded-xl bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/60 border border-sky-500/30 p-4 flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div id="heroMetricTitleLabel" class="text-xs font-semibold uppercase tracking-wider text-slate-400">Overall Pitching Arsenal+</div>
+              <div class="flex items-baseline gap-2.5 mt-1">
+                <span id="heroArsenalPlus" class="text-4xl sm:text-5xl font-extrabold font-mono-num text-white">89.0</span>
+                <span id="heroArsenalDeltaBadge" class="hidden px-2 py-0.5 rounded text-xs font-mono-num font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">+0.0</span>
+              </div>
+              <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                <span id="heroScoutGradeBadge" class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-sky-500 text-slate-950">45 Grade • Fringe D1 / Varsity+</span>
+              </div>
+            </div>
+
+            <div class="text-right font-mono-num text-xs space-y-0.5 text-slate-300">
+              <div><span id="heroBaseLabel">Pitch Quality Base:</span> <span id="heroBaseStuff" class="font-bold text-white">84.9</span></div>
+              <div><span id="heroRawSynLabel">Raw Deception Bonus:</span> <span id="heroRawSynergy" class="font-bold text-slate-300">+10.0</span></div>
+              <div title="Secondary pitches play better when backed by college-average fastball velocity.">
+                <span id="heroGammaLabel" class="underline decoration-dotted cursor-help">Fastball Setup Factor:</span>
+                <span id="heroAnchorGamma" class="font-bold text-amber-300">42%</span>
+              </div>
+              <div><span id="heroNetSynLabel">Net Arsenal Bonus:</span> <span id="heroNetSynergy" class="font-bold text-emerald-400">+4.2</span></div>
+              <div class="text-[10px] text-slate-400 pt-0.5">
+                Tunnel:<span id="heroTunnelBonus">+2.8</span> • Speed Mix:<span id="heroSepBonus">+3.7</span> • Left/Right:<span id="heroPlatoonBonus">+3.5</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dual Present vs. 3-Year College Growth Projection Comparison Bar -->
+          <div id="heroDualProjectionBadge" class="mt-3 pt-2.5 border-t border-slate-800/90 flex items-center justify-between text-xs font-mono-num text-slate-200">
+            <span>Present: <strong class="text-sky-300">89.0 Arsenal+ (45)</strong></span>
+            <span class="text-slate-600">|</span>
+            <span>3-Yr Projection: <strong class="text-emerald-300">107.7 Arsenal+ (55)</strong></span>
+          </div>
+        </div>
+
+        <!-- Horizontal NCAA D1 Speedometer / Percentile Gauge -->
+        <div class="lg:col-span-7 glass-card-subtle rounded-xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between text-xs">
+            <span id="gaugeTitleLabel" class="font-semibold text-slate-300">College Division 1 Scale (100 = Average D1 Pitcher)</span>
+            <span id="gaugePercentileText" class="font-mono-num font-bold text-sky-400">14th %ile Present • 78th %ile Projected</span>
+          </div>
+
+          <!-- Gauge Bar -->
+          <div class="relative mt-5 mb-3">
+            <div class="h-3.5 w-full rounded-full bg-gradient-to-r from-rose-500/70 via-amber-400/70 via-50% to-emerald-400/80 border border-slate-700"></div>
+            <div class="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white/80" title="College D1 Average (100)"></div>
+            <div id="gaugeBaseMarker" class="absolute -top-2 w-3.5 h-7 rounded bg-slate-300 border-2 border-slate-950 shadow transition-all duration-300" style="left: 25%;" title="Pitch Quality Base"></div>
+            <div id="gaugeArsenalMarker" class="absolute -top-2.5 w-4 h-8 rounded-md bg-sky-400 border-2 border-slate-950 shadow-lg shadow-sky-400/50 transition-all duration-300" style="left: 32%;" title="Current Overall Arsenal+"></div>
+            <div id="gaugeProjectedMarker" class="absolute -top-2 w-3.5 h-7 rounded bg-emerald-400/80 border-2 border-slate-950 shadow transition-all duration-300" style="left: 65%;" title="3-Year Projected Arsenal+"></div>
+          </div>
+
+          <div class="flex justify-between text-[11px] font-mono-num text-slate-400">
+            <span>65 (30-Grade)</span>
+            <span>72 (35 HS Varsity)</span>
+            <span>85 (45 Fringe D1)</span>
+            <span class="text-white font-semibold">100 (College Avg)</span>
+            <span>115 (60 Plus)</span>
+            <span>130 (80 Ace)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pitch Shape Pills Row -->
+      <div id="tier1PitchPillsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+        <!-- Dynamically populated pitch cards -->
+      </div>
+
+      <!-- Scouting Report Narrative Box -->
+      <div class="mt-4 rounded-xl bg-slate-900/90 border border-sky-500/25 p-4">
+        <div class="flex items-center justify-between gap-2 mb-1.5">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+            <span id="scoutSpeakHeaderTitle" class="text-xs font-bold uppercase tracking-wider text-sky-300">Scouting Director's Summary</span>
+          </div>
+          <span id="scoutSpeakShrinkageTag" class="text-[11px] font-mono-num text-slate-400">Small-Sample Adjusted • Fastball Setup: 42%</span>
+        </div>
+        <p id="scoutSpeakExecutiveText" class="text-sm text-slate-200 leading-relaxed"></p>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- SECTION 5: WHAT-IF PITCH LAB (COUNTERFACTUAL SIMULATOR)                 -->
+    <!-- ======================================================================= -->
+    <section id="section-pitchlab" class="tier-section glass-card rounded-2xl p-4 sm:p-6 shadow-xl border-indigo-500/30 no-print">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
+        <div>
+          <span id="pitchLabEyebrow" class="text-[11px] font-mono-num uppercase tracking-widest text-indigo-400 font-semibold">
+            5. What-If Pitch Lab • Test Velocity, Arm Slot &amp; Grip Adjustments
+          </span>
+          <h2 class="text-lg sm:text-xl font-extrabold text-white mt-0.5">Interactive Pitching Coach "What-If" Simulator</h2>
+        </div>
+        <!-- Quick Scenario Preset & Reset Buttons -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button type="button" data-preset="velo_boost" class="lab-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/30 transition">
+            +3.0 mph Offseason Velo
+          </button>
+          <button type="button" data-preset="drop_slot_sinker" class="lab-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/30 transition">
+            Drop Slot 4" + Sinker Grip
+          </button>
+          <button type="button" data-preset="tight_gyro_slider" class="lab-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/30 transition">
+            Tighter Slider (+2.5 mph)
+          </button>
+          <button type="button" data-preset="pronated_ssw_ch" class="lab-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/30 transition">
+            More Changeup Drop &amp; Fade
+          </button>
+          <button id="resetCurrentPitchBtn" type="button" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 transition">
+            Reset Current Pitch
+          </button>
+          <button id="resetLabBtn" type="button" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            Reset Entire Arsenal
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Multi-Pitch Modifications Status Strip -->
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-2 bg-slate-950/75 px-3.5 py-2 rounded-xl border border-slate-800/90 text-xs">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-semibold text-slate-400">Current Pitch Grades:</span>
+          <div id="activeLabPillsStrip" class="flex flex-wrap items-center gap-1.5 font-mono-num"></div>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer select-none text-slate-300">
+          <input id="coupledSlotToggle" type="checkbox" checked class="rounded accent-sky-400" />
+          <span id="coupledSlotLabelText" class="text-[11px] font-medium">
+            Realistic Body Mechanics (Auto-adjusts release width &amp; spin tilt)
+          </span>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4">
+        <!-- Sliders Column -->
+        <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div class="sm:col-span-2 flex items-center justify-between bg-slate-900/80 px-3.5 py-2.5 rounded-xl border border-slate-800">
+            <label for="labPitchSelect" class="text-xs font-semibold text-slate-300">Select Pitch to Tweak (Changes stay saved when switching):</label>
+            <select id="labPitchSelect" class="bg-slate-950 border border-slate-700 text-sky-300 text-xs font-mono-num font-bold rounded-lg px-3 py-1.5">
+              <option value="0">Pitch 1 (Fastball)</option>
+              <option value="1">Pitch 2 (Secondary #1)</option>
+              <option value="2">Pitch 3 (Secondary #2)</option>
+            </select>
+          </div>
+
+          <!-- Slider 1: Velocity -->
+          <div class="glass-card-subtle p-3 rounded-xl">
+            <div class="flex justify-between text-xs mb-1">
+              <span id="sliderLabelVelo" class="text-slate-300 font-medium">Add / Subtract Velocity</span>
+              <span id="labVeloVal" class="font-mono-num font-bold text-sky-400">+0.0 mph</span>
+            </div>
+            <input id="labVeloSlider" type="range" min="-4.0" max="8.0" step="0.5" value="0.0" class="w-full" />
+          </div>
+
+          <!-- Slider 2: Spin Rate -->
+          <div class="glass-card-subtle p-3 rounded-xl">
+            <div class="flex justify-between text-xs mb-1">
+              <span id="sliderLabelSpin" class="text-slate-300 font-medium">Add / Subtract Spin Rate</span>
+              <span id="labSpinVal" class="font-mono-num font-bold text-sky-400">+0 rpm</span>
+            </div>
+            <input id="labSpinSlider" type="range" min="-400" max="500" step="25" value="0" class="w-full" />
+          </div>
+
+          <!-- Slider 3: Vertical Break -->
+          <div class="glass-card-subtle p-3 rounded-xl">
+            <div class="flex justify-between text-xs mb-1">
+              <span id="sliderLabelIvb" class="text-slate-300 font-medium">More Ride (+) / More Drop (-)</span>
+              <span id="labIvbVal" class="font-mono-num font-bold text-sky-400">+0.0 in</span>
+            </div>
+            <input id="labIvbSlider" type="range" min="-7.0" max="7.0" step="0.5" value="0.0" class="w-full" />
+          </div>
+
+          <!-- Slider 4: Horizontal Break -->
+          <div class="glass-card-subtle p-3 rounded-xl">
+            <div class="flex justify-between text-xs mb-1">
+              <span id="sliderLabelHb" class="text-slate-300 font-medium">Arm-Side Run (+) / Glove Sweep (-)</span>
+              <span id="labHbVal" class="font-mono-num font-bold text-sky-400">+0.0 in</span>
+            </div>
+            <input id="labHbSlider" type="range" min="-7.0" max="7.0" step="0.5" value="0.0" class="w-full" />
+          </div>
+
+          <!-- Slider 5: Raise / Lower Arm Slot -->
+          <div class="glass-card-subtle p-3 rounded-xl">
+            <div class="flex justify-between text-xs mb-1">
+              <span id="sliderLabelRelH" class="text-slate-300 font-medium">Raise / Lower Arm Slot</span>
+              <span id="labRelHVal" class="font-mono-num font-bold text-sky-400">+0.0 in</span>
+            </div>
+            <input id="labRelHSlider" type="range" min="-6.0" max="6.0" step="0.5" value="0.0" class="w-full" />
+          </div>
+
+          <!-- Slider 6: Extension -->
+          <div class="glass-card-subtle p-3 rounded-xl">
+            <div class="flex justify-between text-xs mb-1">
+              <span id="sliderLabelExt" class="text-slate-300 font-medium">Stride Extension Toward Plate</span>
+              <span id="labExtVal" class="font-mono-num font-bold text-sky-400">+0.0 in</span>
+            </div>
+            <input id="labExtSlider" type="range" min="-6.0" max="8.0" step="0.5" value="0.0" class="w-full" />
+          </div>
+        </div>
+
+        <!-- Live Coaching Impact Output Panel -->
+        <div class="lg:col-span-5 rounded-xl bg-slate-900/95 border border-indigo-500/40 p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-indigo-300">Pitching Coach Impact Preview</span>
+              <span id="labTargetBadge" class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 font-mono-num text-xs font-semibold">Editing: Fastball (FF)</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 my-3">
+              <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+                <div id="labMetricBox1Title" class="text-[11px] text-slate-400">New College Stuff+</div>
+                <div class="flex items-baseline gap-2 mt-0.5">
+                  <span id="labSimPitchStuff" class="text-2xl font-extrabold font-mono-num text-white">70.0</span>
+                  <span id="labSimPitchDelta" class="text-xs font-mono-num font-bold text-emerald-400">+0.0</span>
+                </div>
+              </div>
+              <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+                <div id="labMetricBox2Title" class="text-[11px] text-slate-400">New Overall Arsenal+</div>
+                <div class="flex items-baseline gap-2 mt-0.5">
+                  <span id="labSimArsenal" class="text-2xl font-extrabold font-mono-num text-sky-400">89.0</span>
+                  <span id="labSimArsenalDelta" class="text-xs font-mono-num font-bold text-emerald-400">+0.0</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="labKinematicsSummary" class="text-xs font-mono-num text-slate-300 bg-slate-950/70 p-2.5 rounded-lg border border-slate-800/80 mb-3">
+              Velo: 83.0 mph | Break: +15.4" Ride, +13.0" Run | Hitter Window: 161ms
+            </div>
+
+            <p id="labPrescriptionText" class="text-xs text-slate-200 leading-relaxed"></p>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+            <span id="labFooterLeftText">Gray dashed line in 3D view shows original pitch</span>
+            <span id="labArcReadout" class="text-indigo-300 font-mono-num">Release Side: +0.0" • Spin Tilt: 1:30</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- SECTION 2: 3D PITCH TUNNEL & DECISION WINDOW                            -->
+    <!-- ======================================================================= -->
+    <section id="section-tier2" class="tier-section glass-card rounded-2xl p-4 sm:p-6 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
+        <div>
+          <span id="tier2Eyebrow" class="text-[11px] font-mono-num uppercase tracking-widest text-sky-400 font-semibold">
+            2. 3D Pitch Tunnel • Where Pitches Hide Together and Separate on the Way to the Plate
+          </span>
+          <h2 id="tier2MainTitle" class="text-lg sm:text-xl font-extrabold text-white mt-0.5">
+            Interactive 3D Pitch Flight &amp; Hitter Decision Point (23.8 ft Out)
+          </h2>
+        </div>
+
+        <!-- 3D Camera, Batter Silhouette & Animation Controls -->
+        <div class="flex flex-wrap items-center gap-1.5 no-print">
+          <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg px-2 py-0.5 mr-1">
+            <label for="batterStanceSelect" class="text-[11px] text-slate-400 font-semibold mr-1.5">Batter:</label>
+            <select id="batterStanceSelect" class="bg-transparent text-sky-300 text-xs font-mono-num font-bold focus:outline-none">
+              <option value="RHB">Right-Handed (RHB)</option>
+              <option value="LHB">Left-Handed (LHB)</option>
+              <option value="NONE">None</option>
+            </select>
+          </div>
+
+          <button type="button" data-cam="catcher" class="cam-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition">
+            Catcher View
+          </button>
+          <button type="button" data-cam="commit" class="cam-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
+            Decision Point (23.8 ft)
+          </button>
+          <button type="button" data-cam="side" class="cam-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
+            Side View
+          </button>
+          <button type="button" data-cam="pitcher" class="cam-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
+            Pitcher View
+          </button>
+          <button id="toggleAnimBtn" type="button" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition">
+            Pause Flight
+          </button>
+        </div>
+      </div>
+
+      <!-- 3D WebGL Viewport Container + Pairwise Telemetry -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
+        <div id="webglCanvasWrapper" class="lg:col-span-8 relative h-96 sm:h-[450px] rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
+          <div id="webglCanvasContainer" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+          <!-- Overlay Legend inside 3D Viewport -->
+          <div class="absolute top-3 left-3 bg-slate-950/90 backdrop-blur-md border border-slate-800 rounded-xl p-3 text-xs space-y-1.5 pointer-events-none max-w-xs">
+            <div id="webglLegendHeader" class="font-bold text-slate-200 text-[11px] uppercase tracking-wider">Pitch Speed &amp; Hitter Reaction Time</div>
+            <div id="webglLegendItems" class="space-y-1.5 font-mono-num text-[11px]"></div>
+            <div class="pt-1.5 border-t border-slate-800 text-[10px] font-mono-num text-slate-400 space-y-0.5">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+                <span>&lt;145ms: Elite Deception</span>
+                <span class="w-2 h-2 rounded-full bg-amber-400 inline-block ml-1"></span>
+                <span>145–175ms: Avg</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-rose-400 inline-block"></span>
+                <span>&gt;175ms: Easy for Hitter to Read</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="absolute bottom-3 right-3 bg-slate-950/80 px-2.5 py-1 rounded-lg border border-slate-800 text-[11px] text-slate-400 pointer-events-none">
+            Blue Window = Where Hitter Must Commit to Swing • Drag to rotate
+          </div>
+        </div>
+
+        <!-- Pairwise Tunneling Cards -->
+        <div id="tunnelCardsColumn" class="lg:col-span-4 flex flex-col justify-between space-y-3">
+          <div id="tunnelPairCardsContainer" class="space-y-3">
+            <!-- Dynamically populated pairwise tunneling cards -->
+          </div>
+
+          <div class="rounded-xl bg-slate-900/90 border border-slate-800 p-3 text-xs">
+            <div id="platoonBoxTitle" class="font-bold text-sky-300 uppercase tracking-wider text-[11px] mb-1">How Fastball Velocity Sets Up Offspeed</div>
+            <p id="platoonDiagnosisText" class="text-slate-300 text-xs leading-relaxed"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- SECTION 3: MOVEMENT & SPIN CLOCK                                        -->
+    <!-- ======================================================================= -->
+    <section id="section-tier3" class="tier-section glass-card rounded-2xl p-4 sm:p-6 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800">
+        <div>
+          <span id="tier3Eyebrow" class="text-[11px] font-mono-num uppercase tracking-widest text-sky-400 font-semibold">
+            3. Movement &amp; Spin Clock • How Pitches Move Compared to College Averages
+          </span>
+          <h2 id="tier3MainTitle" class="text-lg sm:text-xl font-extrabold text-white mt-0.5">
+            Pitch Break Chart (Ride vs. Run) &amp; 12-Hour Spin Tilt Clock
+          </h2>
+        </div>
+        <div id="tier3SubtitleRight" class="text-xs text-slate-400 font-mono-num">
+          Colored Ovals = Pitcher's Break Zone • Dashed Ovals = College D1 Average
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4 items-stretch">
+        <!-- 2D IVB vs HB Movement Canvas -->
+        <div class="lg:col-span-7 glass-card-subtle rounded-xl p-3 flex flex-col">
+          <div class="flex items-center justify-between text-xs mb-2 px-1">
+            <span id="movementChartTopTitle" class="font-semibold text-slate-200">Vertical Ride/Drop vs. Horizontal Run/Sweep (Inches)</span>
+            <span class="font-mono-num text-[11px] text-slate-400">Pitcher's View (+Right = Arm-Side Run)</span>
+          </div>
+          <div class="relative h-80 sm:h-96 w-full">
+            <canvas id="movementMatrixCanvas" class="w-full h-full rounded-lg bg-slate-950 border border-slate-800"></canvas>
+          </div>
+        </div>
+
+        <!-- 12-Hour Spin-Tilt Clock & Late Seam Movement -->
+        <div class="lg:col-span-5 glass-card-subtle rounded-xl p-3 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-2 px-1">
+              <span class="font-semibold text-slate-200">12-Hour Spin Direction &amp; Arm Slot Angle</span>
+              <span id="armSlotClockLabel" class="font-mono-num text-[11px] text-sky-400">Slot: Low-3/4 (21.5°)</span>
+            </div>
+            <div class="relative h-64 w-full">
+              <canvas id="spinClockCanvas" class="w-full h-full rounded-lg bg-slate-950 border border-slate-800"></canvas>
+            </div>
+          </div>
+
+          <div class="mt-3 pt-2 border-t border-slate-800">
+            <div id="sswBoxTitle" class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Extra Late Seam Movement (Beyond Spin Alone)</div>
+            <div id="sswTableContainer" class="space-y-1.5 text-xs font-mono-num"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- SECTION 4: HITTER SPLITS & GRADE RANGE                                  -->
+    <!-- ======================================================================= -->
+    <section id="section-tier4" class="tier-section glass-card rounded-2xl p-4 sm:p-6 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800">
+        <div>
+          <span id="tier4Eyebrow" class="text-[11px] font-mono-num uppercase tracking-widest text-sky-400 font-semibold">
+            4. Hitter Splits &amp; Grade Range • How Each Pitch Performs vs. Righties and Lefties
+          </span>
+          <h2 id="tier4MainTitle" class="text-lg sm:text-xl font-extrabold text-white mt-0.5">
+            Pitch Grade Range &amp; Righty / Lefty Hitter Matchups
+          </h2>
+        </div>
+        <div id="tier4SubtitleRight" class="text-xs font-mono-num text-slate-400">
+          Confidence Bars Show True College Talent Range Based on Bullpen Sample Size
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4">
+        <!-- Grade Range / Forest Plot Canvas -->
+        <div class="lg:col-span-5 glass-card-subtle rounded-xl p-3 flex flex-col">
+          <div class="flex items-center justify-between text-xs mb-2 px-1">
+            <span id="forestPlotTopTitle" class="font-semibold text-slate-200">College Stuff+ Grade &amp; Likely Range by Pitch</span>
+            <span id="forestPlotRightNote" class="text-[11px] font-mono-num text-slate-400">100 = College D1 Avg</span>
+          </div>
+          <div class="relative h-72 w-full">
+            <canvas id="bayesForestCanvas" class="w-full h-full rounded-lg bg-slate-950 border border-slate-800"></canvas>
+          </div>
+        </div>
+
+        <!-- Hitter Splits Table & Coaching Priorities -->
+        <div class="lg:col-span-7 flex flex-col justify-between space-y-4">
+          <div class="glass-card-subtle rounded-xl p-3.5 overflow-x-auto">
+            <div id="cascadeTableTopTitle" class="text-xs font-semibold text-slate-200 mb-2">Pitch Effectiveness vs. Right-Handed &amp; Left-Handed College Hitters</div>
+            <table class="w-full text-left border-collapse text-xs font-mono-num">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
+                  <th class="py-1.5 pr-1.5">Pitch</th>
+                  <th class="py-1.5 px-1.5 text-right">Plate Speed</th>
+                  <th class="py-1.5 px-1.5 text-right">Hitter Time</th>
+                  <th class="py-1.5 px-1.5 text-right" id="tableColWhiffHeader">Swing &amp; Miss</th>
+                  <th class="py-1.5 px-1.5 text-right text-sky-300" id="tableColOverallHeader">College Stuff+</th>
+                  <th class="py-1.5 px-1.5 text-right text-emerald-300">vs. Righties</th>
+                  <th class="py-1.5 pl-1.5 text-right text-amber-300">vs. Lefties</th>
+                </tr>
+              </thead>
+              <tbody id="cascadeTableBody" class="divide-y divide-slate-800/60"></tbody>
+            </table>
+          </div>
+
+          <div class="rounded-xl bg-slate-900/90 border border-slate-800 p-4">
+            <div class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2">Top 3 Coaching &amp; Development Gameplan Priorities</div>
+            <ol id="devPrioritiesList" class="list-decimal list-inside space-y-1.5 text-xs text-slate-200 leading-relaxed"></ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex flex-wrap justify-between gap-2 no-print">
+    <span>Project Apex v3.5 • High School TrackMan Bullpen to NCAA Division 1 Scouting &amp; Development</span>
+    <span id="footerRightText" class="font-mono-num">Switch between "Baseball / Scout (Simple)" and "Pro Analytics (R&amp;D)" in the top bar</span>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- APPLICATION LOGIC & MATHEMATICAL ENGINE (VERSION 3.5)                     -->
+  <!-- ========================================================================= -->
+  <script>
+    // =========================================================================
+    // 1. REAL BULLPEN TELEMETRY DATASETS (ROWLAND, HUTCHINGS, NCAA D1 ACE)
+    // =========================================================================
+    const PITCHER_PROFILES = {
+      rowland: {
+        id: 'rowland',
+        name: 'Quinn Rowland',
+        throws: 'R',
+        team: 'Coquitlam Reds (HS Varsity)',
+        date: '10/20/2026',
+        totalPitches: 15,
+        isHighSchool: true,
+        pitches: [
+          {
+            code: 'FF',
+            name: 'Four-Seam Fastball',
+            color: '#38bdf8',
+            count: 5,
+            velo: 83.0,
+            maxVelo: 83.5,
+            spin: 2165,
+            ivb: 15.4,
+            hb: 13.0,
+            relHeight: 5.75,
+            relSide: 1.85,
+            ext: 6.10,
+            plateHeight: 2.65,
+            plateSide: 0.15,
+            vaa: -5.8,
+            havaa: -1.3,
+            spinEff: 89.0,
+            clockTilt: '1:30',
+            clockDeg: 45,
+            magnusIvb: 14.1,
+            magnusHb: 11.2,
+            rawXrv: 0.72,
+            muCol: 0.05,
+            sigCol: 0.68,
+            sigWithin: 11.5,
+            xrvSens: -0.115,
+            pSwing: 0.482,
+            pWhiff: 0.194,
+            pCs: 0.288,
+            xwobacon: 0.376
+          },
+          {
+            code: 'CH',
+            name: 'Changeup (Circle Fade)',
+            color: '#34d399',
+            count: 5,
+            velo: 73.7,
+            maxVelo: 75.1,
+            spin: 1265,
+            ivb: 2.8,
+            hb: 17.7,
+            relHeight: 5.70,
+            relSide: 1.92,
+            ext: 6.10,
+            plateHeight: 2.05,
+            plateSide: 0.42,
+            vaa: -8.0,
+            havaa: -2.1,
+            spinEff: 78.0,
+            clockTilt: '2:30',
+            clockDeg: 75,
+            magnusIvb: 5.6,
+            magnusHb: 14.1,
+            rawXrv: -0.68,
+            muCol: -0.12,
+            sigCol: 0.66,
+            sigWithin: 15.8,
+            xrvSens: -0.065,
+            pSwing: 0.534,
+            pWhiff: 0.362,
+            pCs: 0.241,
+            xwobacon: 0.278
+          },
+          {
+            code: 'SL',
+            name: 'Slider (Gyro Depth)',
+            color: '#fbbf24',
+            count: 5,
+            velo: 71.8,
+            maxVelo: 73.2,
+            spin: 2268,
+            ivb: -3.0,
+            hb: -7.2,
+            relHeight: 5.68,
+            relSide: 1.95,
+            ext: 5.80,
+            plateHeight: 1.88,
+            plateSide: -0.45,
+            vaa: -9.7,
+            havaa: 0.6,
+            spinEff: 38.0,
+            clockTilt: '8:15',
+            clockDeg: 247,
+            magnusIvb: -1.4,
+            magnusHb: -5.8,
+            rawXrv: -0.22,
+            muCol: -0.32,
+            sigCol: 0.72,
+            sigWithin: 15.2,
+            xrvSens: -0.082,
+            pSwing: 0.495,
+            pWhiff: 0.318,
+            pCs: 0.264,
+            xwobacon: 0.312
+          }
+        ]
+      },
+      hutchings: {
+        id: 'hutchings',
+        name: 'Liam Hutchings',
+        throws: 'R',
+        team: 'Coquitlam Reds (HS Developing)',
+        date: '10/20/2026',
+        totalPitches: 15,
+        isHighSchool: true,
+        pitches: [
+          {
+            code: 'FF',
+            name: 'Four-Seam Fastball',
+            color: '#38bdf8',
+            count: 7,
+            velo: 77.2,
+            maxVelo: 78.4,
+            spin: 1982,
+            ivb: 15.5,
+            hb: 12.1,
+            relHeight: 5.65,
+            relSide: 1.80,
+            ext: 5.65,
+            plateHeight: 2.55,
+            plateSide: 0.12,
+            vaa: -6.4,
+            havaa: -1.4,
+            spinEff: 88.0,
+            clockTilt: '1:15',
+            clockDeg: 38,
+            magnusIvb: 14.5,
+            magnusHb: 10.8,
+            rawXrv: 1.35,
+            muCol: 0.05,
+            sigCol: 0.68,
+            sigWithin: 11.5,
+            xrvSens: -0.115,
+            pSwing: 0.490,
+            pWhiff: 0.148,
+            pCs: 0.272,
+            xwobacon: 0.418
+          },
+          {
+            code: 'CU',
+            name: 'Curveball (11-5 Depth)',
+            color: '#a78bfa',
+            count: 5,
+            velo: 65.5,
+            maxVelo: 66.8,
+            spin: 1904,
+            ivb: -13.2,
+            hb: -7.8,
+            relHeight: 5.72,
+            relSide: 1.75,
+            ext: 5.50,
+            plateHeight: 1.75,
+            plateSide: -0.35,
+            vaa: -11.4,
+            havaa: 0.8,
+            spinEff: 68.0,
+            clockTilt: '7:30',
+            clockDeg: 225,
+            magnusIvb: -11.6,
+            magnusHb: -6.5,
+            rawXrv: 0.18,
+            muCol: -0.18,
+            sigCol: 0.70,
+            sigWithin: 16.5,
+            xrvSens: -0.070,
+            pSwing: 0.442,
+            pWhiff: 0.285,
+            pCs: 0.295,
+            xwobacon: 0.334
+          },
+          {
+            code: 'CH',
+            name: 'Changeup (Arm-Side Fade)',
+            color: '#34d399',
+            count: 3,
+            velo: 68.6,
+            maxVelo: 69.5,
+            spin: 1645,
+            ivb: 11.1,
+            hb: 14.9,
+            relHeight: 5.60,
+            relSide: 1.88,
+            ext: 5.60,
+            plateHeight: 2.15,
+            plateSide: 0.38,
+            vaa: -7.9,
+            havaa: -1.8,
+            spinEff: 82.0,
+            clockTilt: '2:00',
+            clockDeg: 60,
+            magnusIvb: 12.2,
+            magnusHb: 12.8,
+            rawXrv: 0.25,
+            muCol: -0.12,
+            sigCol: 0.66,
+            sigWithin: 15.8,
+            xrvSens: -0.065,
+            pSwing: 0.478,
+            pWhiff: 0.268,
+            pCs: 0.252,
+            xwobacon: 0.342
+          }
+        ]
+      },
+      d1_ace: {
+        id: 'd1_ace',
+        name: 'NCAA D1 Friday Ace Benchmark',
+        throws: 'R',
+        team: 'NCAA D1 Power-4 Reference',
+        date: '10/20/2026',
+        totalPitches: 25,
+        isHighSchool: false,
+        pitches: [
+          {
+            code: 'FF',
+            name: 'Four-Seam Fastball',
+            color: '#38bdf8',
+            count: 12,
+            velo: 94.2,
+            maxVelo: 96.1,
+            spin: 2440,
+            ivb: 18.8,
+            hb: 9.4,
+            relHeight: 5.55,
+            relSide: 1.95,
+            ext: 6.55,
+            plateHeight: 2.82,
+            plateSide: 0.10,
+            vaa: -4.2,
+            havaa: -1.1,
+            spinEff: 95.0,
+            clockTilt: '12:45',
+            clockDeg: 23,
+            magnusIvb: 17.9,
+            magnusHb: 8.6,
+            rawXrv: -0.82,
+            muCol: 0.05,
+            sigCol: 0.68,
+            sigWithin: 11.5,
+            xrvSens: -0.115,
+            pSwing: 0.512,
+            pWhiff: 0.315,
+            pCs: 0.304,
+            xwobacon: 0.292
+          },
+          {
+            code: 'SL',
+            name: 'Gyro Slider',
+            color: '#fbbf24',
+            count: 8,
+            velo: 84.8,
+            maxVelo: 86.0,
+            spin: 2610,
+            ivb: 1.2,
+            hb: -6.8,
+            relHeight: 5.52,
+            relSide: 1.98,
+            ext: 6.45,
+            plateHeight: 1.95,
+            plateSide: -0.48,
+            vaa: -7.4,
+            havaa: 0.5,
+            spinEff: 34.0,
+            clockTilt: '9:00',
+            clockDeg: 270,
+            magnusIvb: 2.5,
+            magnusHb: -5.1,
+            rawXrv: -1.18,
+            muCol: -0.32,
+            sigCol: 0.72,
+            sigWithin: 15.2,
+            xrvSens: -0.082,
+            pSwing: 0.548,
+            pWhiff: 0.425,
+            pCs: 0.282,
+            xwobacon: 0.258
+          },
+          {
+            code: 'CH',
+            name: 'Split-Changeup',
+            color: '#34d399',
+            count: 5,
+            velo: 85.5,
+            maxVelo: 86.4,
+            spin: 1490,
+            ivb: 3.4,
+            hb: 16.8,
+            relHeight: 5.50,
+            relSide: 2.00,
+            ext: 6.50,
+            plateHeight: 2.02,
+            plateSide: 0.44,
+            vaa: -6.9,
+            havaa: -1.9,
+            spinEff: 74.0,
+            clockTilt: '2:30',
+            clockDeg: 75,
+            magnusIvb: 6.2,
+            magnusHb: 13.4,
+            rawXrv: -0.95,
+            muCol: -0.12,
+            sigCol: 0.66,
+            sigWithin: 15.8,
+            xrvSens: -0.065,
+            pSwing: 0.540,
+            pWhiff: 0.388,
+            pCs: 0.255,
+            xwobacon: 0.271
+          }
+        ]
+      }
+    };
+
+    function createEmptyPitchLabState(pitchCount = 6) {
+      const state = {};
+      for (let i = 0; i < pitchCount; i++) {
+        state[i] = { velo: 0.0, spin: 0, ivb: 0.0, hb: 0.0, relH: 0.0, ext: 0.0 };
+      }
+      return state;
+    }
+
+    // Application State (Default viewMode = 'scout' for plain-English Baseball/Scout View)
+    const appState = {
+      viewMode: 'scout', // 'scout' (Baseball / Scout Simple) | 'rnd' (Pro Analytics R&D)
+      currentPitcherId: 'rowland',
+      gradeMode: 'present', // 'present' | 'projected'
+      pacingMode: 'raw', // 'raw', 'starter', 'reliever'
+      activeTierTab: 'all',
+      labTargetIdx: 0,
+      pitchLabState: createEmptyPitchLabState(6),
+      coupledSlotArc: true,
+      batterStance: 'RHB',
+      animPlaying: true,
+      cameraPreset: 'catcher',
+      dossierPreview: false,
+      get labDeltas() {
+        if (!this.pitchLabState[this.labTargetIdx]) {
+          this.pitchLabState[this.labTargetIdx] = { velo: 0.0, spin: 0, ivb: 0.0, hb: 0.0, relH: 0.0, ext: 0.0 };
+        }
+        return this.pitchLabState[this.labTargetIdx];
+      },
+      set labDeltas(val) {
+        this.pitchLabState[this.labTargetIdx] = { ...val };
+      }
+    };
+
+    // =========================================================================
+    // 2. UNDERLYING V3.0 PHYSICS & BAYESIAN ENGINE (RUNS SILENTLY UNDER THE HOOD)
+    // =========================================================================
+    const GRAVITY_FT_S2 = 32.174;
+    const MPH_TO_FTS = 1.4666667;
+    const AERO_C0_FT_INV = 0.005383;
+    const SHOULDER_PIVOT_Z_FT = 5.05;
+    const ARM_LEVER_RADIUS_FT = 2.40;
+    const NEURAL_SWING_LATENCY_MS = 52.0;
+
+    function degToClockString(deg) {
+      const norm = ((deg % 360) + 360) % 360;
+      const totalMinutes = Math.round((norm / 360) * 720);
+      let hours = Math.floor(totalMinutes / 60);
+      const mins = Math.round((totalMinutes % 60) / 15) * 15;
+      if (mins === 60) hours += 1;
+      const finalMinutes = mins === 60 ? 0 : mins;
+      if (hours <= 0) hours += 12;
+      if (hours > 12) hours -= 12;
+      return `${hours}:${finalMinutes < 10 ? '0' + finalMinutes : finalMinutes}`;
+    }
+
+    function computeCoupledSlotKinematics(basePitch, dRelH_in, coupledArcEnabled) {
+      const dRelH_ft = dRelH_in / 12.0;
+      const newRelH = Math.min(7.0, Math.max(3.6, basePitch.relHeight + dRelH_ft));
+      if (!coupledArcEnabled || Math.abs(dRelH_in) < 0.01) {
+        return {
+          relHeight: newRelH,
+          relSide: basePitch.relSide,
+          relSideDeltaIn: 0.0,
+          tiltDeltaDeg: 0.0,
+          clockDeg: basePitch.clockDeg,
+          clockTilt: basePitch.clockTilt,
+          slotInducedIvb: 1.15 * dRelH_ft,
+          slotInducedHb: (basePitch.code === 'FF' || basePitch.code === 'CH' || basePitch.code === 'SI')
+            ? -1.05 * dRelH_ft
+            : 0.95 * dRelH_ft
+        };
+      }
+
+      const sin0 = Math.min(0.96, Math.max(-0.92, (basePitch.relHeight - SHOULDER_PIVOT_Z_FT) / ARM_LEVER_RADIUS_FT));
+      const sin1 = Math.min(0.96, Math.max(-0.92, (newRelH - SHOULDER_PIVOT_Z_FT) / ARM_LEVER_RADIUS_FT));
+      const theta0 = Math.asin(sin0);
+      const theta1 = Math.asin(sin1);
+
+      const arcHorizShiftFt = ARM_LEVER_RADIUS_FT * (Math.cos(theta1) - Math.cos(theta0));
+      const newRelSide = basePitch.relSide + arcHorizShiftFt;
+      const relSideDeltaIn = arcHorizShiftFt * 12.0;
+
+      const dThetaDeg = ((theta1 - theta0) * 180.0) / Math.PI;
+      const tiltDeltaDeg = -dThetaDeg;
+      const newClockDeg = (((basePitch.clockDeg + tiltDeltaDeg) % 360) + 360) % 360;
+      const newClockTilt = degToClockString(newClockDeg);
+
+      const tiltRad = (tiltDeltaDeg * Math.PI) / 180.0;
+      const rotIvb = basePitch.ivb * Math.cos(tiltRad) - basePitch.hb * Math.sin(tiltRad) * 0.38;
+      const rotHb = basePitch.hb * Math.cos(tiltRad) + basePitch.ivb * Math.sin(tiltRad) * 0.38;
+
+      return {
+        relHeight: newRelH,
+        relSide: newRelSide,
+        relSideDeltaIn,
+        tiltDeltaDeg,
+        clockDeg: newClockDeg,
+        clockTilt: newClockTilt,
+        slotInducedIvb: rotIvb - basePitch.ivb,
+        slotInducedHb: rotHb - basePitch.hb
+      };
+    }
+
+    function compute3DTrajectoryPoints(pitch, handedness = 'R') {
+      const N_STEPS = 45;
+      const yStart = Math.max(48.0, 60.5 - pitch.ext);
+      const dy = -yStart / N_STEPS;
+
+      const throwsSign = handedness === 'L' ? -1.0 : 1.0;
+      const xStart = -throwsSign * pitch.relSide;
+      const zStart = pitch.relHeight;
+
+      const xTarget = (pitch.plateSide !== undefined ? pitch.plateSide : 0.0) + throwsSign * (pitch.hb / 12.0) * 0.52;
+      const zTarget = Math.max(1.15, Math.min(3.85, 2.38 + (pitch.ivb - 10.0) / 12.0 * 0.65));
+
+      const v0_fts = Math.max(50.0, pitch.velo) * MPH_TO_FTS;
+      const spinFactor = (pitch.spin / 2200.0) * (pitch.spinEff / 100.0);
+      const cdBase = 0.315 + 0.032 * spinFactor;
+      const kDrag = AERO_C0_FT_INV * cdBase;
+
+      const flightDist = yStart;
+      const expK = Math.exp(kDrag * flightDist);
+      const tEstTotal = (expK - 1.0) / (kDrag * v0_fts);
+
+      const axAero = (2.0 * throwsSign * (pitch.hb / 12.0)) / (tEstTotal * tEstTotal);
+      const azAero = (2.0 * (pitch.ivb / 12.0)) / (tEstTotal * tEstTotal);
+
+      const vy0 = -v0_fts * 0.992;
+      const vx0 = (xTarget - xStart - 0.5 * axAero * tEstTotal * tEstTotal) / tEstTotal;
+      const vz0 = (zTarget - zStart + 0.5 * (GRAVITY_FT_S2 - azAero) * tEstTotal * tEstTotal) / tEstTotal;
+
+      const points = [];
+      let x = xStart;
+      let y = yStart;
+      let z = zStart;
+      let vx = vx0;
+      let vy = vy0;
+      let vz = vz0;
+      let t = 0.0;
+
+      points.push({
+        x, y, z, vx, vy, vz,
+        speedMph: Math.hypot(vx, vy, vz) / MPH_TO_FTS,
+        tSec: 0.0,
+        s: 0.0
+      });
+
+      for (let step = 1; step <= N_STEPS; step++) {
+        const dt = dy / vy;
+        const speed = Math.hypot(vx, vy, vz);
+        const cdDynamic = cdBase * (0.96 + 0.04 * (speed / v0_fts));
+        const dragMag = AERO_C0_FT_INV * cdDynamic * speed;
+
+        const ax1 = -dragMag * vx + axAero;
+        const ay1 = -dragMag * vy;
+        const az1 = -GRAVITY_FT_S2 - dragMag * vz + azAero;
+
+        const vxPred = vx + ax1 * dt;
+        const vyPred = Math.min(-35.0, vy + ay1 * dt);
+        const vzPred = vz + az1 * dt;
+        const dtCorr = dy / (0.5 * (vy + vyPred));
+
+        const speedPred = Math.hypot(vxPred, vyPred, vzPred);
+        const dragMag2 = AERO_C0_FT_INV * cdDynamic * speedPred;
+        const ax2 = -dragMag2 * vxPred + axAero;
+        const ay2 = -dragMag2 * vyPred;
+        const az2 = -GRAVITY_FT_S2 - dragMag2 * vzPred + azAero;
+
+        x += 0.5 * (vx + vxPred) * dtCorr;
+        y = yStart + step * dy;
+        z += 0.5 * (vz + vzPred) * dtCorr;
+
+        vx += 0.5 * (ax1 + ax2) * dtCorr;
+        vy = Math.min(-35.0, vy + 0.5 * (ay1 + ay2) * dtCorr);
+        vz += 0.5 * (az1 + az2) * dtCorr;
+        t += dtCorr;
+
+        points.push({
+          x,
+          y: Math.max(0.0, y),
+          z,
+          vx,
+          vy,
+          vz,
+          speedMph: Math.hypot(vx, vy, vz) / MPH_TO_FTS,
+          tSec: t,
+          s: step / N_STEPS
+        });
+      }
+
+      return points;
+    }
+
+    function interpolateAtY(points, targetY) {
+      for (let i = 0; i < points.length - 1; i++) {
+        const p0 = points[i];
+        const p1 = points[i + 1];
+        if ((p0.y >= targetY && p1.y <= targetY) || (p0.y <= targetY && p1.y >= targetY)) {
+          const frac = Math.abs(p0.y - p1.y) < 1e-6 ? 0.0 : (p0.y - targetY) / (p0.y - p1.y);
+          return {
+            x: p0.x + frac * (p1.x - p0.x),
+            y: targetY,
+            z: p0.z + frac * (p1.z - p0.z),
+            tSec: p0.tSec + frac * (p1.tSec - p0.tSec),
+            speedMph: p0.speedMph + frac * (p1.speedMph - p0.speedMph)
+          };
+        }
+      }
+      return points[points.length - 1];
+    }
+
+    function classifyArmSlot(relHeightFt, relSideFt) {
+      const absSide = Math.max(Math.abs(relSideFt), 0.15);
+      const angleDeg = (Math.atan2(relHeightFt - SHOULDER_PIVOT_Z_FT, absSide) * 180) / Math.PI;
+      const ratio = relHeightFt / absSide;
+      let slot = 'Low-3/4';
+      if (angleDeg >= 52.0 || ratio >= 3.8) slot = 'Over-the-Top';
+      else if (angleDeg >= 32.0 || ratio >= 2.4) slot = 'High-3/4';
+      else if (angleDeg >= 12.0 || ratio >= 1.65) slot = 'Low-3/4';
+      else slot = 'Sidearm/Sub';
+      return { slot, angleDeg };
+    }
+
+    function mapStuffTo2080(score) {
+      if (score >= 130) return { grade: 80, short: '80', label: '80 Grade • Generational' };
+      if (score >= 120) return { grade: 70, short: '70', label: '70 Grade • Plus-Plus D1 Ace' };
+      if (score >= 110) return { grade: 60, short: '60', label: '60 Grade • Plus D1 Weapon' };
+      if (score >= 105) return { grade: 55, short: '55', label: '55 Grade • Above-Avg D1' };
+      if (score >= 95) return { grade: 50, short: '50', label: '50 Grade • Solid College Avg' };
+      if (score >= 90) return { grade: 45, short: '45+', label: '45+ Grade • Quality D1 Arm' };
+      if (score >= 85) return { grade: 45, short: '45', label: '45 Grade • Fringe D1 / Varsity+' };
+      if (score >= 75) return { grade: 40, short: '40', label: '40 Grade • Developing HS' };
+      if (score >= 70) return { grade: 35, short: '35', label: '35 Grade • Below D1 Avg (Varsity)' };
+      return { grade: 30, short: '30', label: '30 Grade • Needs Velo Jump' };
+    }
+
+    function getSampleConfidenceBadge(count) {
+      if (count >= 8) {
+        return { level: 'High', cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' };
+      }
+      if (count >= 5) {
+        return { level: 'Med', cls: 'bg-sky-500/15 text-sky-300 border-sky-500/30' };
+      }
+      return { level: 'Low', cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30' };
+    }
+
+    function classifyReactionMargin(marginMs, isScoutView = true) {
+      if (marginMs < 145.0) {
+        return {
+          tier: isScoutView ? 'Elite Deception' : 'Elite Disguise',
+          colorHex: '#34d399',
+          badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+          barColor: 'bg-emerald-400'
+        };
+      }
+      if (marginMs <= 175.0) {
+        return {
+          tier: isScoutView ? 'Average College' : 'Average D1',
+          colorHex: '#fbbf24',
+          badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+          barColor: 'bg-amber-400'
+        };
+      }
+      return {
+        tier: isScoutView ? 'Easy for Hitter to Read' : 'Extreme Batter Advantage',
+        colorHex: '#fb7185',
+        badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+        barColor: 'bg-rose-500'
+      };
+    }
+
+    function stuffToPercentile(score) {
+      const z = (score - 100.0) / 10.0;
+      const t = 1.0 / (1.0 + 0.2316419 * Math.abs(z));
+      const d = 0.3989423 * Math.exp((-z * z) / 2.0);
+      let prob = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+      if (z > 0) prob = 1.0 - prob;
+      return Math.round(Math.min(99, Math.max(1, prob * 100)));
+    }
+
+    function computeFastballNonLinearStuff(velo, ivb, hb, ext, slotBonus) {
+      const veloLinearTerm = 3.85 * (velo - 91.5);
+      const penaltyCliff = velo < 88.0 ? -0.45 * Math.pow(88.0 - velo, 1.6) : 0.0;
+      const shapeBonus = 7.5 + 0.72 * (ivb - 15.0) + 0.42 * (Math.abs(hb) - 11.0) + 2.8 * (ext - 6.0);
+      const rawStuff = 100.0 + veloLinearTerm + penaltyCliff + shapeBonus;
+      const priorStuff = Math.max(35.0, Math.min(138.0, 100.0 + 3.85 * (velo - 91.5) + slotBonus));
+      return { rawStuff, priorStuff, penaltyCliff };
+    }
+
+    function evaluateFullPipeline(profile, pacingMode, pitchLabStateMap, coupledSlotArc = true, gradeMode = 'present') {
+      const pacingDiscount = pacingMode === 'starter' ? -1.5 : pacingMode === 'reliever' ? -0.5 : 0.0;
+      const isProjectionActive = gradeMode === 'projected';
+      const isScoutView = appState.viewMode === 'scout';
+
+      const workingPitches = profile.pitches.map((p, idx) => {
+        const pDeltas = (pitchLabStateMap && pitchLabStateMap[idx])
+          ? pitchLabStateMap[idx]
+          : { velo: 0.0, spin: 0, ivb: 0.0, hb: 0.0, relH: 0.0, ext: 0.0 };
+
+        const isFastball = p.code === 'FF' || p.code === 'SI' || p.code === 'FC';
+        const growthVelo = isProjectionActive ? (isFastball ? 5.0 : 3.5) : 0.0;
+        const growthExt = isProjectionActive ? 0.30 : 0.0;
+
+        const dVelo = pacingDiscount + growthVelo + (pDeltas.velo || 0.0);
+        const dSpin = (pDeltas.spin || 0) + (isProjectionActive ? 95 : 0);
+        const dExt_ft = growthExt + (pDeltas.ext || 0.0) / 12.0;
+
+        const coupled = computeCoupledSlotKinematics(p, pDeltas.relH || 0.0, coupledSlotArc);
+
+        const simVelo = p.velo + dVelo;
+        const simSpin = Math.max(500, p.spin + dSpin);
+        const simRelH = coupled.relHeight;
+        const simRelSide = coupled.relSide;
+        const simExt = Math.min(7.5, Math.max(4.2, p.ext + dExt_ft));
+        const simIvb = p.ivb + (pDeltas.ivb || 0.0) + coupled.slotInducedIvb;
+        const simHb = p.hb + (pDeltas.hb || 0.0) + coupled.slotInducedHb;
+
+        const dRelH_ft = simRelH - p.relHeight;
+        const simVaa = p.vaa - 0.55 * dRelH_ft + 0.08 * (simIvb - p.ivb) + 0.04 * (simVelo - p.velo);
+
+        const veloXrvDelta = p.xrvSens * (simVelo - p.velo);
+        const extXrvDelta = -0.095 * (simExt - p.ext);
+        let moveXrvDelta = 0.0;
+        if (p.code === 'FF' || p.code === 'SI') {
+          moveXrvDelta = -0.032 * (simIvb - p.ivb) - 0.012 * (Math.abs(simHb) - Math.abs(p.hb));
+        } else if (p.code === 'CH' || p.code === 'FS') {
+          moveXrvDelta = 0.030 * (simIvb - p.ivb) - 0.032 * (Math.abs(simHb) - Math.abs(p.hb));
+        } else {
+          moveXrvDelta = 0.024 * (simIvb - p.ivb) - 0.028 * (Math.abs(simHb) - Math.abs(p.hb));
+        }
+        const adjXrv = p.rawXrv + veloXrvDelta + extXrvDelta + moveXrvDelta;
+
+        return {
+          ...p,
+          velo: simVelo,
+          spin: simSpin,
+          relHeight: simRelH,
+          relSide: simRelSide,
+          relSideDeltaIn: coupled.relSideDeltaIn,
+          tiltDeltaDeg: coupled.tiltDeltaDeg,
+          clockDeg: coupled.clockDeg,
+          clockTilt: coupled.clockTilt,
+          ext: simExt,
+          ivb: simIvb,
+          hb: simHb,
+          vaa: simVaa,
+          adjXrv,
+          hasActiveLabDelta: Object.values(pDeltas).some((v) => Math.abs(v) > 0.01)
+        };
+      });
+
+      const primaryFb = workingPitches[0];
+      const secondaryVeloCoeffMap = { SI: 2.85, FC: 2.15, SL: 1.35, SW: 1.25, CH: 0.95, FS: 1.10, CU: 1.05 };
+      const slotMap = {
+        'Over-the-Top': { FF: 2.0, SI: -2.5, FC: 0.5, SL: -1.0, SW: -3.5, CH: -0.5, FS: 1.5, CU: 2.5 },
+        'High-3/4': { FF: 1.5, SI: 0.0, FC: 1.0, SL: 1.5, SW: 0.5, CH: 1.0, FS: 1.0, CU: 1.0 },
+        'Low-3/4': { FF: 1.5, SI: 2.0, FC: 0.5, SL: 1.5, SW: 2.5, CH: 2.0, FS: 0.0, CU: -1.5 },
+        'Sidearm/Sub': { FF: -1.0, SI: 3.0, FC: 0.0, SL: 2.0, SW: 3.5, CH: 2.5, FS: -1.5, CU: -3.0 }
+      };
+
+      const gradedPitches = workingPitches.map((p) => {
+        const { slot, angleDeg } = classifyArmSlot(p.relHeight, p.relSide);
+        const sBonus = (slotMap[slot] && slotMap[slot][p.code]) || 0.0;
+
+        let rawStuff = 100.0;
+        let priorStuff = 100.0;
+        let penaltyCliff = 0.0;
+
+        if (p.code === 'FF' || p.code === 'SI') {
+          const fbCal = computeFastballNonLinearStuff(p.velo, p.ivb, p.hb, p.ext, sBonus);
+          rawStuff = fbCal.rawStuff;
+          priorStuff = fbCal.priorStuff;
+          penaltyCliff = fbCal.penaltyCliff;
+        } else {
+          rawStuff = 100.0 - ((p.adjXrv - p.muCol) / p.sigCol) * 10.0;
+          const vCoeff = secondaryVeloCoeffMap[p.code] || 1.15;
+          priorStuff = Math.min(130.0, Math.max(55.0, 100.0 + vCoeff * (primaryFb.velo - 91.5) + sBonus));
+        }
+
+        const varBetween = 100.0;
+        const varWithin = p.sigWithin * p.sigWithin;
+        const w = (p.count * varBetween) / (p.count * varBetween + varWithin);
+        const shrunkStuff = w * rawStuff + (1.0 - w) * priorStuff;
+        const postSd = Math.sqrt((1.0 - w) * varBetween);
+        const ci90 = [shrunkStuff - 1.64485 * postSd, shrunkStuff + 1.64485 * postSd];
+        const ci95 = [shrunkStuff - 1.95996 * postSd, shrunkStuff + 1.95996 * postSd];
+
+        const trajPoints = compute3DTrajectoryPoints(p, profile.throws);
+        const commitPos = interpolateAtY(trajPoints, 23.8);
+        const platePos = trajPoints[trajPoints.length - 1];
+
+        const totalFlightMs = platePos.tSec * 1000.0;
+        const timeToCommitMs = commitPos.tSec * 1000.0;
+        const rawCommitToPlateMs = totalFlightMs - timeToCommitMs;
+        const reactionMarginMs = Math.max(110.0, rawCommitToPlateMs - NEURAL_SWING_LATENCY_MS);
+        const reactionMeta = classifyReactionMargin(reactionMarginMs, isScoutView);
+        const plateSpeedMph = platePos.speedMph;
+        const dragDecayPct = ((p.velo - plateSpeedMph) / Math.max(p.velo, 1.0)) * 100.0;
+
+        return {
+          ...p,
+          slot,
+          slotAngleDeg: angleDeg,
+          rawStuff,
+          priorStuff,
+          penaltyCliff,
+          w,
+          shrunkStuff,
+          postSd,
+          ci90,
+          ci95,
+          confidenceBadge: getSampleConfidenceBadge(p.count),
+          scout2080: mapStuffTo2080(shrunkStuff),
+          trajPoints,
+          commitPos,
+          platePos,
+          totalFlightMs,
+          timeToCommitMs,
+          commitToPlateMs: rawCommitToPlateMs,
+          reactionMarginMs,
+          reactionMeta,
+          plateSpeedMph,
+          dragDecayPct
+        };
+      });
+
+      const hasEliteFadeOrCut = gradedPitches.some(
+        (p) => ((p.code === 'CH' || p.code === 'FS') && Math.abs(p.hb) >= 15.0 && p.shrunkStuff >= 98.0) ||
+               (p.code === 'FC' && p.shrunkStuff >= 98.0)
+      );
+
+      gradedPitches.forEach((p) => {
+        let sameHandDelta = 0.0;
+        let oppHandDelta = 0.0;
+        if (p.code === 'SL' || p.code === 'SW') {
+          sameHandDelta = +8.0;
+          oppHandDelta = (hasEliteFadeOrCut && p.ivb <= -2.0) ? -6.5 : -12.0;
+        } else if (p.code === 'CH' || p.code === 'FS') {
+          sameHandDelta = -4.0;
+          oppHandDelta = +6.5;
+        } else if (p.code === 'CU') {
+          sameHandDelta = +1.5;
+          oppHandDelta = +2.0;
+        } else {
+          sameHandDelta = +1.5;
+          oppHandDelta = -1.5;
+        }
+
+        const stuffSameHand = p.shrunkStuff + sameHandDelta;
+        const stuffOppHand = p.shrunkStuff + oppHandDelta;
+        p.stuffVsRHB = profile.throws === 'R' ? stuffSameHand : stuffOppHand;
+        p.stuffVsLHB = profile.throws === 'R' ? stuffOppHand : stuffSameHand;
+      });
+
+      const fb = gradedPitches[0];
+      const secCountSum = gradedPitches.slice(1).reduce((acc, p) => acc + p.count, 0);
+      const normWeights = gradedPitches.map((p, idx) => {
+        if (gradedPitches.length === 1) return 1.0;
+        if (idx === 0) return 0.50;
+        return secCountSum > 0 ? 0.50 * (p.count / secCountSum) : 0.50 / (gradedPitches.length - 1);
+      });
+
+      const weightedBaseStuff = gradedPitches.reduce((acc, p, i) => acc + normWeights[i] * p.shrunkStuff, 0);
+
+      const pairwise = [];
+      let tunnelSum = 0.0;
+      let sepSum = 0.0;
+      let secWeightTotal = 0.0;
+
+      for (let i = 1; i < gradedPitches.length; i++) {
+        const sec = gradedPitches[i];
+        const dRelFt = Math.hypot(fb.relSide - sec.relSide, fb.ext - sec.ext, fb.relHeight - sec.relHeight);
+        const dRelIn = dRelFt * 12.0;
+        const mahalD = dRelIn / 1.15;
+
+        let disguiseAdj = 0.0;
+        if (dRelIn <= 2.5) disguiseAdj = 5.0 - 1.4 * dRelIn;
+        else if (dRelIn <= 5.0) disguiseAdj = 1.5 * (1.0 - (dRelIn - 2.5) / 2.5);
+        else disguiseAdj = Math.max(-6.0, -1.5 * (dRelIn - 5.0));
+
+        const dDecIn = Math.hypot(
+          fb.commitPos.x - sec.commitPos.x,
+          fb.commitPos.z - sec.commitPos.z
+        ) * 12.0;
+        const dPlateIn = Math.hypot(
+          fb.platePos.x - sec.platePos.x,
+          fb.platePos.z - sec.platePos.z
+        ) * 12.0;
+        const lateDivIn = Math.max(0.0, dPlateIn - dDecIn);
+
+        let apertureScore = 0.0;
+        if (dDecIn <= 4.5) apertureScore = 2.5 * (1.0 - dDecIn / 6.0);
+        else if (dDecIn <= 8.0) apertureScore = 0.625 * (1.0 - (dDecIn - 4.5) / 3.5);
+        else apertureScore = Math.max(-3.5, -0.55 * (dDecIn - 8.0));
+
+        const lateBonus = Math.min(2.5, Math.max(-1.5, (lateDivIn - 8.0) * 0.22));
+        const commitTunnelScore = Math.min(5.0, Math.max(-5.0, apertureScore + lateBonus));
+        const pairTunnelAdj = Math.min(6.0, Math.max(-6.0, 0.55 * disguiseAdj + 0.65 * commitTunnelScore));
+
+        const veloDelta = fb.velo - sec.velo;
+        const moveSepIn = Math.hypot(fb.ivb - sec.ivb, fb.hb - sec.hb);
+        const timeDeltaMs = sec.totalFlightMs - fb.totalFlightMs;
+
+        let veloScore = 1.8;
+        if (sec.code === 'CH' || sec.code === 'FS') {
+          if (veloDelta >= 8.0 && veloDelta <= 12.5) veloScore = 2.5;
+          else if (veloDelta < 5.0) veloScore = -2.5;
+          else veloScore = 1.4;
+        } else if (sec.code === 'SL' || sec.code === 'SW') {
+          if (veloDelta >= 6.0 && veloDelta <= 11.5) veloScore = 2.0;
+          else veloScore = 1.2;
+        }
+        const shapeScore = Math.min(2.8, Math.max(-2.0, (moveSepIn - 11.0) * 0.18));
+        const pairSepAdj = Math.min(5.0, Math.max(-5.0, veloScore + shapeScore));
+
+        pairwise.push({
+          primary: fb.code,
+          secondary: sec.code,
+          secName: sec.name,
+          color: sec.color,
+          dRelIn,
+          mahalD,
+          disguiseAdj,
+          dDecIn,
+          dPlateIn,
+          lateDivIn,
+          pairTunnelAdj,
+          veloDelta,
+          moveSepIn,
+          timeDeltaMs,
+          secReactionMarginMs: sec.reactionMarginMs,
+          secReactionMeta: sec.reactionMeta,
+          pairSepAdj
+        });
+
+        tunnelSum += normWeights[i] * pairTunnelAdj;
+        sepSum += normWeights[i] * pairSepAdj;
+        secWeightTotal += normWeights[i];
+      }
+
+      const deltaTunnel = secWeightTotal > 0 ? tunnelSum / secWeightTotal : 0.0;
+      const deltaSep = secWeightTotal > 0 ? sepSum / secWeightTotal : 0.0;
+
+      const chPitch = gradedPitches.find((p) => p.code === 'CH' || p.code === 'FS');
+      const brkPitch = gradedPitches.find((p) => p.code === 'SL' || p.code === 'CU' || p.code === 'SW' || p.code === 'FC');
+      const hasFadeCh = Boolean(chPitch && (Math.abs(chPitch.hb) >= 14.0 || (fb.ivb - chPitch.ivb) >= 8.5));
+      const hasGloveBrk = Boolean(brkPitch && brkPitch.shrunkStuff >= 94.0);
+      const oppHandLabel = profile.throws === 'L' ? 'right-handed hitters' : 'left-handed hitters';
+
+      let deltaPlatoon = 0.8;
+      if (hasFadeCh && hasGloveBrk) {
+        deltaPlatoon = 3.5;
+      } else if (hasFadeCh) {
+        deltaPlatoon = 2.2;
+      } else {
+        deltaPlatoon = -1.5;
+      }
+
+      const gammaAnchor = Math.min(1.0, Math.max(0.15, (fb.velo - 78.0) / (90.0 - 78.0)));
+      const rawSynergyTotal = deltaTunnel + deltaSep + deltaPlatoon;
+      const netSynergy = gammaAnchor * rawSynergyTotal;
+      const setupPct = Math.round(gammaAnchor * 100);
+
+      const platoonDiagnosis = isScoutView
+        ? `At ${fb.velo.toFixed(1)} mph, his Fastball Setup Factor is ${setupPct}%, meaning his secondary pitches earn ${netSynergy >= 0 ? '+' : ''}${netSynergy.toFixed(1)} out of a possible +${rawSynergyTotal.toFixed(1)} deception points. Adding fastball velocity will make his offspeed significantly harder for ${oppHandLabel} to lay off.`
+        : `FB Anchor Viability γ = ${gammaAnchor.toFixed(2)} (at ${fb.velo.toFixed(1)} mph) scales raw repertoire synergy (${rawSynergyTotal >= 0 ? '+' : ''}${rawSynergyTotal.toFixed(1)}) to ${netSynergy >= 0 ? '+' : ''}${netSynergy.toFixed(1)} net points vs. ${oppHandLabel}.`;
+
+      const arsenalPlus = weightedBaseStuff + netSynergy;
+      const arsenal2080 = mapStuffTo2080(arsenalPlus);
+
+      return {
+        gradedPitches,
+        weightedBaseStuff,
+        deltaTunnel,
+        deltaSep,
+        deltaPlatoon,
+        gammaAnchor,
+        setupPct,
+        rawSynergyTotal,
+        netSynergy,
+        platoonDiagnosis,
+        arsenalPlus,
+        arsenal2080,
+        pairwise
+      };
+    }
+
+    // =========================================================================
+    // 3. THREE.JS 3D BATTER SILHOUETTE & 9-QUADRANT STRIKE ZONE
+    // =========================================================================
+    let threeScene = null;
+    let threeCamera = null;
+    let threeRenderer = null;
+    let trajectoryGroup = null;
+    let batterMeshGroup = null;
+    let animatedBalls = [];
+    let animClock = 0;
+    let isDragging3D = false;
+    let prevMouse = { x: 0, y: 0 };
+    let sphericalCam = { radius: 22, theta: 0.0, phi: 1.42, target: new THREE.Vector3(0, 2.7, 20) };
+
+    function build9QuadrantStrikeZone() {
+      const zoneGroup = new THREE.Group();
+      const width = 1.417;
+      const height = 2.00;
+      const depth = 0.22;
+      const yBottom = 1.50;
+      const yTop = yBottom + height;
+      const yCenter = yBottom + height / 2.0;
+
+      const outerGeo = new THREE.BoxGeometry(width, height, depth);
+      const outerEdges = new THREE.EdgesGeometry(outerGeo);
+      const outerMat = new THREE.LineBasicMaterial({ color: 0xe2e8f0 });
+      const outerWire = new THREE.LineSegments(outerEdges, outerMat);
+      outerWire.position.set(0, yCenter, 0);
+      zoneGroup.add(outerWire);
+
+      const glassGeo = new THREE.PlaneGeometry(width, height);
+      const glassMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.05,
+        side: THREE.DoubleSide
+      });
+      const glassMesh = new THREE.Mesh(glassGeo, glassMat);
+      glassMesh.position.set(0, yCenter, 0);
+      zoneGroup.add(glassMesh);
+
+      const gridMat = new THREE.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.85 });
+      const xLeft = -width / 2.0;
+      const xRight = width / 2.0;
+      const xThird1 = xLeft + width / 3.0;
+      const xThird2 = xLeft + (2.0 * width) / 3.0;
+      const yThird1 = yBottom + height / 3.0;
+      const yThird2 = yBottom + (2.0 * height) / 3.0;
+
+      const lineCoords = [
+        [xThird1, yBottom, depth / 2, xThird1, yTop, depth / 2],
+        [xThird2, yBottom, depth / 2, xThird2, yTop, depth / 2],
+        [xThird1, yBottom, -depth / 2, xThird1, yTop, -depth / 2],
+        [xThird2, yBottom, -depth / 2, xThird2, yTop, -depth / 2],
+        [xLeft, yThird1, depth / 2, xRight, yThird1, depth / 2],
+        [xLeft, yThird2, depth / 2, xRight, yThird2, depth / 2],
+        [xLeft, yThird1, -depth / 2, xRight, yThird1, -depth / 2],
+        [xLeft, yThird2, -depth / 2, xRight, yThird2, -depth / 2]
+      ];
+
+      lineCoords.forEach((c) => {
+        const pts = [new THREE.Vector3(c[0], c[1], c[2]), new THREE.Vector3(c[3], c[4], c[5])];
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        zoneGroup.add(new THREE.Line(geo, gridMat));
+      });
+
+      return zoneGroup;
+    }
+
+    function update3DBatterSilhouette(stance) {
+      if (!batterMeshGroup) return;
+      while (batterMeshGroup.children.length > 0) {
+        batterMeshGroup.remove(batterMeshGroup.children[0]);
+      }
+      if (stance === 'NONE') return;
+
+      const xOffset = stance === 'RHB' ? -2.20 : 2.20;
+      const zOffset = 1.20;
+      const sideSign = stance === 'RHB' ? -1.0 : 1.0;
+
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.22,
+        roughness: 0.4
+      });
+      const wireMat = new THREE.LineBasicMaterial({
+        color: 0x7dd3fc,
+        transparent: true,
+        opacity: 0.60
+      });
+
+      function addPart(geo, x, y, z, rx = 0, ry = 0, rz = 0) {
+        const mesh = new THREE.Mesh(geo, bodyMat);
+        mesh.position.set(x, y, z);
+        mesh.rotation.set(rx, ry, rz);
+        batterMeshGroup.add(mesh);
+
+        const edges = new THREE.EdgesGeometry(geo);
+        const line = new THREE.LineSegments(edges, wireMat);
+        line.position.set(x, y, z);
+        line.rotation.set(rx, ry, rz);
+        batterMeshGroup.add(line);
+      }
+
+      const legGeo = new THREE.CylinderGeometry(0.20, 0.16, 2.35, 10);
+      addPart(legGeo, xOffset - 0.12 * sideSign, 1.18, zOffset - 0.45);
+      addPart(legGeo, xOffset + 0.08 * sideSign, 1.18, zOffset + 0.48);
+
+      const torsoGeo = new THREE.CylinderGeometry(0.46, 0.38, 1.95, 12);
+      addPart(torsoGeo, xOffset, 3.25, zOffset, 0.05, 0, -0.06 * sideSign);
+
+      const headGeo = new THREE.SphereGeometry(0.36, 14, 14);
+      addPart(headGeo, xOffset - 0.05 * sideSign, 4.65, zOffset + 0.12);
+
+      const armGeo = new THREE.CylinderGeometry(0.12, 0.10, 1.45, 8);
+      addPart(armGeo, xOffset - 0.42 * sideSign, 3.85, zOffset - 0.25, 0.45, 0, 0.55 * sideSign);
+
+      const batGeo = new THREE.CylinderGeometry(0.11, 0.05, 2.85, 10);
+      const batMat = new THREE.MeshStandardMaterial({
+        color: 0xfbbf24,
+        transparent: true,
+        opacity: 0.55
+      });
+      const batMesh = new THREE.Mesh(batGeo, batMat);
+      batMesh.position.set(xOffset - 0.45 * sideSign, 4.95, zOffset - 0.55);
+      batMesh.rotation.set(-0.38, 0, 0.32 * sideSign);
+      batterMeshGroup.add(batMesh);
+    }
+
+    function initThreeJS() {
+      const container = document.getElementById('webglCanvasContainer');
+      if (!container || typeof THREE === 'undefined') return;
+
+      const width = container.clientWidth || 700;
+      const height = container.clientHeight || 420;
+
+      threeScene = new THREE.Scene();
+      threeScene.background = new THREE.Color(0x050811);
+
+      threeCamera = new THREE.PerspectiveCamera(42, width / height, 0.1, 300);
+      threeRenderer = new THREE.WebGLRenderer({ antialias: true });
+      threeRenderer.setSize(width, height);
+      threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      container.innerHTML = '';
+      container.appendChild(threeRenderer.domElement);
+
+      const ambient = new THREE.AmbientLight(0xffffff, 0.78);
+      threeScene.add(ambient);
+      const dirLight = new THREE.DirectionalLight(0x38bdf8, 0.92);
+      dirLight.position.set(15, 35, 25);
+      threeScene.add(dirLight);
+
+      const turfGeo = new THREE.PlaneGeometry(20, 72);
+      const turfMat = new THREE.MeshBasicMaterial({ color: 0x091326, side: THREE.DoubleSide });
+      const turfMesh = new THREE.Mesh(turfGeo, turfMat);
+      turfMesh.rotation.x = -Math.PI / 2;
+      turfMesh.position.set(0, 0, 30);
+      threeScene.add(turfMesh);
+
+      const gridHelper = new THREE.GridHelper(68, 34, 0x1e293b, 0x0f172a);
+      gridHelper.position.set(0, 0.01, 30);
+      threeScene.add(gridHelper);
+
+      [-2.20, 2.20].forEach((bx) => {
+        const boxGeo = new THREE.PlaneGeometry(3.2, 5.5);
+        const boxEdges = new THREE.EdgesGeometry(boxGeo);
+        const boxLine = new THREE.LineSegments(boxEdges, new THREE.LineBasicMaterial({ color: 0x334155 }));
+        boxLine.rotation.x = -Math.PI / 2;
+        boxLine.position.set(bx, 0.02, 1.20);
+        threeScene.add(boxLine);
+      });
+
+      const rubberGeo = new THREE.BoxGeometry(2.0, 0.08, 0.5);
+      const rubberMat = new THREE.MeshBasicMaterial({ color: 0xe2e8f0 });
+      const rubberMesh = new THREE.Mesh(rubberGeo, rubberMat);
+      rubberMesh.position.set(0, 0.83, 60.5);
+      threeScene.add(rubberMesh);
+
+      const plateGeo = new THREE.BoxGeometry(1.417, 0.04, 1.417);
+      const plateMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const plateMesh = new THREE.Mesh(plateGeo, plateMat);
+      plateMesh.position.set(0, 0.03, 0);
+      threeScene.add(plateMesh);
+
+      threeScene.add(build9QuadrantStrikeZone());
+
+      const commitGeo = new THREE.PlaneGeometry(5.5, 5.0);
+      const commitMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.14,
+        side: THREE.DoubleSide
+      });
+      const commitPlane = new THREE.Mesh(commitGeo, commitMat);
+      commitPlane.position.set(0, 2.6, 23.8);
+      threeScene.add(commitPlane);
+
+      const commitEdges = new THREE.EdgesGeometry(commitGeo);
+      const commitBorder = new THREE.LineSegments(
+        commitEdges,
+        new THREE.LineBasicMaterial({ color: 0x38bdf8 })
+      );
+      commitBorder.position.set(0, 2.6, 23.8);
+      threeScene.add(commitBorder);
+
+      batterMeshGroup = new THREE.Group();
+      threeScene.add(batterMeshGroup);
+      update3DBatterSilhouette(appState.batterStance);
+
+      trajectoryGroup = new THREE.Group();
+      threeScene.add(trajectoryGroup);
+
+      const domElem = threeRenderer.domElement;
+      domElem.addEventListener('mousedown', (e) => {
+        isDragging3D = true;
+        prevMouse = { x: e.clientX, y: e.clientY };
+      });
+      window.addEventListener('mouseup', () => {
+        isDragging3D = false;
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging3D) return;
+        const dx = e.clientX - prevMouse.x;
+        const dy = e.clientY - prevMouse.y;
+        prevMouse = { x: e.clientX, y: e.clientY };
+        sphericalCam.theta -= dx * 0.007;
+        sphericalCam.phi = Math.max(0.25, Math.min(1.52, sphericalCam.phi - dy * 0.006));
+        updateCameraPosition();
+      });
+      domElem.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        sphericalCam.radius = Math.max(6, Math.min(75, sphericalCam.radius + e.deltaY * 0.02));
+        updateCameraPosition();
+      }, { passive: false });
+
+      setCameraPreset('catcher');
+      animateThreeJS();
+    }
+
+    function setCameraPreset(presetName) {
+      appState.cameraPreset = presetName;
+      if (presetName === 'catcher') {
+        sphericalCam = { radius: 14.5, theta: 0.0, phi: 1.44, target: new THREE.Vector3(0, 2.6, 18) };
+      } else if (presetName === 'commit') {
+        sphericalCam = { radius: 9.5, theta: 0.32, phi: 1.38, target: new THREE.Vector3(-0.3, 2.9, 23.8) };
+      } else if (presetName === 'side') {
+        sphericalCam = { radius: 38.0, theta: 1.54, phi: 1.42, target: new THREE.Vector3(0, 3.0, 28) };
+      } else if (presetName === 'pitcher') {
+        sphericalCam = { radius: 16.0, theta: Math.PI, phi: 1.36, target: new THREE.Vector3(0, 2.5, 22) };
+      }
+      updateCameraPosition();
+    }
+
+    function updateCameraPosition() {
+      if (!threeCamera) return;
+      const { radius, theta, phi, target } = sphericalCam;
+      threeCamera.position.x = target.x + radius * Math.sin(phi) * Math.sin(theta);
+      threeCamera.position.y = target.y + radius * Math.cos(phi);
+      threeCamera.position.z = target.z - radius * Math.sin(phi) * Math.cos(theta);
+      threeCamera.lookAt(target);
+    }
+
+    function rebuild3DTrajectories(baselineEval, simEval) {
+      if (!trajectoryGroup) return;
+      while (trajectoryGroup.children.length > 0) {
+        trajectoryGroup.remove(trajectoryGroup.children[0]);
+      }
+      animatedBalls = [];
+
+      simEval.gradedPitches.forEach((p, idx) => {
+        const vec3Pts = p.trajPoints.map((pt) => new THREE.Vector3(pt.x, pt.z, pt.y));
+        const curve = new THREE.CatmullRomCurve3(vec3Pts);
+        const tubeGeo = new THREE.TubeGeometry(curve, 52, 0.055, 10, false);
+        const colorHex = new THREE.Color(p.color);
+        const tubeMat = new THREE.MeshStandardMaterial({
+          color: colorHex,
+          roughness: 0.25,
+          metalness: 0.15
+        });
+        const mesh = new THREE.Mesh(tubeGeo, tubeMat);
+        trajectoryGroup.add(mesh);
+
+        const ringGeo = new THREE.RingGeometry(0.09, 0.15, 24);
+        const ringMat = new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.position.set(p.commitPos.x, p.commitPos.z, 23.81);
+        trajectoryGroup.add(ringMesh);
+
+        const ballGeo = new THREE.SphereGeometry(0.12, 16, 16);
+        const ballMat = new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 0.35 });
+        const ballMesh = new THREE.Mesh(ballGeo, ballMat);
+        trajectoryGroup.add(ballMesh);
+        animatedBalls.push({ mesh: ballMesh, curve, speedFactor: p.velo / 85.0 });
+
+        if ((p.hasActiveLabDelta || appState.gradeMode === 'projected') && baselineEval.gradedPitches[idx]) {
+          const basePitch = baselineEval.gradedPitches[idx];
+          const ghostPts = basePitch.trajPoints.map((pt) => new THREE.Vector3(pt.x, pt.z, pt.y));
+          const ghostCurve = new THREE.CatmullRomCurve3(ghostPts);
+          const ghostGeo = new THREE.TubeGeometry(ghostCurve, 44, 0.036, 8, false);
+          const ghostMat = new THREE.MeshBasicMaterial({
+            color: 0x94a3b8,
+            transparent: true,
+            opacity: 0.42,
+            wireframe: true
+          });
+          trajectoryGroup.add(new THREE.Mesh(ghostGeo, ghostMat));
+        }
+      });
+    }
+
+    function animateThreeJS() {
+      requestAnimationFrame(animateThreeJS);
+      if (appState.animPlaying && animatedBalls.length > 0) {
+        animClock = (animClock + 0.011) % 1.0;
+        animatedBalls.forEach((b) => {
+          const t = Math.min(1.0, (animClock * b.speedFactor) % 1.0);
+          const pos = b.curve.getPointAt(t);
+          b.mesh.position.copy(pos);
+        });
+      }
+      if (threeRenderer && threeScene && threeCamera) {
+        threeRenderer.render(threeScene, threeCamera);
+      }
+    }
+
+    // =========================================================================
+    // 4. 2D CANVASES (MOVEMENT CHART, SPIN CLOCK, GRADE RANGE CHART)
+    // =========================================================================
+    function drawMovementMatrix(baselineEval, simEval) {
+      const canvas = document.getElementById('movementMatrixCanvas');
+      if (!canvas) return;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const widthPx = Math.max(rect.width, 320);
+      const heightPx = Math.max(rect.height, 260);
+      canvas.width = widthPx * dpr;
+      canvas.height = heightPx * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      const w = widthPx;
+      const h = heightPx;
+      const cx = w / 2;
+      const cy = h / 2;
+      const scale = Math.min(w, h) / 52;
+      const isScout = appState.viewMode === 'scout';
+
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      for (let inch = -24; inch <= 24; inch += 6) {
+        const x = cx + inch * scale;
+        const y = cy - inch * scale;
+        ctx.beginPath(); ctx.moveTo(x, 12); ctx.lineTo(x, h - 12); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(12, y); ctx.lineTo(w - 12, y); ctx.stroke();
+      }
+
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(cx, 8); ctx.lineTo(cx, h - 8); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(8, cy); ctx.lineTo(w - 8, cy); ctx.stroke();
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.fillText(isScout ? '+24" Vertical Ride' : '+24" IVB (Ride)', cx + 6, 18);
+      ctx.fillText(isScout ? '-24" Vertical Drop' : '-24" IVB (Drop)', cx + 6, h - 10);
+      ctx.fillText(isScout ? '<- Glove-Side Break' : '<- Glove-Side (-HB)', 14, cy - 6);
+      ctx.fillText(isScout ? 'Arm-Side Run ->' : 'Arm-Side (+HB) ->', w - 115, cy - 6);
+
+      const d1Clouds = [
+        { label: 'College FF Avg', hb: 10.5, ivb: 16.8, rx: 4.0, ry: 3.2 },
+        { label: 'College CH Avg', hb: 14.5, ivb: 6.5, rx: 4.5, ry: 3.8 },
+        { label: 'College SL Avg', hb: -6.0, ivb: 0.5, rx: 4.8, ry: 4.0 },
+        { label: 'College CU Avg', hb: -8.5, ivb: -12.5, rx: 4.5, ry: 4.5 }
+      ];
+      d1Clouds.forEach((c) => {
+        const x = cx + c.hb * scale;
+        const y = cy - c.ivb * scale;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.06)';
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.ellipse(x, y, c.rx * scale, c.ry * scale, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.55)';
+        ctx.fillText(c.label, x - 28, y - c.ry * scale - 4);
+        ctx.restore();
+      });
+
+      const pitches = simEval.gradedPitches;
+      const fb = pitches[0];
+      const fbX = cx + fb.hb * scale;
+      const fbY = cy - fb.ivb * scale;
+
+      for (let i = 1; i < pitches.length; i++) {
+        const sec = pitches[i];
+        const secX = cx + sec.hb * scale;
+        const secY = cy - sec.ivb * scale;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(226, 232, 240, 0.45)';
+        ctx.setLineDash([5, 4]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(fbX, fbY);
+        ctx.lineTo(secX, secY);
+        ctx.stroke();
+
+        const midX = (fbX + secX) / 2;
+        const midY = (fbY + secY) / 2;
+        const dShape = Math.hypot(fb.ivb - sec.ivb, fb.hb - sec.hb).toFixed(1);
+        const dVelo = (fb.velo - sec.velo).toFixed(1);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.fillText(`${dVelo}mph / ${dShape}" sep`, midX + 6, midY);
+        ctx.restore();
+      }
+
+      pitches.forEach((p) => {
+        const px = cx + p.hb * scale;
+        const py = cy - p.ivb * scale;
+        const magX = cx + p.magnusHb * scale;
+        const magY = cy - p.magnusIvb * scale;
+
+        ctx.save();
+        ctx.fillStyle = p.color + '26';
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.ellipse(px, py, 2.7 * scale, 2.3 * scale, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(magX, magY);
+        ctx.lineTo(px, py);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#020617';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.fillText(`${p.code} (${p.shrunkStuff.toFixed(0)})`, px + 9, py + 4);
+      });
+    }
+
+    function drawSpinClock(simEval) {
+      const canvas = document.getElementById('spinClockCanvas');
+      if (!canvas) return;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const widthPx = Math.max(rect.width, 280);
+      const heightPx = Math.max(rect.height, 220);
+      canvas.width = widthPx * dpr;
+      canvas.height = heightPx * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      const w = widthPx;
+      const h = heightPx;
+      const cx = w / 2;
+      const cy = h / 2;
+      const r = Math.min(w, h) * 0.39;
+
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let hr = 1; hr <= 12; hr++) {
+        const ang = ((hr * 30 - 90) * Math.PI) / 180;
+        const tx = cx + (r + 14) * Math.cos(ang);
+        const ty = cy + (r + 14) * Math.sin(ang);
+        ctx.fillText(`${hr}:00`, tx, ty);
+      }
+
+      const fb = simEval.gradedPitches[0];
+      const slotRad = ((-fb.slotAngleDeg) * Math.PI) / 180;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.38)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + r * 0.92 * Math.cos(slotRad), cy + r * 0.92 * Math.sin(slotRad));
+      ctx.stroke();
+      ctx.restore();
+
+      simEval.gradedPitches.forEach((p) => {
+        const rad = ((p.clockDeg - 90) * Math.PI) / 180;
+        const len = r * (0.55 + 0.35 * (p.spinEff / 100.0));
+        const ex = cx + len * Math.cos(rad);
+        const ey = cy + len * Math.sin(rad);
+
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(ex, ey, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawBayesForestPlot(simEval) {
+      const canvas = document.getElementById('bayesForestCanvas');
+      if (!canvas) return;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const widthPx = Math.max(rect.width, 320);
+      const heightPx = Math.max(rect.height, 240);
+      canvas.width = widthPx * dpr;
+      canvas.height = heightPx * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      const w = widthPx;
+      const h = heightPx;
+      const isScout = appState.viewMode === 'scout';
+      ctx.clearRect(0, 0, w, h);
+
+      const minS = 50;
+      const maxS = 135;
+      const padL = 86;
+      const padR = 24;
+      const plotW = w - padL - padR;
+      const xOf = (val) => padL + ((Math.min(maxS, Math.max(minS, val)) - minS) / (maxS - minS)) * plotW;
+
+      [60, 75, 90, 100, 115, 130].forEach((val) => {
+        const x = xOf(val);
+        ctx.strokeStyle = val === 100 ? '#38bdf8' : '#1e293b';
+        ctx.lineWidth = val === 100 ? 1.8 : 1;
+        ctx.beginPath();
+        ctx.moveTo(x, 18);
+        ctx.lineTo(x, h - 28);
+        ctx.stroke();
+
+        ctx.fillStyle = val === 100 ? '#38bdf8' : '#64748b';
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.fillText(val === 100 ? '100 (Avg)' : `${val}`, x - 14, h - 10);
+      });
+
+      const pitches = simEval.gradedPitches;
+      const rowH = (h - 45) / pitches.length;
+
+      pitches.forEach((p, idx) => {
+        const y = 30 + idx * rowH + rowH * 0.45;
+
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.fillText(`${p.code} (${p.count}p)`, 10, y - 4);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.fillText(isScout ? `Conf: ${p.confidenceBadge.level}` : `w=${p.w.toFixed(2)}`, 10, y + 10);
+
+        ctx.strokeStyle = p.color + '66';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(xOf(p.ci95[0]), y);
+        ctx.lineTo(xOf(p.ci95[1]), y);
+        ctx.stroke();
+
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(xOf(p.ci90[0]), y);
+        ctx.lineTo(xOf(p.ci90[1]), y);
+        ctx.stroke();
+
+        if (!isScout) {
+          const pxPrior = xOf(p.priorStuff);
+          ctx.fillStyle = '#0f172a';
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(pxPrior, y, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          const pxRaw = xOf(p.rawStuff);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.beginPath();
+          ctx.arc(pxRaw, y, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        const pxShrunk = xOf(p.shrunkStuff);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(pxShrunk, y, 6.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#020617';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px JetBrains Mono, monospace';
+        ctx.fillText(`${p.shrunkStuff.toFixed(1)}`, pxShrunk - 12, y - 11);
+      });
+    }
+
+    // =========================================================================
+    // 5. CLIENT-SIDE TRACKMAN B1 CSV / JSON FILE INGESTION
+    // =========================================================================
+    const PITCH_TYPE_META = {
+      FF: { name: 'Four-Seam Fastball', color: '#38bdf8', muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115 },
+      SI: { name: 'Two-Seam Sinker', color: '#60a5fa', muCol: 0.08, sigCol: 0.65, sigWithin: 12.0, xrvSens: -0.108 },
+      FC: { name: 'Cutter', color: '#f472b6', muCol: -0.05, sigCol: 0.64, sigWithin: 13.0, xrvSens: -0.095 },
+      SL: { name: 'Slider (Gyro Depth)', color: '#fbbf24', muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082 },
+      SW: { name: 'Sweeper', color: '#fb923c', muCol: -0.38, sigCol: 0.76, sigWithin: 16.0, xrvSens: -0.078 },
+      CU: { name: 'Curveball', color: '#a78bfa', muCol: -0.18, sigCol: 0.70, sigWithin: 16.5, xrvSens: -0.070 },
+      CH: { name: 'Changeup (Fade)', color: '#34d399', muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065 },
+      FS: { name: 'Splitter', color: '#2dd4bf', muCol: -0.28, sigCol: 0.74, sigWithin: 16.8, xrvSens: -0.072 }
+    };
+
+    function normalizePitchCode(rawTag) {
+      const s = String(rawTag || 'FF').trim().toUpperCase();
+      if (s.includes('SINK') || s === 'SI' || s === 'FT' || s.includes('TWO')) return 'SI';
+      if (s.includes('CUT') || s === 'FC') return 'FC';
+      if (s.includes('SWEEP') || s === 'SW' || s === 'ST') return 'SW';
+      if (s.includes('SLID') || s === 'SL') return 'SL';
+      if (s.includes('CURV') || s === 'CU' || s === 'CB' || s === 'KC') return 'CU';
+      if (s.includes('SPLIT') || s === 'FS' || s === 'SF') return 'FS';
+      if (s.includes('CHANG') || s === 'CH') return 'CH';
+      return 'FF';
+    }
+
+    function parseTiltToDegrees(tiltVal) {
+      if (tiltVal === undefined || tiltVal === null || tiltVal === '') return 45;
+      const str = String(tiltVal).trim();
+      if (str.includes(':')) {
+        const parts = str.split(':');
+        const hr = parseInt(parts[0], 10) || 12;
+        const mn = parseInt(parts[1], 10) || 0;
+        return (((hr % 12) * 30 + mn * 0.5) % 360 + 360) % 360;
+      }
+      const num = parseFloat(str);
+      return Number.isFinite(num) ? ((num % 360) + 360) % 360 : 45;
+    }
+
+    function parseTrackManCSVOrJSON(rawText, fileName = 'Uploaded_TrackMan.csv') {
+      let rows = [];
+      const trimmed = rawText.trim();
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        const parsed = JSON.parse(trimmed);
+        rows = Array.isArray(parsed) ? parsed : (parsed.pitches || parsed.data || [parsed]);
+      } else {
+        const lines = trimmed.split(/\r?\n/).filter((l) => l.trim().length > 0);
+        if (lines.length < 2) throw new Error('CSV must contain a header row and at least 1 pitch row.');
+        const headers = lines[0].split(',').map((h) => h.trim().replace(/^["']|["']$/g, ''));
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',').map((c) => c.trim().replace(/^["']|["']$/g, ''));
+          const obj = {};
+          headers.forEach((h, idx) => {
+            obj[h] = cols[idx];
+          });
+          rows.push(obj);
+        }
+      }
+
+      if (!rows.length) throw new Error('No valid pitch records found in file.');
+
+      function getField(row, aliases, fallback) {
+        const keys = Object.keys(row);
+        for (const alias of aliases) {
+          const matchKey = keys.find((k) => k.toLowerCase().replace(/[^a-z0-9]/g, '') === alias.toLowerCase().replace(/[^a-z0-9]/g, ''));
+          if (matchKey !== undefined && row[matchKey] !== undefined && row[matchKey] !== '') {
+            return row[matchKey];
+          }
+        }
+        return fallback;
+      }
+
+      const firstRow = rows[0];
+      const pitcherName = String(getField(firstRow, ['Pitcher', 'PitcherName', 'Player', 'Name'], fileName.replace(/\.(csv|json|txt)$/i, '')));
+      const rawThrows = String(getField(firstRow, ['Throws', 'PitcherThrows', 'Hand', 'Handedness'], 'R')).toUpperCase();
+      const throws = rawThrows.startsWith('L') ? 'L' : 'R';
+      const sessionDate = String(getField(firstRow, ['Date', 'PitchDate', 'SessionDate'], '11/05/2026'));
+
+      const groups = {};
+      rows.forEach((r) => {
+        const rawType = getField(r, ['TaggedPitchType', 'AutoPitchType', 'PitchType', 'Pitch'], 'FF');
+        const code = normalizePitchCode(rawType);
+        if (!groups[code]) groups[code] = [];
+        groups[code].push(r);
+      });
+
+      const meanOf = (arr, fn, defVal) => {
+        const vals = arr.map(fn).filter((v) => Number.isFinite(v));
+        return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : defVal;
+      };
+
+      const aggregatedPitches = Object.entries(groups).map(([code, grp]) => {
+        const meta = PITCH_TYPE_META[code] || PITCH_TYPE_META.FF;
+        const velos = grp.map((r) => parseFloat(getField(r, ['RelSpeed', 'Velo', 'ReleaseSpeed', 'Velocity'], NaN))).filter(Number.isFinite);
+        const velo = velos.length ? velos.reduce((a, b) => a + b, 0) / velos.length : (code === 'FF' ? 85.0 : 75.0);
+        const maxVelo = velos.length ? Math.max(...velos) : velo + 1.1;
+        const spin = meanOf(grp, (r) => parseFloat(getField(r, ['SpinRate', 'Spin', 'TotalSpin'], NaN)), code === 'CH' ? 1550 : 2150);
+        const ivb = meanOf(grp, (r) => parseFloat(getField(r, ['InducedVertBreak', 'IVB', 'InducedVerticalBreak'], NaN)), code === 'FF' ? 16.0 : code === 'CH' ? 5.5 : -3.5);
+        const hb = meanOf(grp, (r) => parseFloat(getField(r, ['HorzBreak', 'HB', 'HorizontalBreak'], NaN)), code === 'FF' ? 11.0 : code === 'CH' ? 15.0 : -6.5);
+        const relHeight = meanOf(grp, (r) => parseFloat(getField(r, ['RelHeight', 'ReleaseHeight', 'z0'], NaN)), 5.75);
+        const relSide = meanOf(grp, (r) => parseFloat(getField(r, ['RelSide', 'ReleaseSide', 'x0'], NaN)), 1.85);
+        const ext = meanOf(grp, (r) => parseFloat(getField(r, ['Extension', 'RelExtension', 'Ext'], NaN)), 6.00);
+        const plateHeight = meanOf(grp, (r) => parseFloat(getField(r, ['PlateLocHeight', 'PlateZ', 'pz'], NaN)), 2.45);
+        const plateSide = meanOf(grp, (r) => parseFloat(getField(r, ['PlateLocSide', 'PlateX', 'px'], NaN)), 0.0);
+        const spinEff = meanOf(grp, (r) => parseFloat(getField(r, ['SpinEfficiency', 'SpinEff', 'TrueSpinPct'], NaN)), code === 'FF' ? 90.0 : code === 'CH' ? 78.0 : 45.0);
+        const clockDeg = meanOf(grp, (r) => parseTiltToDegrees(getField(r, ['SpinAxis', 'Tilt', 'SpinTilt'], null)), code === 'FF' ? 40 : code === 'CH' ? 70 : 245);
+        const clockTilt = degToClockString(clockDeg);
+
+        const dFlight = Math.max(48.0, 60.5 - ext - 1.417);
+        const vaa = -((Math.atan2(relHeight - 2.35 - (ivb / 12.0) * 0.48, dFlight * 0.62) * 180) / Math.PI);
+        const havaa = throws === 'R' ? -1.4 : 1.4;
+
+        let rawXrv = meta.muCol;
+        if (code === 'FF' || code === 'SI') {
+          rawXrv = meta.muCol - 0.112 * (velo - 91.5) - 0.032 * (ivb - 16.5) - 0.015 * (Math.abs(hb) - 10.5) - 0.08 * (ext - 6.2);
+        } else if (code === 'CH' || code === 'FS') {
+          rawXrv = meta.muCol - 0.065 * (velo - 82.0) + 0.032 * (ivb - 6.5) - 0.036 * (Math.abs(hb) - 14.0);
+        } else {
+          rawXrv = meta.muCol - 0.082 * (velo - 81.5) + 0.022 * (ivb - 0.0) - 0.028 * (Math.abs(hb) - 6.5);
+        }
+
+        const pWhiff = Math.min(0.55, Math.max(0.10, 0.26 - 0.095 * rawXrv));
+        const pSwing = 0.495;
+        const pCs = 0.275;
+        const xwobacon = Math.min(0.460, Math.max(0.220, 0.325 + 0.065 * rawXrv));
+
+        return {
+          code,
+          name: meta.name,
+          color: meta.color,
+          count: grp.length,
+          velo,
+          maxVelo,
+          spin,
+          ivb,
+          hb,
+          relHeight,
+          relSide,
+          ext,
+          plateHeight,
+          plateSide,
+          vaa,
+          havaa,
+          spinEff,
+          clockTilt,
+          clockDeg,
+          magnusIvb: ivb * 0.88,
+          magnusHb: hb * 0.84,
+          rawXrv,
+          muCol: meta.muCol,
+          sigCol: meta.sigCol,
+          sigWithin: meta.sigWithin,
+          xrvSens: meta.xrvSens,
+          pSwing,
+          pWhiff,
+          pCs,
+          xwobacon
+        };
+      });
+
+      aggregatedPitches.sort((a, b) => {
+        const aIsFb = a.code === 'FF' || a.code === 'SI' ? 1 : 0;
+        const bIsFb = b.code === 'FF' || b.code === 'SI' ? 1 : 0;
+        if (aIsFb !== bIsFb) return bIsFb - aIsFb;
+        return b.velo - a.velo;
+      });
+
+      const customId = 'custom_' + Date.now();
+      PITCHER_PROFILES[customId] = {
+        id: customId,
+        name: pitcherName,
+        throws,
+        team: 'TrackMan B1 Uploaded Session',
+        date: sessionDate,
+        totalPitches: rows.length,
+        isHighSchool: true,
+        pitches: aggregatedPitches
+      };
+
+      const sel = document.getElementById('pitcherSelect');
+      const opt = document.createElement('option');
+      opt.value = customId;
+      opt.textContent = `${pitcherName} (${throws}HP — Uploaded TrackMan N=${rows.length})`;
+      sel.appendChild(opt);
+      sel.value = customId;
+
+      appState.currentPitcherId = customId;
+      appState.labTargetIdx = 0;
+      appState.pitchLabState = createEmptyPitchLabState(aggregatedPitches.length + 2);
+      syncSlidersToUI();
+      renderAll();
+
+      return { pitcherName, totalRows: rows.length, pitchTypesCount: aggregatedPitches.length };
+    }
+
+    const SAMPLE_TRACKMAN_CSV = `Pitcher,PitcherThrows,Date,TaggedPitchType,RelSpeed,SpinRate,SpinAxis,RelHeight,RelSide,Extension,InducedVertBreak,HorzBreak,PlateLocHeight,PlateLocSide
+Marcus Vance,R,10/28/2026,Fastball,89.4,2340,1:15,5.82,1.78,6.35,17.9,11.2,2.75,0.12
+Marcus Vance,R,10/28/2026,Fastball,90.1,2385,1:15,5.80,1.81,6.40,18.4,10.8,2.88,-0.08
+Marcus Vance,R,10/28/2026,Fastball,89.8,2360,1:15,5.81,1.79,6.38,18.1,11.5,2.62,0.21
+Marcus Vance,R,10/28/2026,Fastball,89.2,2315,1:15,5.79,1.82,6.32,17.6,11.0,2.50,0.05
+Marcus Vance,R,10/28/2026,Slider,79.6,2520,8:45,5.76,1.85,6.15,0.8,-8.4,1.92,-0.42
+Marcus Vance,R,10/28/2026,Slider,80.2,2565,8:45,5.74,1.87,6.18,1.2,-7.9,1.85,-0.38
+Marcus Vance,R,10/28/2026,Slider,79.8,2540,8:45,5.75,1.86,6.16,0.5,-8.8,1.78,-0.51
+Marcus Vance,R,10/28/2026,ChangeUp,80.4,1510,2:30,5.72,1.88,6.30,4.2,16.4,2.04,0.38
+Marcus Vance,R,10/28/2026,ChangeUp,80.9,1545,2:30,5.73,1.86,6.32,4.6,15.9,1.95,0.44
+Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0.31`;
+
+    // =========================================================================
+    // 6. DOM RENDERING: SEAMLESS "SCOUT VIEW" vs "PRO ANALYTICS (R&D)" TOGGLE
+    // =========================================================================
+    function applyViewModeLabels() {
+      const isScout = appState.viewMode === 'scout';
+
+      document.getElementById('headerBadgeVersion').textContent = isScout
+        ? 'College Scouting & 3D Pitch Lab'
+        : 'v3.5 R&D • Non-Linear Cliff + 45-Step RK';
+
+      // Section 1 headers & labels
+      document.getElementById('tier1Eyebrow').textContent = isScout
+        ? '1. Player Scout Card • How This Arsenal Stacks Up Against College Hitters'
+        : 'Tier 1 • 3-Second Executive Interface (50% Fastball Anchor Weight • σ = 10)';
+      document.getElementById('heroMetricTitleLabel').textContent = isScout
+        ? 'Overall Pitching Arsenal+'
+        : 'Composite Arsenal+ (Anchor-Gated)';
+      document.getElementById('heroBaseLabel').textContent = isScout ? 'Pitch Quality Base:' : 'Base (50% FB):';
+      document.getElementById('heroRawSynLabel').textContent = isScout ? 'Raw Deception Bonus:' : 'Raw Synergy (Δ):';
+      document.getElementById('heroGammaLabel').textContent = isScout ? 'Fastball Setup Factor:' : 'FB Anchor γ:';
+      document.getElementById('heroNetSynLabel').textContent = isScout ? 'Net Arsenal Bonus:' : 'Net Synergy:';
+      document.getElementById('gaugeTitleLabel').textContent = isScout
+        ? 'College Division 1 Scale (100 = Average D1 Pitcher)'
+        : 'NCAA Division 1 Benchmark Scale (100 = D1 Median, σ = 10)';
+      document.getElementById('scoutSpeakHeaderTitle').textContent = isScout
+        ? "Scouting Director's Summary"
+        : 'Gemini "ScoutSpeak" Executive Synthesis';
+
+      // Section 2 headers
+      document.getElementById('tier2Eyebrow').textContent = isScout
+        ? '2. 3D Pitch Tunnel • Where Pitches Hide Together and Separate on the Way to the Plate'
+        : 'Tier 2 • 45-Step Drag/Magnus Ballistics & 23.8-Ft Commitment Horizon';
+      document.getElementById('tier2MainTitle').textContent = isScout
+        ? 'Interactive 3D Pitch Flight & Hitter Decision Point (23.8 ft Out)'
+        : 'Interactive 3D WebGL Flight, 9-Quadrant Zone & 23.8-Ft Decision Horizon';
+      document.getElementById('webglLegendHeader').textContent = isScout
+        ? 'Pitch Speed & Hitter Reaction Time'
+        : '45-Step Flight & Reaction Margin';
+      document.getElementById('platoonBoxTitle').textContent = isScout
+        ? 'How Fastball Velocity Sets Up Offspeed'
+        : 'Platoon Neutralization & Anchor Gating (γ)';
+
+      // Section 3 headers
+      document.getElementById('tier3Eyebrow').textContent = isScout
+        ? '3. Movement & Spin Clock • How Pitches Move Compared to College Averages'
+        : 'Tier 3 • Aerodynamic Shape Matrix & 95% Mahalanobis Confidence Ellipses';
+      document.getElementById('tier3MainTitle').textContent = isScout
+        ? 'Pitch Break Chart (Ride vs. Run) & 12-Hour Spin Tilt Clock'
+        : '2D Movement-Separation Matrix (IVB vs. HB) & 12-Hour Spin-Tilt Clock';
+      document.getElementById('tier3SubtitleRight').textContent = isScout
+        ? "Colored Ovals = Pitcher's Break Zone • Dashed Ovals = College D1 Average"
+        : '95% Mahalanobis Ellipses • Complementary Pairing Vectors • SSW Non-Magnus Arrows';
+      document.getElementById('movementChartTopTitle').textContent = isScout
+        ? 'Vertical Ride/Drop vs. Horizontal Run/Sweep (Inches)'
+        : 'Induced Vertical Break (IVB) vs. Horizontal Break (HB) — Sea-Level Normalized';
+      document.getElementById('sswBoxTitle').textContent = isScout
+        ? 'Extra Late Seam Movement (Beyond Spin Alone)'
+        : 'Seam-Shifted Wake (SSW) Non-Magnus Decomposition';
+
+      // Section 4 headers
+      document.getElementById('tier4Eyebrow').textContent = isScout
+        ? '4. Hitter Splits & Range • How Each Pitch Performs vs. Righties and Lefties'
+        : 'Tier 4 • Empirical Bayes Shrinkage Forest Plot & 4-Head Cascade';
+      document.getElementById('tier4MainTitle').textContent = isScout
+        ? 'Pitch Grade Range & Righty / Lefty Hitter Matchups'
+        : 'Empirical Bayes Shrinkage Forest Plot, Platoon Splits & 4-Head Cascade';
+      document.getElementById('tier4SubtitleRight').textContent = isScout
+        ? 'Bars Show Likely College Grade Range Based on Bullpen Sample Size'
+        : 'w_i = (N_i · σ²_between) / (N_i · σ²_between + σ²_within) • 90% & 95% Posterior CIs';
+      document.getElementById('forestPlotTopTitle').textContent = isScout
+        ? 'College Stuff+ Grade & Likely Range by Pitch'
+        : 'Bayesian Shrinkage: Raw vs. Prior vs. Posterior Shrunk Stuff+';
+      document.getElementById('forestPlotRightNote').textContent = isScout
+        ? '100 = College D1 Avg'
+        : 'Bars = 90% / 95% CI';
+      document.getElementById('cascadeTableTopTitle').textContent = isScout
+        ? 'Pitch Effectiveness vs. Right-Handed & Left-Handed College Hitters'
+        : 'NCAA D1 4-Head Cascade, Reaction Margin & Platoon Splits (vs. RHB / vs. LHB)';
+      document.getElementById('tableColWhiffHeader').textContent = isScout ? 'Swing & Miss' : 'P(Whiff)';
+      document.getElementById('tableColOverallHeader').textContent = isScout ? 'College Stuff+' : 'Shrunk Stuff+';
+
+      // Section 5 Pitch Lab labels
+      document.getElementById('coupledSlotLabelText').textContent = isScout
+        ? 'Realistic Body Mechanics (Auto-adjusts release width & spin tilt)'
+        : 'Biomechanical Shoulder-Arc Coupling (r = 2.4 ft • Auto RelSide & Spin Tilt)';
+      document.getElementById('sliderLabelVelo').textContent = isScout ? 'Add / Subtract Velocity' : 'Release Velocity Δ';
+      document.getElementById('sliderLabelSpin').textContent = isScout ? 'Add / Subtract Spin Rate' : 'Spin Rate Δ';
+      document.getElementById('sliderLabelIvb').textContent = isScout ? 'More Ride (+) / More Drop (-)' : 'Induced Vertical Break Δ';
+      document.getElementById('sliderLabelHb').textContent = isScout ? 'Arm-Side Run (+) / Glove Sweep (-)' : 'Horizontal / SSW Break Δ';
+      document.getElementById('sliderLabelRelH').textContent = isScout ? 'Raise / Lower Arm Slot' : 'Arm-Slot Height Δ (Arc Coupled)';
+      document.getElementById('sliderLabelExt').textContent = isScout ? 'Stride Extension Toward Plate' : 'Mound Extension Δ';
+      document.getElementById('labMetricBox1Title').textContent = isScout ? 'New College Stuff+' : 'Modified Pitch Stuff+';
+      document.getElementById('labMetricBox2Title').textContent = isScout ? 'New Overall Arsenal+' : 'Compound Arsenal+';
+      document.getElementById('labFooterLeftText').textContent = isScout
+        ? 'Gray wireframe in 3D view shows original pitch path'
+        : '45-Step Drag Ballistics + Coupled Shoulder Arc';
+    }
+
+    function renderAll() {
+      applyViewModeLabels();
+      const isScout = appState.viewMode === 'scout';
+      const profile = PITCHER_PROFILES[appState.currentPitcherId];
+      const emptyLabMap = createEmptyPitchLabState(profile.pitches.length);
+
+      const presentBaselineEval = evaluateFullPipeline(profile, appState.pacingMode, emptyLabMap, appState.coupledSlotArc, 'present');
+      const projectedBaselineEval = evaluateFullPipeline(profile, appState.pacingMode, emptyLabMap, appState.coupledSlotArc, 'projected');
+      const baselineEval = appState.gradeMode === 'projected' ? projectedBaselineEval : presentBaselineEval;
+      const simEval = evaluateFullPipeline(profile, appState.pacingMode, appState.pitchLabState, appState.coupledSlotArc, appState.gradeMode);
+
+      const fb = simEval.gradedPitches[0];
+
+      const fullHeaderTitle = `${profile.name} • ${profile.throws}HP`;
+      const fullHeaderMeta = `${profile.team} • ${profile.date} • ${profile.totalPitches} Pitches • ${fb.slot} Slot`;
+      document.getElementById('pitcherHeaderName').textContent = fullHeaderTitle;
+      document.getElementById('pitcherHeaderMeta').textContent = fullHeaderMeta;
+      document.getElementById('dossierTitleName').textContent = fullHeaderTitle;
+      document.getElementById('dossierSubMeta').textContent = fullHeaderMeta;
+
+      const modeBadge = document.getElementById('dualModeBannerBadge');
+      if (modeBadge) {
+        modeBadge.textContent = appState.gradeMode === 'projected'
+          ? 'Showing: 3-Year College Growth Projection (+5 mph FB / +3.5 mph Offspeed)'
+          : 'Showing: Present College Grade (Current Bullpen Velocity)';
+      }
+
+      // Hero Arsenal+ Metrics
+      document.getElementById('heroArsenalPlus').textContent = simEval.arsenalPlus.toFixed(1);
+      const arsenalDelta = simEval.arsenalPlus - baselineEval.arsenalPlus;
+      const deltaBadge = document.getElementById('heroArsenalDeltaBadge');
+      if (Math.abs(arsenalDelta) >= 0.05) {
+        deltaBadge.classList.remove('hidden');
+        deltaBadge.textContent = `${arsenalDelta >= 0 ? '+' : ''}${arsenalDelta.toFixed(1)} in Lab`;
+      } else {
+        deltaBadge.classList.add('hidden');
+      }
+
+      document.getElementById('heroScoutGradeBadge').textContent = simEval.arsenal2080.label;
+      document.getElementById('heroBaseStuff').textContent = simEval.weightedBaseStuff.toFixed(1);
+      document.getElementById('heroRawSynergy').textContent = `${simEval.rawSynergyTotal >= 0 ? '+' : ''}${simEval.rawSynergyTotal.toFixed(1)}`;
+      document.getElementById('heroAnchorGamma').textContent = isScout
+        ? `${simEval.setupPct}%`
+        : `${simEval.gammaAnchor.toFixed(2)}×`;
+      document.getElementById('heroNetSynergy').textContent = `${simEval.netSynergy >= 0 ? '+' : ''}${simEval.netSynergy.toFixed(1)}`;
+      document.getElementById('heroTunnelBonus').textContent = `${simEval.deltaTunnel >= 0 ? '+' : ''}${simEval.deltaTunnel.toFixed(1)}`;
+      document.getElementById('heroSepBonus').textContent = `${simEval.deltaSep >= 0 ? '+' : ''}${simEval.deltaSep.toFixed(1)}`;
+      document.getElementById('heroPlatoonBonus').textContent = `${simEval.deltaPlatoon >= 0 ? '+' : ''}${simEval.deltaPlatoon.toFixed(1)}`;
+
+      document.getElementById('heroDualProjectionBadge').innerHTML = `
+        <span>Present: <strong class="text-sky-300">${presentBaselineEval.arsenalPlus.toFixed(1)} Arsenal+ (${presentBaselineEval.arsenal2080.short} Grade)</strong></span>
+        <span class="text-slate-600">|</span>
+        <span>3-Yr Projection: <strong class="text-emerald-300">${projectedBaselineEval.arsenalPlus.toFixed(1)} Arsenal+ (${projectedBaselineEval.arsenal2080.short} Grade)</strong></span>
+      `;
+
+      // Percentile Gauge
+      const pctPresent = stuffToPercentile(presentBaselineEval.arsenalPlus);
+      const pctProj = stuffToPercentile(projectedBaselineEval.arsenalPlus);
+      const pctActive = stuffToPercentile(simEval.arsenalPlus);
+      document.getElementById('gaugePercentileText').textContent =
+        `Current: ${pctActive}th %ile D1 (Present: ${pctPresent}th %ile | 3-Yr Projection: ${pctProj}th %ile)`;
+
+      const baseLeft = Math.min(96, Math.max(4, ((simEval.weightedBaseStuff - 65) / 65) * 100));
+      const arsLeft = Math.min(96, Math.max(4, ((simEval.arsenalPlus - 65) / 65) * 100));
+      const projLeft = Math.min(96, Math.max(4, ((projectedBaselineEval.arsenalPlus - 65) / 65) * 100));
+      document.getElementById('gaugeBaseMarker').style.left = `${baseLeft}%`;
+      document.getElementById('gaugeArsenalMarker').style.left = `${arsLeft}%`;
+      document.getElementById('gaugeProjectedMarker').style.left = `${projLeft}%`;
+
+      // Requirement 1: Tier 1 Pitch Shape Cards (Scout Mode: "College Stuff+" & "Confidence: High/Med/Low (N=5 pitches)")
+      const pillsHTML = simEval.gradedPitches.map((p, idx) => {
+        const presP = presentBaselineEval.gradedPitches[idx];
+        const projP = projectedBaselineEval.gradedPitches[idx];
+        const stuffLabel = isScout ? 'College Stuff+' : 'Shrunk Stuff+';
+        const rightConfidenceHTML = isScout
+          ? `<span class="px-2 py-0.5 rounded border text-[11px] font-mono-num font-semibold ${p.confidenceBadge.cls}">
+               Confidence: ${p.confidenceBadge.level} (N=${p.count} pitches)
+             </span>`
+          : `<span class="text-xs font-mono-num text-slate-400">90% CI [${p.ci90[0].toFixed(0)}, ${p.ci90[1].toFixed(0)}] • w=${p.w.toFixed(2)}</span>`;
+
+        return `
+        <div class="rounded-xl bg-slate-900/90 border ${p.hasActiveLabDelta ? 'border-indigo-400/70' : 'border-slate-800'} p-3.5 flex flex-col justify-between space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full" style="background:${p.color}"></span>
+              <span class="font-bold text-sm text-white">${p.name}</span>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[11px] font-mono-num font-bold bg-slate-800 text-sky-300">
+              ${p.scout2080.short} Grade
+            </span>
+          </div>
+
+          <div class="flex flex-wrap items-baseline justify-between gap-1">
+            <div>
+              <span class="text-2xl font-extrabold font-mono-num text-white">${p.shrunkStuff.toFixed(1)}</span>
+              <span class="text-[11px] font-mono-num text-slate-400 ml-1">${stuffLabel}</span>
+            </div>
+            ${rightConfidenceHTML}
+          </div>
+
+          <!-- Dual Present vs. 3-Year Projected Badge -->
+          <div class="px-2.5 py-1 rounded-lg bg-slate-950/90 border border-slate-800 text-[11px] font-mono-num text-slate-300 flex items-center justify-between">
+            <span>Present: <strong class="text-sky-300">${presP.shrunkStuff.toFixed(0)} Stuff+ (${presP.scout2080.short} Grade)</strong></span>
+            <span>|</span>
+            <span>Projected: <strong class="text-emerald-300">${projP.shrunkStuff.toFixed(0)} Stuff+ (${projP.scout2080.short} Grade)</strong></span>
+          </div>
+
+          <!-- Platoon Splits (vs. Righties / vs. Lefties) -->
+          <div class="grid grid-cols-2 gap-1.5 text-[11px] font-mono-num">
+            <div class="px-2 py-1 rounded bg-slate-950/60 border border-slate-800/80 flex justify-between">
+              <span class="text-slate-400">${isScout ? 'vs. Righties:' : 'vs. RHB:'}</span>
+              <span class="font-bold text-emerald-300">${p.stuffVsRHB.toFixed(1)}</span>
+            </div>
+            <div class="px-2 py-1 rounded bg-slate-950/60 border border-slate-800/80 flex justify-between">
+              <span class="text-slate-400">${isScout ? 'vs. Lefties:' : 'vs. LHB:'}</span>
+              <span class="font-bold text-amber-300">${p.stuffVsLHB.toFixed(1)}</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-slate-800/80 text-[11px] font-mono-num text-slate-300">
+            <div>Velo: <span class="text-white font-semibold">${p.velo.toFixed(1)}</span></div>
+            <div>Plate: <span class="text-slate-200 font-semibold">${p.plateSpeedMph.toFixed(1)}</span></div>
+            <div>Angle: <span class="text-white font-semibold">${p.vaa.toFixed(1)}°</span></div>
+            <div class="col-span-2">Break: <span class="text-sky-300 font-semibold">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}" V / ${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}" H</span></div>
+            <div>Time: <span class="font-semibold" style="color:${p.reactionMeta.colorHex}">${p.reactionMarginMs.toFixed(0)}ms</span></div>
+          </div>
+        </div>
+      `;
+      }).join('');
+      document.getElementById('tier1PitchPillsContainer').innerHTML = pillsHTML;
+
+      // Requirement 3: Overhaul "ScoutSpeak" Narrative & Development Prescriptions (Zero jargon in Scout View)
+      const avgW = simEval.gradedPitches.reduce((a, p) => a + p.w, 0) / simEval.gradedPitches.length;
+      document.getElementById('scoutSpeakShrinkageTag').textContent = isScout
+        ? `Small-Sample Adjusted (${profile.totalPitches} Pitches) • Fastball Setup Factor: ${simEval.setupPct}%`
+        : `Empirical Bayes Regularized (Avg w = ${avgW.toFixed(2)} • FB Anchor γ = ${simEval.gammaAnchor.toFixed(2)}×)`;
+
+      const bestPitch = [...simEval.gradedPitches].sort((a, b) => b.shrunkStuff - a.shrunkStuff)[0];
+      const presFb = presentBaselineEval.gradedPitches[0];
+      const projFb = projectedBaselineEval.gradedPitches[0];
+      const bestTunnel = simEval.pairwise.find((pw) => pw.secondary === bestPitch.code) || simEval.pairwise[0];
+      const tunnelDistStr = bestTunnel ? `${bestTunnel.dDecIn.toFixed(1)} inches` : 'a tight window';
+
+      let execText = '';
+      if (isScout) {
+        // Sentence 1 (Present Arsenal & Fastball)
+        const s1 = presFb.velo < 88.0
+          ? `Right now, ${profile.name}'s ${presFb.velo.toFixed(1)} mph fastball grades out below college average (${presFb.shrunkStuff.toFixed(0)} College Stuff+, ${presFb.scout2080.short} Grade) despite good life (${presFb.ivb >= 0 ? '+' : ''}${presFb.ivb.toFixed(1)}" vertical ride and ${presFb.ext.toFixed(1)} ft of extension), because college hitters have ${presFb.reactionMarginMs.toFixed(0)} milliseconds to read and react to the pitch.`
+          : `Right now, ${profile.name} attacks hitters with a college-ready ${presFb.velo.toFixed(1)} mph fastball (${presFb.shrunkStuff.toFixed(0)} College Stuff+, ${presFb.scout2080.short} Grade) that jumps out of a ${presFb.ext.toFixed(1)}-ft extension window and gives batters just ${presFb.reactionMarginMs.toFixed(0)} milliseconds to react.`;
+
+        // Sentence 2 (Best Secondary & Platoon Split)
+        const bestSplitTarget = bestPitch.stuffVsLHB >= bestPitch.stuffVsRHB
+          ? `left-handed hitters (${bestPitch.stuffVsLHB.toFixed(0)} College Stuff+ vs. Lefties)`
+          : `right-handed hitters (${bestPitch.stuffVsRHB.toFixed(0)} College Stuff+ vs. Righties)`;
+        const s2 = `His standout weapon is his ${bestPitch.velo.toFixed(1)} mph ${bestPitch.name} (${bestPitch.shrunkStuff.toFixed(0)} College Stuff+, ${bestPitch.scout2080.short} Grade), which hides within ${tunnelDistStr} of his fastball at the hitter's decision point before breaking sharply to neutralize ${bestSplitTarget}.`;
+
+        // Sentence 3 (3-Year College Projection)
+        const s3 = `Once he adds college strength and +5.0 mph of fastball velocity (${projFb.velo.toFixed(1)} mph), his Fastball Setup Factor jumps from ${presentBaselineEval.setupPct}% to ${projectedBaselineEval.setupPct}% and his overall repertoire climbs from ${presentBaselineEval.arsenalPlus.toFixed(1)} Present Arsenal+ (${presentBaselineEval.arsenal2080.short} Grade) to ${projectedBaselineEval.arsenalPlus.toFixed(1)} Projected Arsenal+ (${projectedBaselineEval.arsenal2080.short} Grade).`;
+
+        execText = `${s1} ${s2} ${s3}`;
+      } else {
+        execText = `${profile.name}'s ${presFb.velo.toFixed(1)} mph four-seamer grades at ${presFb.shrunkStuff.toFixed(1)} Present Stuff+ (${presFb.scout2080.short} Grade) against the NCAA D1 91.5 mph baseline (reflecting the ${presFb.penaltyCliff.toFixed(1)} pt non-linear sub-88 mph velocity cliff and a ${presFb.reactionMarginMs.toFixed(0)} ms batter reaction margin), while projecting to ${projFb.shrunkStuff.toFixed(1)} Stuff+ (${projFb.scout2080.short} Grade) at ${projFb.velo.toFixed(1)} mph under 3-year collegiate maturation. Headlined by a ${bestPitch.velo.toFixed(1)} mph ${bestPitch.name} (${bestPitch.shrunkStuff.toFixed(1)} Stuff+, ${bestPitch.stuffVsLHB.toFixed(1)} vs. LHB) and gated by his fastball anchor viability factor (γ = ${simEval.gammaAnchor.toFixed(2)}× damping ${simEval.rawSynergyTotal >= 0 ? '+' : ''}${simEval.rawSynergyTotal.toFixed(1)} raw synergy to ${simEval.netSynergy >= 0 ? '+' : ''}${simEval.netSynergy.toFixed(1)}), the repertoire moves from ${presentBaselineEval.arsenalPlus.toFixed(1)} Present Arsenal+ to ${projectedBaselineEval.arsenalPlus.toFixed(1)} Projected Arsenal+.`;
+      }
+      document.getElementById('scoutSpeakExecutiveText').textContent = execText;
+
+      // Requirement 4: Update What-If Pitch Lab Panel with Pitching-Coach Prose
+      const labSelect = document.getElementById('labPitchSelect');
+      labSelect.innerHTML = simEval.gradedPitches.map((p, idx) =>
+        `<option value="${idx}" ${idx === appState.labTargetIdx ? 'selected' : ''}>${p.code} — ${p.name}${p.hasActiveLabDelta ? ' (Adjusted)' : ''}</option>`
+      ).join('');
+
+      const activePills = simEval.gradedPitches.map((p, idx) => {
+        const baseP = baselineEval.gradedPitches[idx];
+        const sDelta = p.shrunkStuff - baseP.shrunkStuff;
+        const activeClass = p.hasActiveLabDelta
+          ? 'bg-indigo-500/25 text-indigo-200 border-indigo-400/50'
+          : 'bg-slate-900 text-slate-400 border-slate-800';
+        return `<span class="px-2 py-0.5 rounded border text-[11px] ${activeClass}">
+          ${p.code}: ${p.shrunkStuff.toFixed(1)} (${sDelta >= 0 ? '+' : ''}${sDelta.toFixed(1)})
+        </span>`;
+      }).join('');
+      document.getElementById('activeLabPillsStrip').innerHTML = activePills;
+
+      const baseTarget = baselineEval.gradedPitches[appState.labTargetIdx] || baselineEval.gradedPitches[0];
+      const simTarget = simEval.gradedPitches[appState.labTargetIdx] || simEval.gradedPitches[0];
+      const pitchStuffDelta = simTarget.shrunkStuff - baseTarget.shrunkStuff;
+
+      document.getElementById('labTargetBadge').textContent = `Editing: ${simTarget.name} (${simTarget.code})`;
+      document.getElementById('labSimPitchStuff').textContent = simTarget.shrunkStuff.toFixed(1);
+      document.getElementById('labSimPitchDelta').textContent = `${pitchStuffDelta >= 0 ? '+' : ''}${pitchStuffDelta.toFixed(1)}`;
+      document.getElementById('labSimArsenal').textContent = simEval.arsenalPlus.toFixed(1);
+      document.getElementById('labSimArsenalDelta').textContent = `${arsenalDelta >= 0 ? '+' : ''}${arsenalDelta.toFixed(1)}`;
+      document.getElementById('labKinematicsSummary').textContent =
+        `Speed: ${simTarget.velo.toFixed(1)} mph (Plate ${simTarget.plateSpeedMph.toFixed(1)} mph) | Break: ${simTarget.ivb >= 0 ? '+' : ''}${simTarget.ivb.toFixed(1)}" V, ${simTarget.hb >= 0 ? '+' : ''}${simTarget.hb.toFixed(1)}" H | Hitter Time: ${simTarget.reactionMarginMs.toFixed(0)}ms`;
+
+      document.getElementById('labArcReadout').textContent =
+        `Release Width: ${simTarget.relSideDeltaIn >= 0 ? '+' : ''}${simTarget.relSideDeltaIn.toFixed(1)}" • Spin Tilt: ${simTarget.clockTilt}`;
+
+      if (isScout) {
+        const curDeltas = appState.labDeltas;
+        if (!simTarget.hasActiveLabDelta) {
+          document.getElementById('labPrescriptionText').textContent =
+            `Use the sliders or quick buttons above to test adding velocity, changing ${profile.name}'s arm slot, or tweaking pitch break. You'll see the exact impact on his College Stuff+ and 3D pitch tunnel immediately.`;
+        } else if (appState.labTargetIdx === 0 && curDeltas.velo > 0) {
+          document.getElementById('labPrescriptionText').textContent =
+            `Adding +${curDeltas.velo.toFixed(1)} mph to the ${simTarget.name} boosts its College Stuff+ by ${pitchStuffDelta >= 0 ? '+' : ''}${pitchStuffDelta.toFixed(1)} points (from ${baseTarget.shrunkStuff.toFixed(1)} to ${simTarget.shrunkStuff.toFixed(1)}) and raises his Fastball Setup Factor from ${baselineEval.setupPct}% to ${simEval.setupPct}%, making his offspeed pitches play ${arsenalDelta >= 0 ? '+' : ''}${arsenalDelta.toFixed(1)} points tougher overall (${simEval.arsenalPlus.toFixed(1)} Arsenal+).`;
+        } else {
+          document.getElementById('labPrescriptionText').textContent =
+            `This adjustment moves the ${simTarget.name}'s College Stuff+ by ${pitchStuffDelta >= 0 ? '+' : ''}${pitchStuffDelta.toFixed(1)} points (from ${baseTarget.shrunkStuff.toFixed(1)} to ${simTarget.shrunkStuff.toFixed(1)}) and shifts ${profile.name}'s overall repertoire from ${baselineEval.arsenalPlus.toFixed(1)} to ${simEval.arsenalPlus.toFixed(1)} Arsenal+ (${arsenalDelta >= 0 ? '+' : ''}${arsenalDelta.toFixed(1)}).`;
+        }
+      } else {
+        document.getElementById('labPrescriptionText').textContent =
+          `Modifying ${simTarget.code} moves Shrunk Stuff+ from ${baseTarget.shrunkStuff.toFixed(1)} to ${simTarget.shrunkStuff.toFixed(1)} (${pitchStuffDelta >= 0 ? '+' : ''}${pitchStuffDelta.toFixed(1)}), shifts FB Anchor Viability γ to ${simEval.gammaAnchor.toFixed(2)}×, and updates anchor-gated Arsenal+ from ${baselineEval.arsenalPlus.toFixed(1)} to ${simEval.arsenalPlus.toFixed(1)} (${arsenalDelta >= 0 ? '+' : ''}${arsenalDelta.toFixed(1)}).`;
+      }
+
+      // Section 2: 3D Legend & Tunnel Cards
+      document.getElementById('webglLegendItems').innerHTML = simEval.gradedPitches.map((p) => `
+        <div class="flex items-center justify-between gap-2">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${p.color}"></span>
+            <span class="text-slate-200 font-semibold">${p.code}</span>
+            <span class="text-slate-400">${p.velo.toFixed(1)}mph</span>
+          </span>
+          <span class="px-1.5 py-0.5 rounded border text-[10px] font-bold ${p.reactionMeta.badgeClass}">
+            ${p.reactionMarginMs.toFixed(0)}ms • ${p.reactionMeta.tier}
+          </span>
+        </div>
+      `).join('');
+
+      document.getElementById('tunnelPairCardsContainer').innerHTML = simEval.pairwise.map((pw) => {
+        const marginPct = Math.min(100, Math.max(10, ((pw.secReactionMarginMs - 115) / 95) * 100));
+        return `
+        <div class="rounded-xl bg-slate-900/90 border border-slate-800 p-3 text-xs space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-white">${pw.primary} + ${pw.secondary} Tunnel Pair</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-mono-num font-bold">
+              ${pw.pairTunnelAdj >= 0 ? '+' : ''}${pw.pairTunnelAdj.toFixed(1)} Tunnel Grade
+            </span>
+          </div>
+          <div class="grid grid-cols-2 gap-1 font-mono-num text-[11px] text-slate-300">
+            <div>Hand Release Gap: <span class="text-white font-semibold">${pw.dRelIn.toFixed(2)}"</span></div>
+            <div>Gap at 23.8 ft: <span class="text-sky-300 font-semibold">${pw.dDecIn.toFixed(1)}"</span></div>
+            <div>Gap at Plate: <span class="text-white font-semibold">${pw.dPlateIn.toFixed(1)}"</span></div>
+            <div>Late Separation: <span class="text-emerald-400 font-semibold">${pw.lateDivIn.toFixed(1)}"</span></div>
+          </div>
+          <div class="pt-1.5 border-t border-slate-800/80 space-y-1">
+            <div class="flex items-center justify-between text-[10px] font-mono-num">
+              <span class="text-slate-400">${isScout ? 'Hitter Time to React:' : 'Batter Reaction Margin:'}</span>
+              <span class="font-bold" style="color:${pw.secReactionMeta.colorHex}">${pw.secReactionMarginMs.toFixed(0)}ms (${pw.secReactionMeta.tier})</span>
+            </div>
+            <div class="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+              <div class="h-full ${pw.secReactionMeta.barColor}" style="width:${marginPct}%"></div>
+            </div>
+          </div>
+        </div>
+      `;
+      }).join('');
+
+      document.getElementById('platoonDiagnosisText').textContent = simEval.platoonDiagnosis;
+
+      // Section 3: Spin Clock & Extra Seam Movement
+      document.getElementById('armSlotClockLabel').textContent =
+        `Arm Slot: ${fb.slot} (${fb.relHeight.toFixed(1)} ft High, ${fb.relSide.toFixed(1)} ft Wide)`;
+
+      document.getElementById('sswTableContainer').innerHTML = simEval.gradedPitches.map((p) => {
+        const sswMag = Math.hypot(p.ivb - p.magnusIvb, p.hb - p.magnusHb);
+        return `
+          <div class="flex items-center justify-between py-1 px-2 rounded bg-slate-900/80 border border-slate-800/80">
+            <span class="font-bold" style="color:${p.color}">${p.code} (${p.clockTilt} Spin Direction, ${p.spinEff.toFixed(0)}% Spin Efficiency)</span>
+            <span class="text-slate-300">${isScout ? 'Extra Seam Break:' : 'SSW Deflection:'} <strong class="text-rose-400">+${sswMag.toFixed(1)}"</strong></span>
+          </div>
+        `;
+      }).join('');
+
+      // Section 4: Hitter Splits Table & Coaching Gameplan Priorities
+      document.getElementById('cascadeTableBody').innerHTML = simEval.gradedPitches.map((p) => `
+        <tr>
+          <td class="py-2 pr-1.5 font-bold" style="color:${p.color}">${p.code}</td>
+          <td class="py-2 px-1.5 text-right text-slate-300">${p.plateSpeedMph.toFixed(1)} mph</td>
+          <td class="py-2 px-1.5 text-right font-semibold" style="color:${p.reactionMeta.colorHex}">${p.reactionMarginMs.toFixed(0)}ms</td>
+          <td class="py-2 px-1.5 text-right text-slate-300">${(p.pWhiff * 100).toFixed(1)}%</td>
+          <td class="py-2 px-1.5 text-right font-bold text-sky-300">${p.shrunkStuff.toFixed(1)}</td>
+          <td class="py-2 px-1.5 text-right font-semibold text-emerald-300">${p.stuffVsRHB.toFixed(1)}</td>
+          <td class="py-2 pl-1.5 text-right font-semibold text-amber-300">${p.stuffVsLHB.toFixed(1)}</td>
+        </tr>
+      `).join('');
+
+      const devItems = isScout
+        ? [
+            fb.velo < 88.0
+              ? `Build Fastball Velocity to Unlock Offspeed: At ${fb.velo.toFixed(1)} mph, college hitters have ${fb.reactionMarginMs.toFixed(0)} ms to sit on his fastball. Gaining +3 to +5 mph through lower-body strength and long-toss will jump his Fastball Setup Factor from ${presentBaselineEval.setupPct}% to ${projectedBaselineEval.setupPct}% and make his offspeed pitches twice as effective.`
+              : `Attack the Top of the Zone with the Fastball: With ${fb.velo.toFixed(1)} mph velocity and +${fb.ivb.toFixed(1)}" of vertical ride, challenge hitters up in the zone to set up breaking balls down.`,
+            `Use the ${bestPitch.name} as the Put-Away Pitch: His ${bestPitch.name} already grades out at a college-ready ${bestPitch.shrunkStuff.toFixed(0)} College Stuff+ (${bestPitch.stuffVsLHB.toFixed(0)} vs. Lefties) and hides tightly behind his fastball release window.`,
+            `Keep Release Points Tight Across All Pitches: Maintain his consistent ${fb.ext.toFixed(1)}-ft stride extension and arm speed on breaking balls so hitters cannot read spin out of the hand.`
+          ]
+        : [
+            `Overcome Sub-88 mph Velocity Cliff: At ${fb.velo.toFixed(1)} mph, ${fb.code} incurs a ${fb.penaltyCliff.toFixed(1)} pt cliff penalty and gates synergy to γ = ${simEval.gammaAnchor.toFixed(2)}×; adding +5.0 mph lifts ${fb.code} Stuff+ from ${presFb.shrunkStuff.toFixed(1)} to ${projFb.shrunkStuff.toFixed(1)}.`,
+            `Platoon Split Optimization: Leverage ${bestPitch.code} (${bestPitch.stuffVsLHB.toFixed(1)} Stuff+ vs. LHB) to protect the slider from opposite-handed platoon exposure.`,
+            `Batter Recognition Window Compression: Compress post-commitment reaction margin (${fb.reactionMarginMs.toFixed(0)}ms on ${fb.code}) below the 145ms elite collegiate threshold.`
+          ];
+      document.getElementById('devPrioritiesList').innerHTML = devItems.map((item) => `<li>${item}</li>`).join('');
+
+      // Update 3D WebGL & 2D Canvases
+      rebuild3DTrajectories(presentBaselineEval, simEval);
+      drawMovementMatrix(presentBaselineEval, simEval);
+      drawSpinClock(simEval);
+      drawBayesForestPlot(simEval);
+    }
+
+    // =========================================================================
+    // 7. EVENT LISTENERS & UI INTERACTIVITY WIRING
+    // =========================================================================
+    function syncSlidersToUI() {
+      const d = appState.labDeltas;
+      document.getElementById('labVeloSlider').value = d.velo;
+      document.getElementById('labSpinSlider').value = d.spin;
+      document.getElementById('labIvbSlider').value = d.ivb;
+      document.getElementById('labHbSlider').value = d.hb;
+      document.getElementById('labRelHSlider').value = d.relH;
+      document.getElementById('labExtSlider').value = d.ext;
+
+      document.getElementById('labVeloVal').textContent = `${d.velo >= 0 ? '+' : ''}${d.velo.toFixed(1)} mph`;
+      document.getElementById('labSpinVal').textContent = `${d.spin >= 0 ? '+' : ''}${d.spin} rpm`;
+      document.getElementById('labIvbVal').textContent = `${d.ivb >= 0 ? '+' : ''}${d.ivb.toFixed(1)} in`;
+      document.getElementById('labHbVal').textContent = `${d.hb >= 0 ? '+' : ''}${d.hb.toFixed(1)} in`;
+      document.getElementById('labRelHVal').textContent = `${d.relH >= 0 ? '+' : ''}${d.relH.toFixed(1)} in`;
+      document.getElementById('labExtVal').textContent = `${d.ext >= 0 ? '+' : ''}${d.ext.toFixed(1)} in`;
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const text = document.getElementById('toastMessage');
+      text.textContent = msg;
+      banner.classList.remove('hidden');
+      banner.classList.add('flex');
+      setTimeout(() => {
+        banner.classList.add('hidden');
+        banner.classList.remove('flex');
+      }, 2800);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initThreeJS();
+      renderAll();
+
+      // View Mode Selector (Baseball / Scout Simple vs. Pro Analytics R&D)
+      document.getElementById('viewModeSelect').addEventListener('change', (e) => {
+        appState.viewMode = e.target.value;
+        renderAll();
+        showToast(
+          appState.viewMode === 'scout'
+            ? 'Switched to Baseball / Scout View (Plain English)'
+            : 'Switched to Pro Analytics (R&D) View'
+        );
+      });
+
+      // Pitcher Selector
+      document.getElementById('pitcherSelect').addEventListener('change', (e) => {
+        appState.currentPitcherId = e.target.value;
+        appState.labTargetIdx = 0;
+        const pCount = PITCHER_PROFILES[appState.currentPitcherId].pitches.length;
+        appState.pitchLabState = createEmptyPitchLabState(pCount + 2);
+        syncSlidersToUI();
+        renderAll();
+      });
+
+      // Grade Mode Selector
+      document.getElementById('gradeModeSelect').addEventListener('change', (e) => {
+        appState.gradeMode = e.target.value;
+        renderAll();
+        showToast(
+          appState.gradeMode === 'projected'
+            ? '3-Year College Growth Projection Active (+5.0 mph FB / +3.5 mph Offspeed)'
+            : 'Showing Present College Grade'
+        );
+      });
+
+      // Pacing Mode Selector
+      document.getElementById('pacingSelect').addEventListener('change', (e) => {
+        appState.pacingMode = e.target.value;
+        renderAll();
+      });
+
+      // Batter Stance Selector
+      document.getElementById('batterStanceSelect').addEventListener('change', (e) => {
+        appState.batterStance = e.target.value;
+        update3DBatterSilhouette(appState.batterStance);
+      });
+
+      // Realistic Body Mechanics Toggle
+      document.getElementById('coupledSlotToggle').addEventListener('change', (e) => {
+        appState.coupledSlotArc = e.target.checked;
+        renderAll();
+      });
+
+      // Navigation Tabs
+      document.querySelectorAll('.tier-tab-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const tab = btn.getAttribute('data-tier-tab');
+          appState.activeTierTab = tab;
+          document.querySelectorAll('.tier-tab-btn').forEach((b) => {
+            b.className = 'tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap';
+          });
+          btn.className = 'tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition whitespace-nowrap';
+
+          const sections = {
+            tier1: document.getElementById('section-tier1'),
+            tier2: document.getElementById('section-tier2'),
+            tier3: document.getElementById('section-tier3'),
+            tier4: document.getElementById('section-tier4'),
+            pitchlab: document.getElementById('section-pitchlab')
+          };
+          Object.entries(sections).forEach(([key, sec]) => {
+            if (tab === 'all' || tab === key) sec.classList.remove('hidden');
+            else sec.classList.add('hidden');
+          });
+          renderAll();
+        });
+      });
+
+      // Pitch Lab Target Pitch Selector
+      document.getElementById('labPitchSelect').addEventListener('change', (e) => {
+        appState.labTargetIdx = parseInt(e.target.value, 10) || 0;
+        syncSlidersToUI();
+        renderAll();
+      });
+
+      // Pitch Lab Sliders
+      const sliderBindings = [
+        ['labVeloSlider', 'velo'],
+        ['labSpinSlider', 'spin'],
+        ['labIvbSlider', 'ivb'],
+        ['labHbSlider', 'hb'],
+        ['labRelHSlider', 'relH'],
+        ['labExtSlider', 'ext']
+      ];
+      sliderBindings.forEach(([id, key]) => {
+        document.getElementById(id).addEventListener('input', (e) => {
+          appState.labDeltas[key] = parseFloat(e.target.value) || 0;
+          syncSlidersToUI();
+          renderAll();
+        });
+      });
+
+      // Pitch Lab Preset Buttons
+      document.querySelectorAll('.lab-preset-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const preset = btn.getAttribute('data-preset');
+          const profile = PITCHER_PROFILES[appState.currentPitcherId];
+          if (preset === 'velo_boost') {
+            appState.labTargetIdx = 0;
+            appState.pitchLabState[0] = { velo: 3.0, spin: 125, ivb: 1.0, hb: 0.0, relH: 0.0, ext: 2.0 };
+          } else if (preset === 'drop_slot_sinker') {
+            appState.labTargetIdx = 0;
+            appState.pitchLabState[0] = { velo: 0.5, spin: -75, ivb: -3.5, hb: 2.5, relH: -4.0, ext: 1.5 };
+          } else if (preset === 'tight_gyro_slider') {
+            const slIdx = Math.max(0, profile.pitches.findIndex((p) => p.code === 'SL' || p.code === 'CU' || p.code === 'SW'));
+            appState.labTargetIdx = slIdx;
+            appState.pitchLabState[slIdx] = { velo: 2.5, spin: 175, ivb: 1.5, hb: -1.5, relH: 0.0, ext: 1.0 };
+          } else if (preset === 'pronated_ssw_ch') {
+            const chIdx = Math.max(0, profile.pitches.findIndex((p) => p.code === 'CH' || p.code === 'FS'));
+            appState.labTargetIdx = chIdx;
+            appState.pitchLabState[chIdx] = { velo: 0.0, spin: -150, ivb: -2.5, hb: 2.5, relH: -1.0, ext: 1.0 };
+          }
+          syncSlidersToUI();
+          renderAll();
+        });
+      });
+
+      // Reset Current Pitch Button
+      document.getElementById('resetCurrentPitchBtn').addEventListener('click', () => {
+        appState.pitchLabState[appState.labTargetIdx] = { velo: 0, spin: 0, ivb: 0, hb: 0, relH: 0, ext: 0 };
+        syncSlidersToUI();
+        renderAll();
+        showToast('Current pitch reset to original bullpen numbers');
+      });
+
+      // Reset Entire Arsenal Button
+      document.getElementById('resetLabBtn').addEventListener('click', () => {
+        const pCount = PITCHER_PROFILES[appState.currentPitcherId].pitches.length;
+        appState.pitchLabState = createEmptyPitchLabState(pCount + 2);
+        syncSlidersToUI();
+        renderAll();
+        showToast('All pitches reset to original bullpen numbers');
+      });
+
+      // TrackMan B1 File Upload Modal Wiring
+      const uploadModal = document.getElementById('uploadModal');
+      const fileInput = document.getElementById('trackmanFileInput');
+      const statusBox = document.getElementById('uploadStatusBox');
+
+      document.getElementById('openUploadModalBtn').addEventListener('click', () => {
+        uploadModal.classList.remove('hidden');
+        uploadModal.classList.add('flex');
+      });
+      document.getElementById('closeUploadModalBtn').addEventListener('click', () => {
+        uploadModal.classList.add('hidden');
+        uploadModal.classList.remove('flex');
+      });
+      document.getElementById('browseTrackmanFileBtn').addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      function handleTrackManFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const res = parseTrackManCSVOrJSON(ev.target.result, file.name);
+            statusBox.textContent = `Loaded ${res.pitcherName}: ${res.totalRows} pitches across ${res.pitchTypesCount} pitch types.`;
+            uploadModal.classList.add('hidden');
+            uploadModal.classList.remove('flex');
+            showToast(`Loaded ${res.pitcherName} (${res.totalRows} pitches)`);
+          } catch (err) {
+            statusBox.textContent = `Error reading file: ${err.message}`;
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleTrackManFile(e.target.files[0]);
+        }
+      });
+
+      const dropzone = document.getElementById('trackmanDropzone');
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-sky-300');
+      });
+      dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('border-sky-300');
+      });
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-sky-300');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          handleTrackManFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      document.getElementById('loadSampleCsvBtn').addEventListener('click', () => {
+        const res = parseTrackManCSVOrJSON(SAMPLE_TRACKMAN_CSV, 'Marcus_Vance_TrackMan_B1.csv');
+        statusBox.textContent = `Loaded sample bullpen (${res.pitcherName}, ${res.totalRows} pitches).`;
+        uploadModal.classList.add('hidden');
+        uploadModal.classList.remove('flex');
+        showToast(`Loaded ${res.pitcherName} sample TrackMan bullpen!`);
+      });
+
+      // Print Scout Sheet Button
+      document.getElementById('exportDossierBtn').addEventListener('click', () => {
+        appState.dossierPreview = !appState.dossierPreview;
+        document.body.classList.toggle('dossier-preview-mode', appState.dossierPreview);
+        const indicator = document.getElementById('dossierModeIndicator');
+        if (appState.dossierPreview) {
+          indicator.classList.remove('hidden');
+          ['section-tier1', 'section-tier2', 'section-tier3', 'section-tier4'].forEach((id) => {
+            document.getElementById(id).classList.remove('hidden');
+          });
+          renderAll();
+          showToast('Formatted 8.5×11 Scout Sheet — Opening Print Dialog');
+          setTimeout(() => {
+            try { window.print(); } catch (e) { /* sandboxed fallback */ }
+          }, 180);
+        } else {
+          indicator.classList.add('hidden');
+          renderAll();
+          showToast('Returned to Interactive 3D View');
+        }
+      });
+
+      // 3D Camera Presets
+      document.querySelectorAll('.cam-preset-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const cam = btn.getAttribute('data-cam');
+          setCameraPreset(cam);
+          document.querySelectorAll('.cam-preset-btn').forEach((b) => {
+            b.className = 'cam-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition';
+          });
+          btn.className = 'cam-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition';
+        });
+      });
+
+      // Play / Pause 3D Flight Animation
+      document.getElementById('toggleAnimBtn').addEventListener('click', (e) => {
+        appState.animPlaying = !appState.animPlaying;
+        e.target.textContent = appState.animPlaying ? 'Pause Flight' : 'Play Flight';
+      });
+
+      // Copy Scouting Summary Button
+      document.getElementById('copyReportBtn').addEventListener('click', () => {
+        const text = document.getElementById('scoutSpeakExecutiveText').textContent;
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+          document.execCommand('copy');
+          showToast('Scouting report copied to clipboard!');
+        } catch (err) {
+          showToast('Report ready in Player Scout Card');
+        }
+        document.body.removeChild(temp);
+      });
+
+      // Responsive Resize Handler
+      window.addEventListener('resize', () => {
+        const container = document.getElementById('webglCanvasContainer');
+        if (container && threeRenderer && threeCamera) {
+          const w = container.clientWidth || 700;
+          const h = container.clientHeight || 420;
+          threeCamera.aspect = w / h;
+          threeCamera.updateProjectionMatrix();
+          threeRenderer.setSize(w, h);
+        }
+        renderAll();
+      });
+    });
+  </script>
+</body>
+</html>
