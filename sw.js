@@ -1,4 +1,4 @@
-const CACHE_NAME = "apex-cache-v4.6.1";
+const CACHE_NAME = "apex-cache-v5.0";
 const PRECACHE_URLS = [
   "./",
   "./index.html",

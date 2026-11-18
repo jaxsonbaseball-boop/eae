@@ -10,7 +10,8 @@
   <meta name="theme-color" content="#070b14" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%23070b14'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='210' fill='%2338bdf8'%3EA+%3C/text%3E%3C/svg%3E" />
-  <title>Project Apex v4.6 — Mobile-First Pitching Scout Card &amp; 3D Pitch Lab</title>
+  <title>Project Apex v5.0 — Mobile-First Pitching Scout Card &amp; 3D Pitch Lab</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -164,7 +165,7 @@
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div>
           <span class="text-[11px] font-mono-num uppercase tracking-widest text-sky-400 font-semibold">TrackMan Bullpen Import</span>
-          <h3 class="text-lg font-extrabold text-white">Upload TrackMan B1 CSV or JSON File</h3>
+          <h3 class="text-lg font-extrabold text-white">Upload TrackMan B1 CSV, JSON, or PDF Report</h3>
         </div>
         <button id="closeUploadModalBtn" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
           Close
@@ -177,10 +178,10 @@
         <p class="text-xs text-slate-300 mb-3">
           Automatically reads <span class="font-mono-num text-slate-200">Pitcher, Throws, TaggedPitchType, RelSpeed, SpinRate, SpinAxis, RelHeight, RelSide, Extension, InducedVertBreak, HorzBreak</span>
         </p>
-        <input id="trackmanFileInput" type="file" accept=".csv,.json,.txt" class="hidden" />
+        <input id="trackmanFileInput" type="file" accept=".csv,.json,.txt,.pdf" class="hidden" />
         <div class="flex flex-wrap items-center justify-center gap-2">
           <button id="browseTrackmanFileBtn" type="button" class="px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold transition">
-            Select CSV / JSON File
+            Select CSV / JSON / PDF File
           </button>
           <button id="loadSampleCsvBtn" type="button" class="px-3.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition">
             Load Sample Showcase Bullpen CSV
@@ -189,7 +190,7 @@
       </div>
 
       <div id="uploadStatusBox" class="text-xs font-mono-num text-slate-400 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
-        Ready to load portable TrackMan B1 or stadium CSV/JSON files. Any missing columns are automatically filled using standard high school and college defaults.
+        Ready to load TrackMan B1 CSV, JSON, or text-based TrackMan PDF reports (pitch-by-pitch or pitch-type summary tables). Missing fields use standard high school and college defaults.
       </div>
     </div>
   </div>
@@ -806,7 +807,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>Project Apex v4.6 • NCAA D1 4-Head XGBoost (10×10 Grid) &amp; 3D Pitch Lab</span>
+    <span>Project Apex v5.0 • NCAA D1 4-Head XGBoost (10×10 Grid) &amp; TrackMan PDF/CSV Lab</span>
     <span id="footerRightText" class="font-mono-num">Switch between "Baseball / Scout (Simple)" and "Pro Analytics (R&amp;D)" in the top bar</span>
   </footer>
 
@@ -3134,6 +3135,246 @@
       return { pitcherName, totalRows: rows.length, pitchTypesCount: aggregatedPitches.length };
     }
 
+
+    // =========================================================================
+    // 5B. CLIENT-SIDE TRACKMAN PDF REPORT PARSER (MOZILLA PDF.JS)
+    // =========================================================================
+    function reconstructLinesFromPDFItems(items, yTolerancePx = 3.0) {
+      if (!items || !items.length) return [];
+      const cleaned = items
+        .filter((it) => it && typeof it.str === 'string' && it.str.trim().length > 0 && Array.isArray(it.transform))
+        .map((it) => ({
+          str: it.str.trim(),
+          x: Number(it.transform[4]) || 0,
+          y: Number(it.transform[5]) || 0
+        }));
+      if (!cleaned.length) return [];
+
+      // Sort top-to-bottom (descending Y in PDF coordinate space)
+      cleaned.sort((a, b) => b.y - a.y || a.x - b.x);
+
+      const lineGroups = [];
+      cleaned.forEach((item) => {
+        let targetGroup = null;
+        for (let i = 0; i < lineGroups.length; i++) {
+          if (Math.abs(lineGroups[i].y - item.y) <= yTolerancePx) {
+            targetGroup = lineGroups[i];
+            break;
+          }
+        }
+        if (!targetGroup) {
+          targetGroup = { y: item.y, items: [item] };
+          lineGroups.push(targetGroup);
+        } else {
+          targetGroup.items.push(item);
+        }
+      });
+
+      return lineGroups.map((grp) => {
+        grp.items.sort((a, b) => a.x - b.x);
+        return grp.items.map((it) => it.str).join('  ');
+      });
+    }
+
+    function extractTrackManPDFMetadata(lines, fileName) {
+      let pitcherName = fileName.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').trim() || 'Uploaded PDF Pitcher';
+      let throws = 'R';
+      let sessionDate = '11/18/2026';
+
+      for (const line of lines.slice(0, 35)) {
+        const nameMatch = line.match(/(?:Pitcher|Player|Name)\s*[:\-]\s*([A-Za-z0-9#.,'\- ]{2,45})/i);
+        if (nameMatch && nameMatch[1]) {
+          pitcherName = nameMatch[1].split(/\s{2,}|Throws|Hand|Date/i)[0].trim();
+        }
+        const throwsMatch = line.match(/(?:Throws|Hand|Arm)\s*[:\-]?\s*(Left|Right|LHP|RHP|\bL\b|\bR\b)/i) ||
+                            line.match(/\b(LHP|RHP)\b/i);
+        if (throwsMatch && throwsMatch[1]) {
+          throws = throwsMatch[1].trim().toUpperCase().startsWith('L') ? 'L' : 'R';
+        }
+        const dateMatch = line.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}-\d{2}-\d{2})/);
+        if (dateMatch && dateMatch[1]) {
+          sessionDate = dateMatch[1];
+        }
+      }
+      return { pitcherName, throws, sessionDate };
+    }
+
+    function parseTrackManPDFLines(lines, fileName = 'TrackMan_Report.pdf') {
+      if (!lines || !lines.length) {
+        throw new Error('No selectable text found in this PDF. It appears to be a scanned image; please export a text-based TrackMan PDF or CSV.');
+      }
+
+      const meta = extractTrackManPDFMetadata(lines, fileName);
+      const pitchTagRegex = /\b(Four-?Seam|4-?Seam|Fastball|Two-?Seam|2-?Seam|Sinker|Cutter|Sweeper|Slider|Curveball|Knuckle-?Curve|Changeup|Change|Splitter|Split|FF|FA|SI|FT|FC|SW|ST|SL|CU|KC|CH|FS)\b/i;
+
+      let headerTokens = null;
+      const parsedRows = [];
+
+      function splitTokens(line) {
+        return line.split(/\s{2,}|\t+/).map((t) => t.trim()).filter(Boolean);
+      }
+
+      function mapHeaderIndex(tokens) {
+        const lower = tokens.map((t) => t.toLowerCase().replace(/[^a-z0-9#]/g, ''));
+        const findIdx = (aliases) => lower.findIndex((c) => aliases.some((a) => c === a || c.includes(a)));
+        const idxMap = {
+          pitch: findIdx(['pitchtype', 'taggedpitchtype', 'autopitchtype', 'pitch']),
+          count: findIdx(['count', 'n', '#', 'pitches']),
+          velo: findIdx(['relspeed', 'velo', 'avgvelo', 'velocity', 'mph']),
+          spin: findIdx(['spinrate', 'spin', 'rpm']),
+          tilt: findIdx(['tilt', 'spinaxis', 'spintilt']),
+          ivb: findIdx(['ivb', 'inducedvertbreak', 'vertbreak']),
+          hb: findIdx(['hb', 'horzbreak', 'horizontalbreak']),
+          relH: findIdx(['relheight', 'relh', 'releaseheight']),
+          relS: findIdx(['relside', 'rels', 'releaseside']),
+          ext: findIdx(['extension', 'ext']),
+          vaa: findIdx(['vaa', 'vertapprangle'])
+        };
+        if (idxMap.velo !== -1 && (idxMap.ivb !== -1 || idxMap.spin !== -1 || idxMap.pitch !== -1)) {
+          return idxMap;
+        }
+        return null;
+      }
+
+      for (const line of lines) {
+        const tokens = splitTokens(line);
+        if (tokens.length >= 4) {
+          const maybeHeader = mapHeaderIndex(tokens);
+          if (maybeHeader) {
+            headerTokens = maybeHeader;
+            continue;
+          }
+        }
+
+        const tagMatch = line.match(pitchTagRegex);
+        if (!tagMatch) continue;
+        // Skip narrative/header lines that don't contain numeric telemetry
+        const numMatches = line.match(/-?\d+(?:\.\d+)?/g);
+        if (!numMatches || numMatches.length < 3) continue;
+
+        const code = normalizePitchCode(tagMatch[1]);
+        const tiltMatch = line.match(/\b(1[0-2]|[1-9]):([0-5]\d)\b/);
+        const tiltStr = tiltMatch ? `${tiltMatch[1]}:${tiltMatch[2]}` : null;
+
+        let countVal = 1;
+        let veloVal = NaN;
+        let spinVal = NaN;
+        let ivbVal = NaN;
+        let hbVal = NaN;
+        let relHVal = 5.75;
+        let relSVal = 1.85;
+        let extVal = 6.00;
+        let vaaVal = NaN;
+
+        if (headerTokens && tokens.length >= 4) {
+          const getNumAt = (idx) => {
+            if (idx === -1 || idx >= tokens.length) return NaN;
+            const m = tokens[idx].match(/-?\d+(?:\.\d+)?/);
+            return m ? parseFloat(m[0]) : NaN;
+          };
+          const maybeCnt = getNumAt(headerTokens.count);
+          if (Number.isFinite(maybeCnt) && maybeCnt >= 1 && maybeCnt <= 120) countVal = Math.round(maybeCnt);
+          veloVal = getNumAt(headerTokens.velo);
+          spinVal = getNumAt(headerTokens.spin);
+          ivbVal = getNumAt(headerTokens.ivb);
+          hbVal = getNumAt(headerTokens.hb);
+          if (Number.isFinite(getNumAt(headerTokens.relH))) relHVal = getNumAt(headerTokens.relH);
+          if (Number.isFinite(getNumAt(headerTokens.relS))) relSVal = Math.abs(getNumAt(headerTokens.relS));
+          if (Number.isFinite(getNumAt(headerTokens.ext))) extVal = getNumAt(headerTokens.ext);
+          vaaVal = getNumAt(headerTokens.vaa);
+        }
+
+        // Positional fallback when table spacing collapsed or header wasn't matched
+        if (!Number.isFinite(veloVal)) {
+          const nums = line.replace(/\b(1[0-2]|[1-9]):[0-5]\d\b/g, ' ').match(/-?\d+(?:\.\d+)?/g) || [];
+          const floats = nums.map(Number).filter(Number.isFinite);
+          // Heuristic: integer 1..40 before velo is Count or PitchNo; velo in [58..104]; spin in [800..3400]
+          const veloIdx = floats.findIndex((v) => v >= 58.0 && v <= 104.0);
+          if (veloIdx === -1) continue;
+          veloVal = floats[veloIdx];
+          if (veloIdx > 0 && floats[veloIdx - 1] >= 1 && floats[veloIdx - 1] <= 60 && Number.isInteger(floats[veloIdx - 1])) {
+            // Distinguish summary Count vs PitchNo by checking if multiple rows share same pitch type later
+            countVal = floats[veloIdx - 1];
+          }
+          const spinCandidate = floats.find((v, idx) => idx > veloIdx && v >= 800 && v <= 3400);
+          if (spinCandidate !== undefined) spinVal = spinCandidate;
+          const afterSpinIdx = spinCandidate !== undefined ? floats.indexOf(spinCandidate) : veloIdx;
+          const tail = floats.slice(afterSpinIdx + 1);
+          if (tail.length >= 1) ivbVal = tail[0];
+          if (tail.length >= 2) hbVal = tail[1];
+          if (tail.length >= 3 && tail[2] >= 3.5 && tail[2] <= 7.5) relHVal = tail[2];
+          if (tail.length >= 4 && Math.abs(tail[3]) <= 4.0) relSVal = Math.abs(tail[3]);
+          if (tail.length >= 5 && tail[4] >= 4.0 && tail[4] <= 7.8) extVal = tail[4];
+          if (tail.length >= 6 && tail[5] >= -15.0 && tail[5] <= 1.0) vaaVal = tail[5];
+        }
+
+        if (!Number.isFinite(veloVal) || veloVal < 55.0 || veloVal > 105.0) continue;
+
+        parsedRows.push({
+          Pitcher: meta.pitcherName,
+          Throws: meta.throws,
+          Date: meta.sessionDate,
+          TaggedPitchType: code,
+          _pdfCount: countVal,
+          RelSpeed: veloVal,
+          SpinRate: Number.isFinite(spinVal) ? spinVal : (code === 'CH' ? 1550 : 2150),
+          SpinAxis: tiltStr || (code === 'FF' ? '1:15' : code === 'CH' ? '2:15' : '8:45'),
+          InducedVertBreak: Number.isFinite(ivbVal) ? ivbVal : (code === 'FF' ? 15.8 : code === 'CH' ? 5.5 : -2.5),
+          HorzBreak: Number.isFinite(hbVal) ? hbVal : (code === 'FF' ? 10.5 : code === 'CH' ? 14.5 : -6.5),
+          RelHeight: relHVal,
+          RelSide: relSVal,
+          Extension: extVal,
+          VertApprAngle: Number.isFinite(vaaVal) ? vaaVal : undefined
+        });
+      }
+
+      if (!parsedRows.length) {
+        throw new Error('Could not detect TrackMan pitch tables in this PDF. Ensure the PDF contains selectable text with Pitch Type, Velocity, Spin, and Break columns.');
+      }
+
+      // Detect pitch-type summary table (1 row per pitch type with Count > 1) vs pitch-by-pitch rows
+      const typeCounts = {};
+      parsedRows.forEach((r) => {
+        typeCounts[r.TaggedPitchType] = (typeCounts[r.TaggedPitchType] || 0) + 1;
+      });
+      const isSummaryTable = Object.values(typeCounts).every((c) => c === 1) && parsedRows.some((r) => r._pdfCount > 1);
+
+      const expandedRows = [];
+      parsedRows.forEach((r) => {
+        const repeatN = isSummaryTable ? Math.min(60, Math.max(1, r._pdfCount)) : 1;
+        for (let k = 0; k < repeatN; k++) {
+          expandedRows.push(r);
+        }
+      });
+
+      const res = parseTrackManCSVOrJSON(JSON.stringify(expandedRows), fileName);
+      res.layoutDetected = isSummaryTable ? 'Pitch-Type Summary Table' : 'Pitch-by-Pitch Table';
+      res.pitchTypesList = Object.keys(typeCounts);
+      return res;
+    }
+
+    async function ingestTrackManPDF(arrayBuffer, fileName) {
+      if (typeof pdfjsLib === 'undefined') {
+        throw new Error('PDF.js library failed to load. Check internet connection or upload a CSV/JSON export.');
+      }
+      if (pdfjsLib.GlobalWorkerOptions && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer, isEvalSupported: false });
+      const pdfDoc = await loadingTask.promise;
+      const allLines = [];
+      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+        const page = await pdfDoc.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageLines = reconstructLinesFromPDFItems(textContent.items, 3.0);
+        allLines.push(...pageLines);
+      }
+      if (!allLines.length) {
+        throw new Error('No selectable text found in this PDF. It appears to be a scanned image; please export a text-based TrackMan PDF or CSV.');
+      }
+      return parseTrackManPDFLines(allLines, fileName);
+    }
+
     const SAMPLE_TRACKMAN_CSV = `Pitcher,PitcherThrows,Date,TaggedPitchType,RelSpeed,SpinRate,SpinAxis,RelHeight,RelSide,Extension,InducedVertBreak,HorzBreak,PlateLocHeight,PlateLocSide
 Marcus Vance,R,10/28/2026,Fastball,89.4,2340,1:15,5.82,1.78,6.35,17.9,11.2,2.75,0.12
 Marcus Vance,R,10/28/2026,Fastball,90.1,2385,1:15,5.80,1.81,6.40,18.4,10.8,2.88,-0.08
@@ -3159,7 +3400,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
 
       setLabelText('headerBadgeVersion', isScout
         ? 'College Scouting & 3D Pitch Lab'
-        : 'v4.6 R&D • 4-Head XGBoost (10×10 Grid) + 45-Step RK');
+        : 'v5.0 R&D • 4-Head XGBoost (10×10 Grid) + PDF/CSV');
 
       // Section 1 headers & labels
       setLabelText('tier1Eyebrow', isScout
@@ -3914,21 +4155,44 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
 
       function handleTrackManFile(file) {
         if (!file) return;
+        const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
         const reader = new FileReader();
-        reader.onload = (ev) => {
-          try {
-            const res = parseTrackManCSVOrJSON(ev.target.result, file.name);
-            if (statusBox) statusBox.textContent = `Loaded ${res.pitcherName}: ${res.totalRows} pitches across ${res.pitchTypesCount} pitch types.`;
-            if (uploadModal) {
-              uploadModal.classList.add('hidden');
-              uploadModal.classList.remove('flex');
+        if (isPdf) {
+          if (statusBox) statusBox.textContent = `Reading TrackMan PDF (${file.name})...`;
+          reader.onload = async (ev) => {
+            try {
+              const res = await ingestTrackManPDF(ev.target.result, file.name);
+              const typesStr = (res.pitchTypesList || []).join(', ');
+              if (statusBox) {
+                statusBox.textContent = `Loaded ${res.pitcherName} (${res.layoutDetected}): ${res.totalRows} pitches across ${res.pitchTypesCount} pitch types (${typesStr}).`;
+              }
+              if (uploadModal) {
+                uploadModal.classList.add('hidden');
+                uploadModal.classList.remove('flex');
+              }
+              showToast(`PDF Loaded: ${res.pitcherName} (${res.totalRows} pitches • ${typesStr})`);
+            } catch (err) {
+              if (statusBox) statusBox.textContent = `PDF Error: ${err.message}`;
+              showToast(`PDF Error: ${err.message}`);
             }
-            showToast(`Loaded ${res.pitcherName} (${res.totalRows} pitches)`);
-          } catch (err) {
-            if (statusBox) statusBox.textContent = `Error reading file: ${err.message}`;
-          }
-        };
-        reader.readAsText(file);
+          };
+          reader.readAsArrayBuffer(file);
+        } else {
+          reader.onload = (ev) => {
+            try {
+              const res = parseTrackManCSVOrJSON(ev.target.result, file.name);
+              if (statusBox) statusBox.textContent = `Loaded ${res.pitcherName}: ${res.totalRows} pitches across ${res.pitchTypesCount} pitch types.`;
+              if (uploadModal) {
+                uploadModal.classList.add('hidden');
+                uploadModal.classList.remove('flex');
+              }
+              showToast(`Loaded ${res.pitcherName} (${res.totalRows} pitches)`);
+            } catch (err) {
+              if (statusBox) statusBox.textContent = `Error reading file: ${err.message}`;
+            }
+          };
+          reader.readAsText(file);
+        }
       }
 
       if (fileInput) {
