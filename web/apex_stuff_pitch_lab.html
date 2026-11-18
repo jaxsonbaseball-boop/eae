@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Apex A+" />
   <meta name="theme-color" content="#070b14" />
-  <link rel="manifest" href="../manifest.json" />
+  <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%23070b14'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='210' fill='%2338bdf8'%3EA+%3C/text%3E%3C/svg%3E" />
   <title>Project Apex v4.6 — Mobile-First Pitching Scout Card &amp; 3D Pitch Lab</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -2208,7 +2208,7 @@
     let animClock = 0;
     let isDragging3D = false;
     let prevMouse = { x: 0, y: 0 };
-    let sphericalCam = { radius: 22, theta: 0.0, phi: 1.42, target: new THREE.Vector3(0, 2.7, 20) };
+    let sphericalCam = { radius: 22, theta: 0.0, phi: 1.42, target: { x: 0, y: 2.7, z: 20 } };
 
     function build9QuadrantStrikeZone() {
       const zoneGroup = new THREE.Group();
@@ -2509,16 +2509,20 @@
       }
     }
 
+    function makeTargetVec(x, y, z) {
+      return typeof THREE !== 'undefined' && THREE.Vector3 ? new THREE.Vector3(x, y, z) : { x, y, z };
+    }
+
     function setCameraPreset(presetName) {
       appState.cameraPreset = presetName;
       if (presetName === 'catcher') {
-        sphericalCam = { radius: 14.5, theta: 0.0, phi: 1.44, target: new THREE.Vector3(0, 2.6, 18) };
+        sphericalCam = { radius: 14.5, theta: 0.0, phi: 1.44, target: makeTargetVec(0, 2.6, 18) };
       } else if (presetName === 'commit') {
-        sphericalCam = { radius: 9.5, theta: 0.32, phi: 1.38, target: new THREE.Vector3(-0.3, 2.9, 23.8) };
+        sphericalCam = { radius: 9.5, theta: 0.32, phi: 1.38, target: makeTargetVec(-0.3, 2.9, 23.8) };
       } else if (presetName === 'side') {
-        sphericalCam = { radius: 38.0, theta: 1.54, phi: 1.42, target: new THREE.Vector3(0, 3.0, 28) };
+        sphericalCam = { radius: 38.0, theta: 1.54, phi: 1.42, target: makeTargetVec(0, 3.0, 28) };
       } else if (presetName === 'pitcher') {
-        sphericalCam = { radius: 16.0, theta: Math.PI, phi: 1.36, target: new THREE.Vector3(0, 2.5, 22) };
+        sphericalCam = { radius: 16.0, theta: Math.PI, phi: 1.36, target: makeTargetVec(0, 2.5, 22) };
       }
       updateCameraPosition();
     }
@@ -2529,7 +2533,11 @@
       threeCamera.position.x = target.x + radius * Math.sin(phi) * Math.sin(theta);
       threeCamera.position.y = target.y + radius * Math.cos(phi);
       threeCamera.position.z = target.z - radius * Math.sin(phi) * Math.cos(theta);
-      threeCamera.lookAt(target);
+      if (typeof THREE !== 'undefined' && THREE.Vector3 && !(target instanceof THREE.Vector3)) {
+        threeCamera.lookAt(new THREE.Vector3(target.x, target.y, target.z));
+      } else {
+        threeCamera.lookAt(target);
+      }
     }
 
     function rebuild3DTrajectories(baselineEval, simEval) {
@@ -3141,99 +3149,102 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
     // =========================================================================
     // 6. DOM RENDERING: SEAMLESS "SCOUT VIEW" vs "PRO ANALYTICS (R&D)" TOGGLE
     // =========================================================================
+    function setLabelText(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    }
+
     function applyViewModeLabels() {
       const isScout = appState.viewMode === 'scout';
 
-      document.getElementById('headerBadgeVersion').textContent = isScout
+      setLabelText('headerBadgeVersion', isScout
         ? 'College Scouting & 3D Pitch Lab'
-        : 'v4.0 R&D • 4-Head XGBoost (10×10 Grid) + 45-Step RK';
+        : 'v4.6 R&D • 4-Head XGBoost (10×10 Grid) + 45-Step RK');
 
       // Section 1 headers & labels
-      document.getElementById('tier1Eyebrow').textContent = isScout
+      setLabelText('tier1Eyebrow', isScout
         ? '1. Player Scout Card • How This Arsenal Stacks Up Against College Hitters'
-        : 'Tier 1 • 3-Second Executive Interface (50% Fastball Anchor Weight • σ = 10)';
-      document.getElementById('heroMetricTitleLabel').textContent = isScout
+        : 'Tier 1 • 3-Second Executive Interface (50% Fastball Anchor Weight • σ = 10)');
+      setLabelText('heroMetricTitleLabel', isScout
         ? 'Overall Pitching Arsenal+'
-        : 'Composite Arsenal+ (Anchor-Gated)';
-      document.getElementById('heroBaseLabel').textContent = isScout ? 'Pitch Quality Base:' : 'Base (50% FB):';
-      document.getElementById('heroRawSynLabel').textContent = isScout ? 'Raw Deception Bonus:' : 'Raw Synergy (Δ):';
-      document.getElementById('heroGammaLabel').textContent = isScout ? 'Fastball Setup Factor:' : 'FB Anchor γ:';
-      document.getElementById('heroNetSynLabel').textContent = isScout ? 'Net Arsenal Bonus:' : 'Net Synergy:';
-      document.getElementById('gaugeTitleLabel').textContent = isScout
+        : 'Composite Arsenal+ (Anchor-Gated)');
+      setLabelText('heroBaseLabel', isScout ? 'Pitch Quality Base:' : 'Base (50% FB):');
+      setLabelText('heroRawSynLabel', isScout ? 'Raw Deception Bonus:' : 'Raw Synergy (Δ):');
+      setLabelText('heroGammaLabel', isScout ? 'Fastball Setup Factor:' : 'FB Anchor γ:');
+      setLabelText('heroNetSynLabel', isScout ? 'Net Arsenal Bonus:' : 'Net Synergy:');
+      setLabelText('gaugeTitleLabel', isScout
         ? 'College Division 1 Scale (100 = Average D1 Pitcher)'
-        : 'NCAA Division 1 Benchmark Scale (100 = D1 Median, σ = 10)';
-      document.getElementById('scoutSpeakHeaderTitle').textContent = isScout
+        : 'NCAA Division 1 Benchmark Scale (100 = D1 Median, σ = 10)');
+      setLabelText('scoutSpeakHeaderTitle', isScout
         ? "Scouting Director's Summary"
-        : 'Gemini "ScoutSpeak" Executive Synthesis';
+        : 'Gemini "ScoutSpeak" Executive Synthesis');
 
       // Section 2 headers
-      document.getElementById('tier2Eyebrow').textContent = isScout
+      setLabelText('tier2Eyebrow', isScout
         ? '2. 3D Pitch Tunnel • Where Pitches Hide Together and Separate on the Way to the Plate'
-        : 'Tier 2 • 45-Step Drag/Magnus Ballistics & 23.8-Ft Commitment Horizon';
-      document.getElementById('tier2MainTitle').textContent = isScout
+        : 'Tier 2 • 45-Step Drag/Magnus Ballistics & 23.8-Ft Commitment Horizon');
+      setLabelText('tier2MainTitle', isScout
         ? 'Interactive 3D Pitch Flight & Hitter Decision Point (23.8 ft Out)'
-        : 'Interactive 3D WebGL Flight, 9-Quadrant Zone & 23.8-Ft Decision Horizon';
-      document.getElementById('webglLegendHeader').textContent = isScout
+        : 'Interactive 3D WebGL Flight, 9-Quadrant Zone & 23.8-Ft Decision Horizon');
+      setLabelText('webglLegendHeader', isScout
         ? 'Pitch Speed & Hitter Reaction Time'
-        : '45-Step Flight & Reaction Margin';
-      document.getElementById('platoonBoxTitle').textContent = isScout
+        : '45-Step Flight & Reaction Margin');
+      setLabelText('platoonBoxTitle', isScout
         ? 'How Fastball Velocity Sets Up Offspeed'
-        : 'Platoon Neutralization & Anchor Gating (γ)';
+        : 'Platoon Neutralization & Anchor Gating (γ)');
 
       // Section 3 headers
-      document.getElementById('tier3Eyebrow').textContent = isScout
+      setLabelText('tier3Eyebrow', isScout
         ? '3. Movement & Spin Clock • How Pitches Move Compared to College Averages'
-        : 'Tier 3 • Aerodynamic Shape Matrix & 95% Mahalanobis Confidence Ellipses';
-      document.getElementById('tier3MainTitle').textContent = isScout
+        : 'Tier 3 • Aerodynamic Shape Matrix & 95% Mahalanobis Confidence Ellipses');
+      setLabelText('tier3MainTitle', isScout
         ? 'Pitch Break Chart (Ride vs. Run) & 12-Hour Spin Tilt Clock'
-        : '2D Movement-Separation Matrix (IVB vs. HB) & 12-Hour Spin-Tilt Clock';
-      document.getElementById('tier3SubtitleRight').textContent = isScout
+        : '2D Movement-Separation Matrix (IVB vs. HB) & 12-Hour Spin-Tilt Clock');
+      setLabelText('tier3SubtitleRight', isScout
         ? "Colored Ovals = Pitcher's Break Zone • Dashed Ovals = College D1 Average"
-        : '95% Mahalanobis Ellipses • Complementary Pairing Vectors • SSW Non-Magnus Arrows';
-      document.getElementById('movementChartTopTitle').textContent = isScout
+        : '95% Mahalanobis Ellipses • Complementary Pairing Vectors • SSW Non-Magnus Arrows');
+      setLabelText('movementChartTopTitle', isScout
         ? 'Vertical Ride/Drop vs. Horizontal Run/Sweep (Inches)'
-        : 'Induced Vertical Break (IVB) vs. Horizontal Break (HB) — Sea-Level Normalized';
-      document.getElementById('sswBoxTitle').textContent = isScout
+        : 'Induced Vertical Break (IVB) vs. Horizontal Break (HB) — Sea-Level Normalized');
+      setLabelText('sswBoxTitle', isScout
         ? 'Extra Late Seam Movement (Beyond Spin Alone)'
-        : 'Seam-Shifted Wake (SSW) Non-Magnus Decomposition';
+        : 'Seam-Shifted Wake (SSW) Non-Magnus Decomposition');
 
-      // Section 4 headers
-      document.getElementById('tier4Eyebrow').textContent = isScout
+      // Section 4 headers (Note: #cascadeTableHeadRow is dynamically built inside renderAll())
+      setLabelText('tier4Eyebrow', isScout
         ? '4. Hitter Splits & Range • How Each Pitch Performs vs. Righties and Lefties'
-        : 'Tier 4 • Empirical Bayes Shrinkage Forest Plot & 4-Head Cascade';
-      document.getElementById('tier4MainTitle').textContent = isScout
+        : 'Tier 4 • Empirical Bayes Shrinkage Forest Plot & 4-Head Cascade');
+      setLabelText('tier4MainTitle', isScout
         ? 'Pitch Grade Range & Righty / Lefty Hitter Matchups'
-        : 'Empirical Bayes Shrinkage Forest Plot, Platoon Splits & 4-Head Cascade';
-      document.getElementById('tier4SubtitleRight').textContent = isScout
+        : 'Empirical Bayes Shrinkage Forest Plot, Platoon Splits & 4-Head Cascade');
+      setLabelText('tier4SubtitleRight', isScout
         ? 'Bars Show Likely College Grade Range Based on Bullpen Sample Size'
-        : 'w_i = (N_i · σ²_between) / (N_i · σ²_between + σ²_within) • 90% & 95% Posterior CIs';
-      document.getElementById('forestPlotTopTitle').textContent = isScout
+        : 'w_i = (N_i · σ²_between) / (N_i · σ²_between + σ²_within) • 90% & 95% Posterior CIs');
+      setLabelText('forestPlotTopTitle', isScout
         ? 'College Stuff+ Grade & Likely Range by Pitch'
-        : 'Bayesian Shrinkage: Raw vs. Prior vs. Posterior Shrunk Stuff+';
-      document.getElementById('forestPlotRightNote').textContent = isScout
+        : 'Bayesian Shrinkage: Raw vs. Prior vs. Posterior Shrunk Stuff+');
+      setLabelText('forestPlotRightNote', isScout
         ? '100 = College D1 Avg'
-        : 'Bars = 90% / 95% CI';
-      document.getElementById('cascadeTableTopTitle').textContent = isScout
+        : 'Bars = 90% / 95% CI');
+      setLabelText('cascadeTableTopTitle', isScout
         ? 'Pitch Effectiveness vs. Right-Handed & Left-Handed College Hitters'
-        : 'NCAA D1 4-Head Cascade, Reaction Margin & Platoon Splits (vs. RHB / vs. LHB)';
-      document.getElementById('tableColWhiffHeader').textContent = isScout ? 'Swing & Miss' : 'P(Whiff)';
-      document.getElementById('tableColOverallHeader').textContent = isScout ? 'College Stuff+' : 'Shrunk Stuff+';
+        : 'NCAA D1 4-Head Cascade, Reaction Margin & Platoon Splits (vs. RHB / vs. LHB)');
 
       // Section 5 Pitch Lab labels
-      document.getElementById('coupledSlotLabelText').textContent = isScout
+      setLabelText('coupledSlotLabelText', isScout
         ? 'Realistic Body Mechanics (Auto-adjusts release width & spin tilt)'
-        : 'Biomechanical Shoulder-Arc Coupling (r = 2.4 ft • Auto RelSide & Spin Tilt)';
-      document.getElementById('sliderLabelVelo').textContent = isScout ? 'Add / Subtract Velocity' : 'Release Velocity Δ';
-      document.getElementById('sliderLabelSpin').textContent = isScout ? 'Add / Subtract Spin Rate' : 'Spin Rate Δ';
-      document.getElementById('sliderLabelIvb').textContent = isScout ? 'More Ride (+) / More Drop (-)' : 'Induced Vertical Break Δ';
-      document.getElementById('sliderLabelHb').textContent = isScout ? 'Arm-Side Run (+) / Glove Sweep (-)' : 'Horizontal / SSW Break Δ';
-      document.getElementById('sliderLabelRelH').textContent = isScout ? 'Raise / Lower Arm Slot' : 'Arm-Slot Height Δ (Arc Coupled)';
-      document.getElementById('sliderLabelExt').textContent = isScout ? 'Stride Extension Toward Plate' : 'Mound Extension Δ';
-      document.getElementById('labMetricBox1Title').textContent = isScout ? 'New College Stuff+' : 'Modified Pitch Stuff+';
-      document.getElementById('labMetricBox2Title').textContent = isScout ? 'New Overall Arsenal+' : 'Compound Arsenal+';
-      document.getElementById('labFooterLeftText').textContent = isScout
+        : 'Biomechanical Shoulder-Arc Coupling (r = 2.4 ft • Auto RelSide & Spin Tilt)');
+      setLabelText('sliderLabelVelo', isScout ? 'Add / Subtract Velocity' : 'Release Velocity Δ');
+      setLabelText('sliderLabelSpin', isScout ? 'Add / Subtract Spin Rate' : 'Spin Rate Δ');
+      setLabelText('sliderLabelIvb', isScout ? 'More Ride (+) / More Drop (-)' : 'Induced Vertical Break Δ');
+      setLabelText('sliderLabelHb', isScout ? 'Arm-Side Run (+) / Glove Sweep (-)' : 'Horizontal / SSW Break Δ');
+      setLabelText('sliderLabelRelH', isScout ? 'Raise / Lower Arm Slot' : 'Arm-Slot Height Δ (Arc Coupled)');
+      setLabelText('sliderLabelExt', isScout ? 'Stride Extension Toward Plate' : 'Mound Extension Δ');
+      setLabelText('labMetricBox1Title', isScout ? 'New College Stuff+' : 'Modified Pitch Stuff+');
+      setLabelText('labMetricBox2Title', isScout ? 'New Overall Arsenal+' : 'Compound Arsenal+');
+      setLabelText('labFooterLeftText', isScout
         ? 'Gray wireframe in 3D view shows original pitch path'
-        : '45-Step Drag Ballistics + Coupled Shoulder Arc';
+        : '45-Step Drag Ballistics + Coupled Shoulder Arc');
     }
 
     function renderAll() {
@@ -4034,17 +4045,16 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
 
       window.addEventListener('resize', scheduleCanvasAnd3DRedraw);
 
-      // 2. Initialize 3D WebGL (protected by try/catch), default mobile tab, initial render, and async XGBoost load
+      // 2. Initialize 3D WebGL (protected by try/catch), always run initial renderAll(), then set mobile tab & async XGBoost load
       initThreeJS();
+      renderAll();
       if (window.innerWidth < 768) {
         setActiveSectionTab('tier1');
-      } else {
-        renderAll();
       }
       loadExternalXGBoostModel();
 
       if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
-        navigator.serviceWorker.register('../sw.js').catch(() => {});
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
       }
     });
   </script>
