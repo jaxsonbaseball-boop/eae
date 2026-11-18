@@ -10,8 +10,7 @@
   <meta name="theme-color" content="#070b14" />
   <link rel="manifest" href="../manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%23070b14'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='210' fill='%2338bdf8'%3EA+%3C/text%3E%3C/svg%3E" />
-  <title>Project Apex v4.5 — Mobile-First Pitching Scout Card &amp; 3D Pitch Lab</title>
-  <script src="./stuff_model_inference.js"></script>
+  <title>Project Apex v4.6 — Mobile-First Pitching Scout Card &amp; 3D Pitch Lab</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -807,7 +806,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>Project Apex v4.0 • NCAA D1 4-Head XGBoost (10×10 Grid) &amp; 3D Pitch Lab</span>
+    <span>Project Apex v4.6 • NCAA D1 4-Head XGBoost (10×10 Grid) &amp; 3D Pitch Lab</span>
     <span id="footerRightText" class="font-mono-num">Switch between "Baseball / Scout (Simple)" and "Pro Analytics (R&amp;D)" in the top bar</span>
   </footer>
 
@@ -1520,6 +1519,9 @@
       xgbModelArtifact: null,
       xgbEngineLoaded: false,
       lastInferenceMs: 0.0,
+      baselineCache: { key: null, presentEval: null, projectedEval: null },
+      lastBaselineEval: null,
+      lastSimEval: null,
       currentPitcherId: 'prospect_01',
       mobileDrawerOpen: false,
       gradeMode: 'present', // 'present' | 'projected'
@@ -2324,9 +2326,27 @@
       batterMeshGroup.add(batMesh);
     }
 
+    function show3DUnavailableFallback(container, reason) {
+      if (!container) return;
+      container.innerHTML = `
+        <div class="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-slate-950/90 text-slate-300">
+          <div class="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-mono-num font-bold mb-2">
+            3D View Unavailable on This Device
+          </div>
+          <p class="text-xs text-slate-400 max-w-sm">
+            WebGL is unavailable or paused in this browser context. All Scout Card grades, 2D break charts, hitter splits, and What-If Pitch Lab sliders remain fully active.
+          </p>
+        </div>`;
+    }
+
     function initThreeJS() {
       const container = document.getElementById('webglCanvasContainer');
-      if (!container || typeof THREE === 'undefined') return;
+      if (!container) return;
+      if (typeof THREE === 'undefined') {
+        show3DUnavailableFallback(container, 'THREE not loaded');
+        return;
+      }
+      try {
 
       const width = container.clientWidth || 700;
       const height = container.clientHeight || 420;
@@ -2481,6 +2501,12 @@
 
       setCameraPreset('catcher');
       syncWebGLAnimationState();
+      } catch (err) {
+        threeRenderer = null;
+        threeScene = null;
+        threeCamera = null;
+        show3DUnavailableFallback(container, err && err.message);
+      }
     }
 
     function setCameraPreset(presetName) {
@@ -2509,7 +2535,22 @@
     function rebuild3DTrajectories(baselineEval, simEval) {
       if (!trajectoryGroup) return;
       while (trajectoryGroup.children.length > 0) {
-        trajectoryGroup.remove(trajectoryGroup.children[0]);
+        const child = trajectoryGroup.children[0];
+        if (child.traverse) {
+          child.traverse((obj) => {
+            if (obj.geometry && typeof obj.geometry.dispose === 'function') {
+              obj.geometry.dispose();
+            }
+            if (obj.material) {
+              if (Array.isArray(obj.material)) {
+                obj.material.forEach((m) => m && typeof m.dispose === 'function' && m.dispose());
+              } else if (typeof obj.material.dispose === 'function') {
+                obj.material.dispose();
+              }
+            }
+          });
+        }
+        trajectoryGroup.remove(child);
       }
       animatedBalls = [];
 
@@ -3199,12 +3240,21 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
       applyViewModeLabels();
       const isScout = appState.viewMode === 'scout';
       const profile = PITCHER_PROFILES[appState.currentPitcherId];
-      const emptyLabMap = createEmptyPitchLabState(profile.pitches.length);
-
-      const presentBaselineEval = evaluateFullPipeline(profile, appState.pacingMode, emptyLabMap, appState.coupledSlotArc, 'present');
-      const projectedBaselineEval = evaluateFullPipeline(profile, appState.pacingMode, emptyLabMap, appState.coupledSlotArc, 'projected');
+      const cacheKey = `${appState.currentPitcherId}|${appState.pacingMode}|${appState.coupledSlotArc}|${appState.xgbEngineLoaded}`;
+      if (appState.baselineCache.key !== cacheKey) {
+        const emptyLabMap = createEmptyPitchLabState(profile.pitches.length);
+        appState.baselineCache = {
+          key: cacheKey,
+          presentEval: evaluateFullPipeline(profile, appState.pacingMode, emptyLabMap, appState.coupledSlotArc, 'present'),
+          projectedEval: evaluateFullPipeline(profile, appState.pacingMode, emptyLabMap, appState.coupledSlotArc, 'projected')
+        };
+      }
+      const presentBaselineEval = appState.baselineCache.presentEval;
+      const projectedBaselineEval = appState.baselineCache.projectedEval;
       const baselineEval = appState.gradeMode === 'projected' ? projectedBaselineEval : presentBaselineEval;
       const simEval = evaluateFullPipeline(profile, appState.pacingMode, appState.pitchLabState, appState.coupledSlotArc, appState.gradeMode);
+      appState.lastBaselineEval = presentBaselineEval;
+      appState.lastSimEval = simEval;
 
       const fb = simEval.gradedPitches[0];
 
@@ -3615,60 +3665,88 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
       return false;
     }
 
+    let resizeRafId = null;
+    function scheduleCanvasAnd3DRedraw() {
+      if (resizeRafId !== null) return;
+      resizeRafId = requestAnimationFrame(() => {
+        resizeRafId = null;
+        const container = document.getElementById('webglCanvasContainer');
+        if (container && threeRenderer && threeCamera && container.clientWidth > 0 && container.clientHeight > 0) {
+          threeCamera.aspect = container.clientWidth / container.clientHeight;
+          threeCamera.updateProjectionMatrix();
+          threeRenderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        if (appState.lastBaselineEval && appState.lastSimEval) {
+          drawMovementMatrix(appState.lastBaselineEval, appState.lastSimEval);
+          drawSpinClock(appState.lastSimEval);
+          drawBayesForestPlot(appState.lastSimEval);
+        }
+      });
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
-      initThreeJS();
-      renderAll();
-      loadExternalXGBoostModel();
+      // 1. Attach ALL UI event listeners FIRST before Three.js or model fetching
+      const viewModeEl = document.getElementById('viewModeSelect');
+      if (viewModeEl) {
+        viewModeEl.addEventListener('change', (e) => {
+          appState.viewMode = e.target.value;
+          renderAll();
+          showToast(
+            appState.viewMode === 'scout'
+              ? 'Switched to Baseball / Scout View (Plain English)'
+              : 'Switched to Pro Analytics (R&D) View'
+          );
+        });
+      }
 
-      // View Mode Selector (Baseball / Scout Simple vs. Pro Analytics R&D)
-      document.getElementById('viewModeSelect').addEventListener('change', (e) => {
-        appState.viewMode = e.target.value;
-        renderAll();
-        showToast(
-          appState.viewMode === 'scout'
-            ? 'Switched to Baseball / Scout View (Plain English)'
-            : 'Switched to Pro Analytics (R&D) View'
-        );
-      });
+      const pitcherEl = document.getElementById('pitcherSelect');
+      if (pitcherEl) {
+        pitcherEl.addEventListener('change', (e) => {
+          appState.currentPitcherId = e.target.value;
+          appState.labTargetIdx = 0;
+          const pCount = PITCHER_PROFILES[appState.currentPitcherId].pitches.length;
+          appState.pitchLabState = createEmptyPitchLabState(pCount + 2);
+          syncSlidersToUI();
+          renderAll();
+        });
+      }
 
-      // Pitcher Selector
-      document.getElementById('pitcherSelect').addEventListener('change', (e) => {
-        appState.currentPitcherId = e.target.value;
-        appState.labTargetIdx = 0;
-        const pCount = PITCHER_PROFILES[appState.currentPitcherId].pitches.length;
-        appState.pitchLabState = createEmptyPitchLabState(pCount + 2);
-        syncSlidersToUI();
-        renderAll();
-      });
+      const gradeModeEl = document.getElementById('gradeModeSelect');
+      if (gradeModeEl) {
+        gradeModeEl.addEventListener('change', (e) => {
+          appState.gradeMode = e.target.value;
+          renderAll();
+          showToast(
+            appState.gradeMode === 'projected'
+              ? '3-Year College Growth Projection Active (+5.0 mph FB / +3.5 mph Offspeed)'
+              : 'Showing Present College Grade'
+          );
+        });
+      }
 
-      // Grade Mode Selector
-      document.getElementById('gradeModeSelect').addEventListener('change', (e) => {
-        appState.gradeMode = e.target.value;
-        renderAll();
-        showToast(
-          appState.gradeMode === 'projected'
-            ? '3-Year College Growth Projection Active (+5.0 mph FB / +3.5 mph Offspeed)'
-            : 'Showing Present College Grade'
-        );
-      });
+      const pacingEl = document.getElementById('pacingSelect');
+      if (pacingEl) {
+        pacingEl.addEventListener('change', (e) => {
+          appState.pacingMode = e.target.value;
+          renderAll();
+        });
+      }
 
-      // Pacing Mode Selector
-      document.getElementById('pacingSelect').addEventListener('change', (e) => {
-        appState.pacingMode = e.target.value;
-        renderAll();
-      });
+      const stanceEl = document.getElementById('batterStanceSelect');
+      if (stanceEl) {
+        stanceEl.addEventListener('change', (e) => {
+          appState.batterStance = e.target.value;
+          update3DBatterSilhouette(appState.batterStance);
+        });
+      }
 
-      // Batter Stance Selector
-      document.getElementById('batterStanceSelect').addEventListener('change', (e) => {
-        appState.batterStance = e.target.value;
-        update3DBatterSilhouette(appState.batterStance);
-      });
-
-      // Realistic Body Mechanics Toggle
-      document.getElementById('coupledSlotToggle').addEventListener('change', (e) => {
-        appState.coupledSlotArc = e.target.checked;
-        renderAll();
-      });
+      const coupledEl = document.getElementById('coupledSlotToggle');
+      if (coupledEl) {
+        coupledEl.addEventListener('change', (e) => {
+          appState.coupledSlotArc = e.target.checked;
+          renderAll();
+        });
+      }
 
       function setActiveSectionTab(tab) {
         appState.activeTierTab = tab;
@@ -3704,17 +3782,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
           else sec.classList.add('hidden');
         });
 
-        if (tab === 'tier2' && threeRenderer && threeCamera) {
-          const container = document.getElementById('webglCanvasContainer');
-          if (container) {
-            const w = container.clientWidth || 360;
-            const h = container.clientHeight || 360;
-            threeCamera.aspect = w / h;
-            threeCamera.updateProjectionMatrix();
-            threeRenderer.setSize(w, h);
-          }
-        }
-        renderAll();
+        scheduleCanvasAnd3DRedraw();
         syncWebGLAnimationState();
       }
 
@@ -3724,7 +3792,6 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
         });
       });
 
-      // Mobile Slide-Down Controls / Upload Drawer
       const mobileDrawerBtn = document.getElementById('mobileDrawerBtn');
       const headerControlsPanel = document.getElementById('headerControlsPanel');
       const mobileDrawerChevron = document.getElementById('mobileDrawerChevron');
@@ -3738,44 +3805,15 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
         });
       }
 
-      // Default mobile (<768px) view to Scout Card ('tier1') to avoid endless vertical scroll
-      if (window.innerWidth < 768) {
-        setActiveSectionTab('tier1');
-      }
-
-      // Pause 3D WebGL when page visibility changes (iOS Safari battery & RAM protection)
-      document.addEventListener('visibilitychange', syncWebGLAnimationState);
-
-      // ResizeObserver for crisp 2D canvas & WebGL redraws when mobile tabs become visible
-      if (typeof ResizeObserver !== 'undefined') {
-        const ro = new ResizeObserver(() => {
-          const container = document.getElementById('webglCanvasContainer');
-          if (container && threeRenderer && threeCamera && container.clientWidth > 0 && container.clientHeight > 0) {
-            threeCamera.aspect = container.clientWidth / container.clientHeight;
-            threeCamera.updateProjectionMatrix();
-            threeRenderer.setSize(container.clientWidth, container.clientHeight);
-          }
+      const labPitchEl = document.getElementById('labPitchSelect');
+      if (labPitchEl) {
+        labPitchEl.addEventListener('change', (e) => {
+          appState.labTargetIdx = parseInt(e.target.value, 10) || 0;
+          syncSlidersToUI();
           renderAll();
         });
-        ['webglCanvasContainer', 'movementMatrixCanvas', 'spinClockCanvas', 'bayesForestCanvas'].forEach((id) => {
-          const el = document.getElementById(id);
-          if (el && el.parentElement) ro.observe(id === 'webglCanvasContainer' ? el : el.parentElement);
-        });
       }
 
-      // Register Service Worker for offline field support when served over HTTP/HTTPS
-      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
-        navigator.serviceWorker.register('../sw.js').catch(() => {});
-      }
-
-      // Pitch Lab Target Pitch Selector
-      document.getElementById('labPitchSelect').addEventListener('change', (e) => {
-        appState.labTargetIdx = parseInt(e.target.value, 10) || 0;
-        syncSlidersToUI();
-        renderAll();
-      });
-
-      // Pitch Lab Sliders
       const sliderBindings = [
         ['labVeloSlider', 'velo'],
         ['labSpinSlider', 'spin'],
@@ -3785,14 +3823,16 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
         ['labExtSlider', 'ext']
       ];
       sliderBindings.forEach(([id, key]) => {
-        document.getElementById(id).addEventListener('input', (e) => {
-          appState.labDeltas[key] = parseFloat(e.target.value) || 0;
-          syncSlidersToUI();
-          renderAll();
-        });
+        const slEl = document.getElementById(id);
+        if (slEl) {
+          slEl.addEventListener('input', (e) => {
+            appState.labDeltas[key] = parseFloat(e.target.value) || 0;
+            syncSlidersToUI();
+            renderAll();
+          });
+        }
       });
 
-      // Pitch Lab Preset Buttons
       document.querySelectorAll('.lab-preset-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
           const preset = btn.getAttribute('data-preset');
@@ -3817,39 +3857,49 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
         });
       });
 
-      // Reset Current Pitch Button
-      document.getElementById('resetCurrentPitchBtn').addEventListener('click', () => {
-        appState.pitchLabState[appState.labTargetIdx] = { velo: 0, spin: 0, ivb: 0, hb: 0, relH: 0, ext: 0 };
-        syncSlidersToUI();
-        renderAll();
-        showToast('Current pitch reset to original bullpen numbers');
-      });
+      const resetCurBtn = document.getElementById('resetCurrentPitchBtn');
+      if (resetCurBtn) {
+        resetCurBtn.addEventListener('click', () => {
+          appState.pitchLabState[appState.labTargetIdx] = { velo: 0, spin: 0, ivb: 0, hb: 0, relH: 0, ext: 0 };
+          syncSlidersToUI();
+          renderAll();
+          showToast('Current pitch reset to original bullpen numbers');
+        });
+      }
 
-      // Reset Entire Arsenal Button
-      document.getElementById('resetLabBtn').addEventListener('click', () => {
-        const pCount = PITCHER_PROFILES[appState.currentPitcherId].pitches.length;
-        appState.pitchLabState = createEmptyPitchLabState(pCount + 2);
-        syncSlidersToUI();
-        renderAll();
-        showToast('All pitches reset to original bullpen numbers');
-      });
+      const resetAllBtn = document.getElementById('resetLabBtn');
+      if (resetAllBtn) {
+        resetAllBtn.addEventListener('click', () => {
+          const pCount = PITCHER_PROFILES[appState.currentPitcherId].pitches.length;
+          appState.pitchLabState = createEmptyPitchLabState(pCount + 2);
+          syncSlidersToUI();
+          renderAll();
+          showToast('All pitches reset to original bullpen numbers');
+        });
+      }
 
-      // TrackMan B1 File Upload Modal Wiring
       const uploadModal = document.getElementById('uploadModal');
       const fileInput = document.getElementById('trackmanFileInput');
       const statusBox = document.getElementById('uploadStatusBox');
 
-      document.getElementById('openUploadModalBtn').addEventListener('click', () => {
-        uploadModal.classList.remove('hidden');
-        uploadModal.classList.add('flex');
-      });
-      document.getElementById('closeUploadModalBtn').addEventListener('click', () => {
-        uploadModal.classList.add('hidden');
-        uploadModal.classList.remove('flex');
-      });
-      document.getElementById('browseTrackmanFileBtn').addEventListener('click', () => {
-        fileInput.click();
-      });
+      const openUploadBtn = document.getElementById('openUploadModalBtn');
+      if (openUploadBtn && uploadModal) {
+        openUploadBtn.addEventListener('click', () => {
+          uploadModal.classList.remove('hidden');
+          uploadModal.classList.add('flex');
+        });
+      }
+      const closeUploadBtn = document.getElementById('closeUploadModalBtn');
+      if (closeUploadBtn && uploadModal) {
+        closeUploadBtn.addEventListener('click', () => {
+          uploadModal.classList.add('hidden');
+          uploadModal.classList.remove('flex');
+        });
+      }
+      const browseBtn = document.getElementById('browseTrackmanFileBtn');
+      if (browseBtn && fileInput) {
+        browseBtn.addEventListener('click', () => fileInput.click());
+      }
 
       function handleTrackManFile(file) {
         if (!file) return;
@@ -3857,70 +3907,81 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
         reader.onload = (ev) => {
           try {
             const res = parseTrackManCSVOrJSON(ev.target.result, file.name);
-            statusBox.textContent = `Loaded ${res.pitcherName}: ${res.totalRows} pitches across ${res.pitchTypesCount} pitch types.`;
-            uploadModal.classList.add('hidden');
-            uploadModal.classList.remove('flex');
+            if (statusBox) statusBox.textContent = `Loaded ${res.pitcherName}: ${res.totalRows} pitches across ${res.pitchTypesCount} pitch types.`;
+            if (uploadModal) {
+              uploadModal.classList.add('hidden');
+              uploadModal.classList.remove('flex');
+            }
             showToast(`Loaded ${res.pitcherName} (${res.totalRows} pitches)`);
           } catch (err) {
-            statusBox.textContent = `Error reading file: ${err.message}`;
+            if (statusBox) statusBox.textContent = `Error reading file: ${err.message}`;
           }
         };
         reader.readAsText(file);
       }
 
-      fileInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files[0]) {
-          handleTrackManFile(e.target.files[0]);
-        }
-      });
+      if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files[0]) handleTrackManFile(e.target.files[0]);
+        });
+      }
 
       const dropzone = document.getElementById('trackmanDropzone');
-      dropzone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropzone.classList.add('border-sky-300');
-      });
-      dropzone.addEventListener('dragleave', () => {
-        dropzone.classList.remove('border-sky-300');
-      });
-      dropzone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropzone.classList.remove('border-sky-300');
-        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-          handleTrackManFile(e.dataTransfer.files[0]);
-        }
-      });
+      if (dropzone) {
+        dropzone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropzone.classList.add('border-sky-300');
+        });
+        dropzone.addEventListener('dragleave', () => {
+          dropzone.classList.remove('border-sky-300');
+        });
+        dropzone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropzone.classList.remove('border-sky-300');
+          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleTrackManFile(e.dataTransfer.files[0]);
+          }
+        });
+      }
 
-      document.getElementById('loadSampleCsvBtn').addEventListener('click', () => {
-        const res = parseTrackManCSVOrJSON(SAMPLE_TRACKMAN_CSV, 'Marcus_Vance_TrackMan_B1.csv');
-        statusBox.textContent = `Loaded sample bullpen (${res.pitcherName}, ${res.totalRows} pitches).`;
-        uploadModal.classList.add('hidden');
-        uploadModal.classList.remove('flex');
-        showToast(`Loaded ${res.pitcherName} sample TrackMan bullpen!`);
-      });
+      const loadSampleBtn = document.getElementById('loadSampleCsvBtn');
+      if (loadSampleBtn) {
+        loadSampleBtn.addEventListener('click', () => {
+          const res = parseTrackManCSVOrJSON(SAMPLE_TRACKMAN_CSV, 'Marcus_Vance_TrackMan_B1.csv');
+          if (statusBox) statusBox.textContent = `Loaded sample bullpen (${res.pitcherName}, ${res.totalRows} pitches).`;
+          if (uploadModal) {
+            uploadModal.classList.add('hidden');
+            uploadModal.classList.remove('flex');
+          }
+          showToast(`Loaded ${res.pitcherName} sample TrackMan bullpen!`);
+        });
+      }
 
-      // Print Scout Sheet Button
-      document.getElementById('exportDossierBtn').addEventListener('click', () => {
-        appState.dossierPreview = !appState.dossierPreview;
-        document.body.classList.toggle('dossier-preview-mode', appState.dossierPreview);
-        const indicator = document.getElementById('dossierModeIndicator');
-        if (appState.dossierPreview) {
-          indicator.classList.remove('hidden');
-          ['section-tier1', 'section-tier2', 'section-tier3', 'section-tier4'].forEach((id) => {
-            document.getElementById(id).classList.remove('hidden');
-          });
-          renderAll();
-          showToast('Formatted 8.5×11 Scout Sheet — Opening Print Dialog');
-          setTimeout(() => {
-            try { window.print(); } catch (e) { /* sandboxed fallback */ }
-          }, 180);
-        } else {
-          indicator.classList.add('hidden');
-          renderAll();
-          showToast('Returned to Interactive 3D View');
-        }
-      });
+      const exportBtn = document.getElementById('exportDossierBtn');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+          appState.dossierPreview = !appState.dossierPreview;
+          document.body.classList.toggle('dossier-preview-mode', appState.dossierPreview);
+          const indicator = document.getElementById('dossierModeIndicator');
+          if (appState.dossierPreview) {
+            if (indicator) indicator.classList.remove('hidden');
+            ['section-tier1', 'section-tier2', 'section-tier3', 'section-tier4'].forEach((id) => {
+              const sec = document.getElementById(id);
+              if (sec) sec.classList.remove('hidden');
+            });
+            renderAll();
+            showToast('Formatted 8.5×11 Scout Sheet — Opening Print Dialog');
+            setTimeout(() => {
+              try { window.print(); } catch (e) {}
+            }, 180);
+          } else {
+            if (indicator) indicator.classList.add('hidden');
+            renderAll();
+            showToast('Returned to Interactive 3D View');
+          }
+        });
+      }
 
-      // 3D Camera Presets
       document.querySelectorAll('.cam-preset-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
           const cam = btn.getAttribute('data-cam');
@@ -3932,40 +3993,59 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
         });
       });
 
-      // Play / Pause 3D Flight Animation
-      document.getElementById('toggleAnimBtn').addEventListener('click', (e) => {
-        appState.animPlaying = !appState.animPlaying;
-        e.target.textContent = appState.animPlaying ? 'Pause Flight' : 'Play Flight';
-      });
+      const toggleAnimBtn = document.getElementById('toggleAnimBtn');
+      if (toggleAnimBtn) {
+        toggleAnimBtn.addEventListener('click', (e) => {
+          appState.animPlaying = !appState.animPlaying;
+          e.target.textContent = appState.animPlaying ? 'Pause Flight' : 'Play Flight';
+        });
+      }
 
-      // Copy Scouting Summary Button
-      document.getElementById('copyReportBtn').addEventListener('click', () => {
-        const text = document.getElementById('scoutSpeakExecutiveText').textContent;
-        const temp = document.createElement('textarea');
-        temp.value = text;
-        document.body.appendChild(temp);
-        temp.select();
-        try {
-          document.execCommand('copy');
-          showToast('Scouting report copied to clipboard!');
-        } catch (err) {
-          showToast('Report ready in Player Scout Card');
-        }
-        document.body.removeChild(temp);
-      });
+      const copyBtn = document.getElementById('copyReportBtn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+          const execEl = document.getElementById('scoutSpeakExecutiveText');
+          const text = execEl ? execEl.textContent : '';
+          const temp = document.createElement('textarea');
+          temp.value = text;
+          document.body.appendChild(temp);
+          temp.select();
+          try {
+            document.execCommand('copy');
+            showToast('Scouting report copied to clipboard!');
+          } catch (err) {
+            showToast('Report ready in Player Scout Card');
+          }
+          document.body.removeChild(temp);
+        });
+      }
 
-      // Responsive Resize Handler
-      window.addEventListener('resize', () => {
-        const container = document.getElementById('webglCanvasContainer');
-        if (container && threeRenderer && threeCamera) {
-          const w = container.clientWidth || 700;
-          const h = container.clientHeight || 420;
-          threeCamera.aspect = w / h;
-          threeCamera.updateProjectionMatrix();
-          threeRenderer.setSize(w, h);
-        }
+      document.addEventListener('visibilitychange', syncWebGLAnimationState);
+
+      if (typeof ResizeObserver !== 'undefined') {
+        const ro = new ResizeObserver(() => {
+          scheduleCanvasAnd3DRedraw();
+        });
+        ['webglCanvasContainer', 'movementMatrixCanvas', 'spinClockCanvas', 'bayesForestCanvas'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el && el.parentElement) ro.observe(id === 'webglCanvasContainer' ? el : el.parentElement);
+        });
+      }
+
+      window.addEventListener('resize', scheduleCanvasAnd3DRedraw);
+
+      // 2. Initialize 3D WebGL (protected by try/catch), default mobile tab, initial render, and async XGBoost load
+      initThreeJS();
+      if (window.innerWidth < 768) {
+        setActiveSectionTab('tier1');
+      } else {
         renderAll();
-      });
+      }
+      loadExternalXGBoostModel();
+
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
+        navigator.serviceWorker.register('../sw.js').catch(() => {});
+      }
     });
   </script>
 </body>

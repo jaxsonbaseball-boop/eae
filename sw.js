@@ -1,9 +1,8 @@
-const CACHE_NAME = "apex-pitch-lab-v4.5";
+const CACHE_NAME = "apex-cache-v4.6";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./web/stuff_model_inference.js",
   "./data/processed/ncaa_d1_stuff_model.json"
 ];
 
