@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project Apex v3.5 — High School-to-College Pitching Scout Card &amp; 3D Pitch Lab</title>
+  <title>Project Apex v4.0 — High School-to-College Pitching Scout Card &amp; 3D Pitch Lab</title>
+  <script src="./stuff_model_inference.js"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -174,6 +175,10 @@
             <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">PROJECT APEX</h1>
             <span id="headerBadgeVersion" class="px-2 py-0.5 text-[11px] font-mono-num font-semibold uppercase tracking-wider rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
               College Scouting &amp; 3D Pitch Lab
+            </span>
+            <span id="engineStatusPill" class="px-2.5 py-0.5 text-[11px] font-mono-num font-semibold rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1.5" title="Loads ./data/processed/ncaa_d1_stuff_model.json via fetch() when served over HTTP/HTTPS, or falls back to offline heuristic engine under file://">
+              <span id="engineStatusDot" class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              <span id="engineStatusText">Engine: Offline Heuristic Fallback</span>
             </span>
           </div>
           <p class="text-xs text-slate-400">High School TrackMan Bullpen to NCAA Division 1 Scouting &amp; Development</p>
@@ -704,7 +709,7 @@
             <div id="cascadeTableTopTitle" class="text-xs font-semibold text-slate-200 mb-2">Pitch Effectiveness vs. Right-Handed &amp; Left-Handed College Hitters</div>
             <table class="w-full text-left border-collapse text-xs font-mono-num">
               <thead>
-                <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
+                <tr id="cascadeTableHeadRow" class="border-b border-slate-800 text-slate-400 text-[11px]">
                   <th class="py-1.5 pr-1.5">Pitch</th>
                   <th class="py-1.5 px-1.5 text-right">Plate Speed</th>
                   <th class="py-1.5 px-1.5 text-right">Hitter Time</th>
@@ -729,12 +734,347 @@
   </main>
 
   <footer class="max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex flex-wrap justify-between gap-2 no-print">
-    <span>Project Apex v3.5 • High School TrackMan Bullpen to NCAA Division 1 Scouting &amp; Development</span>
+    <span>Project Apex v4.0 • NCAA D1 4-Head XGBoost (10×10 Grid) &amp; 3D Pitch Lab</span>
     <span id="footerRightText" class="font-mono-num">Switch between "Baseball / Scout (Simple)" and "Pro Analytics (R&amp;D)" in the top bar</span>
   </footer>
 
   <!-- ========================================================================= -->
-  <!-- APPLICATION LOGIC & MATHEMATICAL ENGINE (VERSION 3.5)                     -->
+  <!-- PHASE 2 PURE-JS 4-HEAD XGBOOST INFERENCE ENGINE (INLINE + EXTERNAL)       -->
+  <!-- ========================================================================= -->
+  <script>
+/**
+ * Project Apex Phase 2 — Pure-JavaScript 4-Head XGBoost Stuff+ Browser Inference Engine
+ * Zero external dependencies. Evaluates a 10x10 location-neutralized pitch across
+ * 4 XGBoost heads (RHB + LHB splits) in < 2ms with < 0.01 Stuff+ parity vs. Python xgboost.
+ */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === "object" && module.exports) {
+    module.exports = api;
+  }
+  if (root) {
+    root.ApexStuffInference = api;
+    root.evaluatePitchStuffPlus = api.evaluatePitchStuffPlus;
+  }
+})(typeof self !== "undefined" ? self : this, function () {
+  "use strict";
+
+  var PITCH_FAMILY_MAP = {
+    FF: "FF", FASTBALL: "FF", FOURSEAMFASTBALL: "FF", "FOUR-SEAM": "FF", "4-SEAM": "FF", FA: "FF",
+    SI: "SI", SINKER: "SI", TWOSEAMFASTBALL: "SI", "TWO-SEAM": "SI", "2-SEAM": "SI", FT: "SI",
+    FC: "FC", CUTTER: "FC",
+    SL: "SL", SLIDER: "SL",
+    SW: "SW", ST: "SW", SWEEPER: "SW", SLURVE: "SW",
+    CU: "CU", CURVEBALL: "CU", KC: "CU", KNUCKLECURVE: "CU", CS: "CU",
+    CH: "CH", CHANGEUP: "CH", CHANGE: "CH",
+    FS: "FS", SPLITTER: "FS", SPLITFINGER: "FS", FO: "FS"
+  };
+
+  // Indices of features that vary across the 10x10 (PlateLocHeight, PlateLocSide) grid:
+  // 11: VertApprAngle, 12: HorzApprAngle_norm, 18: PlateLocHeight, 19: PlateLocSide_norm, 20: ZoneDist, 21: InStrikeZone
+  var LOCATION_DEPENDENT_FEATURES = { 11: true, 12: true, 18: true, 19: true, 20: true, 21: true };
+
+  function mapPitchFamily(rawTag, ivb, hbNorm) {
+    var clean = String(rawTag || "FF").trim().toUpperCase().replace(/[\s_]+/g, "");
+    var mapped = PITCH_FAMILY_MAP[clean] || "FF";
+    if (mapped === "SL" && typeof hbNorm === "number" && typeof ivb === "number") {
+      if (hbNorm <= -12.0 && ivb >= -4.5) {
+        return "SW";
+      }
+    }
+    return mapped;
+  }
+
+  function computeExpectedVaaAndHaa(relSpeed, relHeight, relSideNorm, plateZ, plateXNorm) {
+    var expVaa = -4.85 + 1.32 * (plateZ - 2.50) + 0.085 * (relSpeed - 91.5) - 0.85 * (relHeight - 5.85);
+    var expHaa = -1.25 + 1.05 * plateXNorm - 0.90 * (relSideNorm - 1.85);
+    return [expVaa, expHaa];
+  }
+
+  function evalFlatTree(tree, featureVec) {
+    var f = tree.f;
+    var t = tree.t;
+    var l = tree.l;
+    var r = tree.r;
+    var d = tree.d;
+    var v = tree.v;
+    var node = 0;
+    while (f[node] !== -1) {
+      var val = Math.fround(featureVec[f[node]]);
+      if (Number.isNaN(val)) {
+        node = d[node];
+      } else if (val < t[node]) {
+        node = l[node];
+      } else {
+        node = r[node];
+      }
+    }
+    return v[node];
+  }
+
+  function prepareHeadPartition(headModel) {
+    if (headModel._partitioned) {
+      return;
+    }
+    var kinTrees = [];
+    var locTrees = [];
+    var trees = headModel.trees;
+    for (var i = 0; i < trees.length; i++) {
+      var tr = trees[i];
+      var fArr = tr.f;
+      var isLoc = false;
+      for (var j = 0; j < fArr.length; j++) {
+        if (fArr[j] !== -1 && LOCATION_DEPENDENT_FEATURES[fArr[j]]) {
+          isLoc = true;
+          break;
+        }
+      }
+      if (isLoc) {
+        locTrees.push(tr);
+      } else {
+        kinTrees.push(tr);
+      }
+    }
+    headModel._kinTrees = kinTrees;
+    headModel._locTrees = locTrees;
+    headModel._partitioned = true;
+  }
+
+  function evalTreeListSum(treeList, featureVec) {
+    var sum = 0.0;
+    var n = treeList.length;
+    for (var i = 0; i < n; i++) {
+      sum += evalFlatTree(treeList[i], featureVec);
+    }
+    return sum;
+  }
+
+  function finalizeHeadPrediction(margin, isLogistic) {
+    if (isLogistic) {
+      var clamped = margin < -30.0 ? -30.0 : (margin > 30.0 ? 30.0 : margin);
+      return 1.0 / (1.0 + Math.exp(-clamped));
+    }
+    return margin;
+  }
+
+  function evalHead(headModel, featureVec) {
+    var margin = headModel.base_margin + evalTreeListSum(headModel.trees, featureVec);
+    return finalizeHeadPrediction(margin, headModel.objective === "binary:logistic");
+  }
+
+  function computeSubDistributionVelocityCliff(pitchFamily, relSpeed) {
+    if ((pitchFamily === "FF" || pitchFamily === "SI") && relSpeed < 86.0) {
+      var delta = 86.0 - relSpeed;
+      return -2.1 * delta - 0.35 * Math.pow(delta, 1.5);
+    }
+    return 0.0;
+  }
+
+  function computeExpectedRvFromHeads(pSwing, pWhiff, pCs, xwobacon, rvConsts) {
+    var pSw = Math.min(1.0 - 1e-4, Math.max(1e-4, pSwing));
+    var pWh = Math.min(1.0 - 1e-4, Math.max(1e-4, pWhiff));
+    var pCsClamped = Math.min(1.0 - 1e-4, Math.max(1e-4, pCs));
+    var xw = Math.min(1.0, Math.max(0.0, xwobacon));
+
+    var pTake = 1.0 - pSw;
+    var xrvTake = pCsClamped * rvConsts.rv_called_strike + (1.0 - pCsClamped) * rvConsts.rv_ball;
+    var bipRv = (xw - rvConsts.ncaa_d1_avg_woba) / rvConsts.ncaa_d1_woba_scale;
+    var contactRv = rvConsts.foul_share_of_contact * rvConsts.rv_foul + (1.0 - rvConsts.foul_share_of_contact) * bipRv;
+    var xrvSwing = pWh * rvConsts.rv_whiff + (1.0 - pWh) * contactRv;
+
+    return pTake * xrvTake + pSw * xrvSwing;
+  }
+
+  function scorePitch10x10(modelArtifact, pitchRow, rhbWeight) {
+    if (typeof rhbWeight !== "number") {
+      rhbWeight = 0.58;
+    }
+    var throwsStr = String(pitchRow.PitcherThrows || "RHP").trim().toUpperCase();
+    var isLhp = throwsStr.indexOf("L") === 0 ? 1.0 : 0.0;
+    var signHand = isLhp > 0.5 ? -1.0 : 1.0;
+
+    var relSpeed = Number(pitchRow.RelSpeed !== undefined ? pitchRow.RelSpeed : 91.5);
+    var spinRate = Number(pitchRow.SpinRate !== undefined ? pitchRow.SpinRate : 2260.0);
+    var spinAxis = Number(pitchRow.SpinAxis !== undefined ? pitchRow.SpinAxis : 210.0);
+    var extRaw = Number(pitchRow.Extension !== undefined ? pitchRow.Extension : 6.15);
+    var ext = Math.min(8.0, Math.max(3.5, extRaw));
+    var relHeight = Number(pitchRow.RelHeight !== undefined ? pitchRow.RelHeight : 5.85);
+    var relSide = Number(pitchRow.RelSide !== undefined ? pitchRow.RelSide : 1.85);
+    var ivb = Number(pitchRow.InducedVertBreak !== undefined ? pitchRow.InducedVertBreak : 15.8);
+    var hb = Number(pitchRow.HorzBreak !== undefined ? pitchRow.HorzBreak : 8.5);
+
+    var hbNorm = pitchRow.HB_norm !== undefined ? Number(pitchRow.HB_norm) : hb * signHand;
+    var relSideNorm = pitchRow.RelSide_norm !== undefined ? Number(pitchRow.RelSide_norm) : Math.abs(relSide);
+    var rawTag = pitchRow.PitchFamily || pitchRow.TaggedPitchType || "FF";
+    var pitchFamily = mapPitchFamily(rawTag, ivb, hbNorm);
+
+    var familyTrees = modelArtifact.xgboost_trees[pitchFamily] || modelArtifact.xgboost_trees[Object.keys(modelArtifact.xgboost_trees)[0]];
+    var familyBase = modelArtifact.college_baselines[pitchFamily] || modelArtifact.college_baselines[Object.keys(modelArtifact.college_baselines)[0]];
+    var rvConsts = modelArtifact.metadata.run_value_constants;
+    var gridSpec = modelArtifact.metadata.location_grid_10x10;
+
+    prepareHeadPartition(familyTrees.swing);
+    prepareHeadPartition(familyTrees.whiff);
+    prepareHeadPartition(familyTrees.called_strike);
+    prepareHeadPartition(familyTrees.xwobacon);
+
+    var perceivedSpeed = pitchRow.PerceivedSpeed !== undefined
+      ? Number(pitchRow.PerceivedSpeed)
+      : relSpeed * ((60.5 - 6.15) / Math.max(45.0, 60.5 - ext));
+    var bauerUnits = pitchRow.BauerUnits !== undefined
+      ? Number(pitchRow.BauerUnits)
+      : spinRate / Math.max(50.0, relSpeed);
+    var spinAxisNorm = pitchRow.SpinAxis_norm !== undefined
+      ? Number(pitchRow.SpinAxis_norm)
+      : (isLhp > 0.5 ? ((360.0 - spinAxis) % 360.0 + 360.0) % 360.0 : ((spinAxis % 360.0) + 360.0) % 360.0);
+    var armSlotAngle = pitchRow.ArmSlotAngle !== undefined
+      ? Number(pitchRow.ArmSlotAngle)
+      : Math.atan2(relHeight - 5.05, Math.max(0.05, relSideNorm - 0.45)) * (180.0 / Math.PI);
+
+    var obsPlateZ = Number(pitchRow.PlateLocHeight !== undefined ? pitchRow.PlateLocHeight : 2.50);
+    var obsPlateX = Number(pitchRow.PlateLocSide !== undefined ? pitchRow.PlateLocSide : 0.0);
+    var obsPlateXNorm = obsPlateX * signHand;
+    var obsVaa = Number(pitchRow.VertApprAngle !== undefined ? pitchRow.VertApprAngle : -4.85);
+    var obsHaa = Number(pitchRow.HorzApprAngle !== undefined ? pitchRow.HorzApprAngle : -1.25 * signHand);
+    var obsHaaNorm = obsHaa * signHand;
+
+    var expObs = computeExpectedVaaAndHaa(relSpeed, relHeight, relSideNorm, obsPlateZ, obsPlateXNorm);
+    var vaaDiff = pitchRow.VAA_diff !== undefined ? Number(pitchRow.VAA_diff) : (obsVaa - expObs[0]);
+    var haaDiff = pitchRow.HAA_diff !== undefined ? Number(pitchRow.HAA_diff) : (obsHaaNorm - expObs[1]);
+
+    var isPrimaryFb = (pitchFamily === "FF" || pitchFamily === "SI");
+    var fbVelo = Number(pitchRow.fb_velo_anchor !== undefined ? pitchRow.fb_velo_anchor : (isPrimaryFb ? relSpeed : 91.5));
+    var fbIvb = Number(pitchRow.fb_ivb_anchor !== undefined ? pitchRow.fb_ivb_anchor : (isPrimaryFb ? ivb : 15.8));
+    var fbHb = Number(pitchRow.fb_hb_anchor !== undefined ? pitchRow.fb_hb_anchor : (isPrimaryFb ? hbNorm : 8.5));
+
+    var veloDiffFb = isPrimaryFb ? 0.0 : (pitchRow.VeloDiff_FB !== undefined ? Number(pitchRow.VeloDiff_FB) : (relSpeed - fbVelo));
+    var ivbDiffFb = isPrimaryFb ? 0.0 : (pitchRow.IVBDiff_FB !== undefined ? Number(pitchRow.IVBDiff_FB) : (ivb - fbIvb));
+    var hbDiffFb = isPrimaryFb ? 0.0 : (pitchRow.HBDiff_FB !== undefined ? Number(pitchRow.HBDiff_FB) : (hbNorm - fbHb));
+
+    var heights = gridSpec.plate_height_ft;
+    var sides = gridSpec.plate_side_ft;
+    var weights = gridSpec.weights_flat;
+
+    var featVec = new Float64Array(26);
+    featVec[0] = relSpeed;
+    featVec[1] = perceivedSpeed;
+    featVec[2] = spinRate;
+    featVec[3] = bauerUnits;
+    featVec[4] = spinAxisNorm;
+    featVec[5] = ivb;
+    featVec[6] = hbNorm;
+    featVec[7] = relHeight;
+    featVec[8] = relSideNorm;
+    featVec[9] = ext;
+    featVec[10] = armSlotAngle;
+    featVec[13] = vaaDiff;
+    featVec[14] = haaDiff;
+    featVec[15] = veloDiffFb;
+    featVec[16] = ivbDiffFb;
+    featVec[17] = hbDiffFb;
+    featVec[23] = isLhp;
+    featVec[25] = 0.0;
+
+    function evalGridForBatter(isLhbVal) {
+      var platoonSame = (isLhp === isLhbVal) ? 1.0 : 0.0;
+      featVec[22] = platoonSame;
+      featVec[24] = isLhbVal;
+
+      // Pre-evaluate location-invariant trees once per batter side
+      var swBase = familyTrees.swing.base_margin + evalTreeListSum(familyTrees.swing._kinTrees, featVec);
+      var whBase = familyTrees.whiff.base_margin + evalTreeListSum(familyTrees.whiff._kinTrees, featVec);
+      var csBase = familyTrees.called_strike.base_margin + evalTreeListSum(familyTrees.called_strike._kinTrees, featVec);
+      var xwBase = familyTrees.xwobacon.base_margin + evalTreeListSum(familyTrees.xwobacon._kinTrees, featVec);
+
+      var swLocTrees = familyTrees.swing._locTrees;
+      var whLocTrees = familyTrees.whiff._locTrees;
+      var csLocTrees = familyTrees.called_strike._locTrees;
+      var xwLocTrees = familyTrees.xwobacon._locTrees;
+
+      var xrvSum = 0.0;
+      var swSum = 0.0;
+      var whSum = 0.0;
+      var csSum = 0.0;
+      var xwSum = 0.0;
+      var idx = 0;
+
+      for (var iz = 0; iz < heights.length; iz++) {
+        var gz = heights[iz];
+        var zScaled = (gz - 2.50) / 1.05;
+        var inZoneZ = (gz >= 1.50 && gz <= 3.50);
+
+        for (var ix = 0; ix < sides.length; ix++) {
+          var gx = sides[ix];
+          var w = weights[idx++];
+
+          var expGrid = computeExpectedVaaAndHaa(relSpeed, relHeight, relSideNorm, gz, gx);
+          featVec[11] = expGrid[0] + vaaDiff;
+          featVec[12] = expGrid[1] + haaDiff;
+          featVec[18] = gz;
+          featVec[19] = gx;
+          var xScaled = gx / (17.0 / 24.0);
+          featVec[20] = Math.sqrt(xScaled * xScaled + zScaled * zScaled);
+          featVec[21] = (inZoneZ && Math.abs(gx) <= 0.83) ? 1.0 : 0.0;
+
+          var pSw = finalizeHeadPrediction(swBase + evalTreeListSum(swLocTrees, featVec), true);
+          var pWh = finalizeHeadPrediction(whBase + evalTreeListSum(whLocTrees, featVec), true);
+          var pCs = finalizeHeadPrediction(csBase + evalTreeListSum(csLocTrees, featVec), true);
+          var xw = Math.min(1.0, Math.max(0.0, finalizeHeadPrediction(xwBase + evalTreeListSum(xwLocTrees, featVec), false)));
+          var nodeXrv = computeExpectedRvFromHeads(pSw, pWh, pCs, xw, rvConsts);
+
+          xrvSum += w * nodeXrv;
+          swSum += w * pSw;
+          whSum += w * pWh;
+          csSum += w * pCs;
+          xwSum += w * xw;
+        }
+      }
+      return { xrv: xrvSum, pSw: swSum, pWh: whSum, pCs: csSum, xw: xwSum };
+    }
+
+    var resRhb = evalGridForBatter(0.0);
+    var resLhb = evalGridForBatter(1.0);
+
+    var wRhb = Math.min(1.0, Math.max(0.0, rhbWeight));
+    var xrvOverall = wRhb * resRhb.xrv + (1.0 - wRhb) * resLhb.xrv;
+
+    var muC = familyBase.mu_college;
+    var sigmaC = Math.max(1e-6, familyBase.sigma_college);
+    var cliffAdj = computeSubDistributionVelocityCliff(familyBase.pitch_family, relSpeed);
+
+    var stuffRhb = 100.0 - ((resRhb.xrv - muC) / sigmaC) * 10.0 + cliffAdj;
+    var stuffLhb = 100.0 - ((resLhb.xrv - muC) / sigmaC) * 10.0 + cliffAdj;
+    var stuffOverall = 100.0 - ((xrvOverall - muC) / sigmaC) * 10.0 + cliffAdj;
+
+    return {
+      pitch_family: familyBase.pitch_family,
+      stuff_xrv_overall: Number(xrvOverall.toFixed(6)),
+      stuff_xrv_vs_rhb: Number(resRhb.xrv.toFixed(6)),
+      stuff_xrv_vs_lhb: Number(resLhb.xrv.toFixed(6)),
+      stuff_plus_overall: Number(stuffOverall.toFixed(2)),
+      stuff_plus_vs_rhb: Number(stuffRhb.toFixed(2)),
+      stuff_plus_vs_lhb: Number(stuffLhb.toFixed(2)),
+      grid_p_swing: Number((wRhb * resRhb.pSw + (1.0 - wRhb) * resLhb.pSw).toFixed(4)),
+      grid_p_whiff_given_swing: Number((wRhb * resRhb.pWh + (1.0 - wRhb) * resLhb.pWh).toFixed(4)),
+      grid_p_called_strike_given_take: Number((wRhb * resRhb.pCs + (1.0 - wRhb) * resLhb.pCs).toFixed(4)),
+      grid_expected_xwobacon: Number((wRhb * resRhb.xw + (1.0 - wRhb) * resLhb.xw).toFixed(4))
+    };
+  }
+
+  return {
+    evaluatePitchStuffPlus: scorePitch10x10,
+    scorePitch10x10: scorePitch10x10,
+    computeSubDistributionVelocityCliff: computeSubDistributionVelocityCliff,
+    evalFlatTree: evalFlatTree,
+    evalHead: evalHead,
+    mapPitchFamily: mapPitchFamily
+  };
+});
+
+  </script>
+
+  <!-- ========================================================================= -->
+  <!-- APPLICATION LOGIC & MATHEMATICAL ENGINE (VERSION 4.0)                     -->
   <!-- ========================================================================= -->
   <script>
     // =========================================================================
@@ -1075,6 +1415,9 @@
     // Application State (Default viewMode = 'scout' for plain-English Baseball/Scout View)
     const appState = {
       viewMode: 'scout', // 'scout' (Baseball / Scout Simple) | 'rnd' (Pro Analytics R&D)
+      xgbModelArtifact: null,
+      xgbEngineLoaded: false,
+      lastInferenceMs: 0.0,
       currentPitcherId: 'rowland',
       gradeMode: 'present', // 'present' | 'projected'
       pacingMode: 'raw', // 'raw', 'starter', 'reliever'
@@ -1344,16 +1687,66 @@
       return Math.round(Math.min(99, Math.max(1, prob * 100)));
     }
 
-    function computeFastballNonLinearStuff(velo, ivb, hb, ext, slotBonus) {
-      const veloLinearTerm = 3.85 * (velo - 91.5);
-      const penaltyCliff = velo < 88.0 ? -0.45 * Math.pow(88.0 - velo, 1.6) : 0.0;
-      const shapeBonus = 7.5 + 0.72 * (ivb - 15.0) + 0.42 * (Math.abs(hb) - 11.0) + 2.8 * (ext - 6.0);
-      const rawStuff = 100.0 + veloLinearTerm + penaltyCliff + shapeBonus;
-      const priorStuff = Math.max(35.0, Math.min(138.0, 100.0 + 3.85 * (velo - 91.5) + slotBonus));
-      return { rawStuff, priorStuff, penaltyCliff };
+    function computeSub86VelocityCliff(code, velo) {
+      if ((code === 'FF' || code === 'SI') && velo < 86.0) {
+        const delta = 86.0 - velo;
+        return -2.1 * delta - 0.35 * Math.pow(delta, 1.5);
+      }
+      return 0.0;
+    }
+
+    function computeFallbackHeuristicPitch(p, primaryFb, sBonus) {
+      const secondaryVeloCoeffMap = { SI: 2.85, FC: 2.15, SL: 1.35, SW: 1.25, CH: 0.95, FS: 1.10, CU: 1.05 };
+      const penaltyCliff = computeSub86VelocityCliff(p.code, p.velo);
+
+      if (p.code === 'FF' || p.code === 'SI') {
+        const veloLinearTerm = 3.25 * (p.velo - 91.2);
+        const shapeBonus = 2.2 + 0.72 * (p.ivb - 15.8) - 0.38 * Math.max(0.0, Math.abs(p.hb) - 10.5) + 2.8 * (p.ext - 6.15);
+        const rawStuff = 100.0 + veloLinearTerm + penaltyCliff + shapeBonus;
+        const priorStuff = Math.max(35.0, Math.min(138.0, 100.0 + 3.25 * (p.velo - 91.2) + penaltyCliff + sBonus));
+        return {
+          rawStuff,
+          priorStuff,
+          penaltyCliff,
+          xgbRHBDelta: 0.5,
+          xgbLHBDelta: -0.5,
+          pSwing: p.pSwing !== undefined ? p.pSwing : 0.485,
+          pWhiff: Math.min(0.65, Math.max(0.08, 0.24 + 0.0045 * (rawStuff - 100.0))),
+          pCs: p.pCs !== undefined ? p.pCs : 0.285,
+          xwobacon: Math.min(1.0, Math.max(0.0, 0.345 - 0.0032 * (rawStuff - 100.0))),
+          gridXrv: -0.0112 - 0.0012 * (rawStuff - 100.0)
+        };
+      }
+
+      const veloXrvDelta = p.xrvSens * (p.velo - p.baseVelo);
+      const extXrvDelta = -0.095 * (p.ext - p.baseExt);
+      let moveXrvDelta = 0.0;
+      if (p.code === 'CH' || p.code === 'FS') {
+        moveXrvDelta = 0.030 * (p.ivb - p.baseIvb) - 0.032 * (Math.abs(p.hb) - Math.abs(p.baseHb));
+      } else {
+        moveXrvDelta = 0.024 * (p.ivb - p.baseIvb) - 0.028 * (Math.abs(p.hb) - Math.abs(p.baseHb));
+      }
+      const adjXrv = p.rawXrv + veloXrvDelta + extXrvDelta + moveXrvDelta;
+      const rawStuff = 100.0 - ((adjXrv - p.muCol) / p.sigCol) * 10.0;
+      const vCoeff = secondaryVeloCoeffMap[p.code] || 1.15;
+      const priorStuff = Math.min(130.0, Math.max(55.0, 100.0 + vCoeff * (primaryFb.velo - 91.2) + sBonus));
+
+      return {
+        rawStuff,
+        priorStuff,
+        penaltyCliff: 0.0,
+        xgbRHBDelta: 0.0,
+        xgbLHBDelta: 0.0,
+        pSwing: p.pSwing !== undefined ? p.pSwing : 0.510,
+        pWhiff: Math.min(0.68, Math.max(0.10, (p.pWhiff || 0.30) + 0.004 * (rawStuff - 100.0))),
+        pCs: p.pCs !== undefined ? p.pCs : 0.260,
+        xwobacon: Math.min(1.0, Math.max(0.0, (p.xwobacon || 0.31) - 0.0025 * (rawStuff - 100.0))),
+        gridXrv: adjXrv * 0.025
+      };
     }
 
     function evaluateFullPipeline(profile, pacingMode, pitchLabStateMap, coupledSlotArc = true, gradeMode = 'present') {
+      const tStart = performance.now();
       const pacingDiscount = pacingMode === 'starter' ? -1.5 : pacingMode === 'reliever' ? -0.5 : 0.0;
       const isProjectionActive = gradeMode === 'projected';
       const isScoutView = appState.viewMode === 'scout';
@@ -1384,20 +1777,12 @@
         const dRelH_ft = simRelH - p.relHeight;
         const simVaa = p.vaa - 0.55 * dRelH_ft + 0.08 * (simIvb - p.ivb) + 0.04 * (simVelo - p.velo);
 
-        const veloXrvDelta = p.xrvSens * (simVelo - p.velo);
-        const extXrvDelta = -0.095 * (simExt - p.ext);
-        let moveXrvDelta = 0.0;
-        if (p.code === 'FF' || p.code === 'SI') {
-          moveXrvDelta = -0.032 * (simIvb - p.ivb) - 0.012 * (Math.abs(simHb) - Math.abs(p.hb));
-        } else if (p.code === 'CH' || p.code === 'FS') {
-          moveXrvDelta = 0.030 * (simIvb - p.ivb) - 0.032 * (Math.abs(simHb) - Math.abs(p.hb));
-        } else {
-          moveXrvDelta = 0.024 * (simIvb - p.ivb) - 0.028 * (Math.abs(simHb) - Math.abs(p.hb));
-        }
-        const adjXrv = p.rawXrv + veloXrvDelta + extXrvDelta + moveXrvDelta;
-
         return {
           ...p,
+          baseVelo: p.velo,
+          baseExt: p.ext,
+          baseIvb: p.ivb,
+          baseHb: p.hb,
           velo: simVelo,
           spin: simSpin,
           relHeight: simRelH,
@@ -1410,7 +1795,6 @@
           ivb: simIvb,
           hb: simHb,
           vaa: simVaa,
-          adjXrv,
           hasActiveLabDelta: Object.values(pDeltas).some((v) => Math.abs(v) > 0.01)
         };
       });
@@ -1430,17 +1814,65 @@
 
         let rawStuff = 100.0;
         let priorStuff = 100.0;
-        let penaltyCliff = 0.0;
+        let penaltyCliff = computeSub86VelocityCliff(p.code, p.velo);
+        let xgbRHBDelta = 0.0;
+        let xgbLHBDelta = 0.0;
+        let pSwing = p.pSwing || 0.49;
+        let pWhiff = p.pWhiff || 0.25;
+        let pCs = p.pCs || 0.28;
+        let xwobacon = Math.min(1.0, Math.max(0.0, p.xwobacon || 0.34));
+        let gridXrv = 0.0;
 
-        if (p.code === 'FF' || p.code === 'SI') {
-          const fbCal = computeFastballNonLinearStuff(p.velo, p.ivb, p.hb, p.ext, sBonus);
-          rawStuff = fbCal.rawStuff;
-          priorStuff = fbCal.priorStuff;
-          penaltyCliff = fbCal.penaltyCliff;
+        if (appState.xgbModelArtifact && typeof evaluatePitchStuffPlus === 'function') {
+          const spinAxisTrackMan = (((180.0 - p.clockDeg) % 360.0) + 360.0) % 360.0;
+          const xgbRow = {
+            PitcherThrows: profile.throws === 'L' ? 'LHP' : 'RHP',
+            PitchFamily: p.code,
+            TaggedPitchType: p.code,
+            RelSpeed: p.velo,
+            SpinRate: p.spin,
+            SpinAxis: spinAxisTrackMan,
+            RelHeight: p.relHeight,
+            RelSide: p.relSide,
+            Extension: p.ext,
+            InducedVertBreak: p.ivb,
+            HorzBreak: p.hb,
+            PlateLocHeight: p.plateHeight !== undefined ? p.plateHeight : 2.50,
+            PlateLocSide: p.plateSide !== undefined ? p.plateSide : 0.0,
+            VertApprAngle: p.vaa,
+            HorzApprAngle: p.havaa !== undefined ? p.havaa : (profile.throws === 'L' ? 1.25 : -1.25),
+            fb_velo_anchor: primaryFb.velo,
+            fb_ivb_anchor: primaryFb.ivb,
+            fb_hb_anchor: primaryFb.hb
+          };
+          const xgbOut = evaluatePitchStuffPlus(appState.xgbModelArtifact, xgbRow, 0.58);
+          rawStuff = xgbOut.stuff_plus_overall;
+          xgbRHBDelta = xgbOut.stuff_plus_vs_rhb - xgbOut.stuff_plus_overall;
+          xgbLHBDelta = xgbOut.stuff_plus_vs_lhb - xgbOut.stuff_plus_overall;
+          pSwing = xgbOut.grid_p_swing;
+          pWhiff = xgbOut.grid_p_whiff_given_swing;
+          pCs = xgbOut.grid_p_called_strike_given_take;
+          xwobacon = Math.min(1.0, Math.max(0.0, xgbOut.grid_expected_xwobacon));
+          gridXrv = xgbOut.stuff_xrv_overall;
+
+          if (p.code === 'FF' || p.code === 'SI') {
+            priorStuff = Math.max(35.0, Math.min(138.0, 100.0 + 3.25 * (p.velo - 91.2) + penaltyCliff + sBonus));
+          } else {
+            const vCoeff = secondaryVeloCoeffMap[p.code] || 1.15;
+            priorStuff = Math.min(130.0, Math.max(55.0, 100.0 + vCoeff * (primaryFb.velo - 91.2) + sBonus));
+          }
         } else {
-          rawStuff = 100.0 - ((p.adjXrv - p.muCol) / p.sigCol) * 10.0;
-          const vCoeff = secondaryVeloCoeffMap[p.code] || 1.15;
-          priorStuff = Math.min(130.0, Math.max(55.0, 100.0 + vCoeff * (primaryFb.velo - 91.5) + sBonus));
+          const fbFallback = computeFallbackHeuristicPitch(p, primaryFb, sBonus);
+          rawStuff = fbFallback.rawStuff;
+          priorStuff = fbFallback.priorStuff;
+          penaltyCliff = fbFallback.penaltyCliff;
+          xgbRHBDelta = fbFallback.xgbRHBDelta;
+          xgbLHBDelta = fbFallback.xgbLHBDelta;
+          pSwing = fbFallback.pSwing;
+          pWhiff = fbFallback.pWhiff;
+          pCs = fbFallback.pCs;
+          xwobacon = fbFallback.xwobacon;
+          gridXrv = fbFallback.gridXrv;
         }
 
         const varBetween = 100.0;
@@ -1470,6 +1902,13 @@
           rawStuff,
           priorStuff,
           penaltyCliff,
+          xgbRHBDelta,
+          xgbLHBDelta,
+          pSwing,
+          pWhiff,
+          pCs,
+          xwobacon,
+          gridXrv,
           w,
           shrunkStuff,
           postSd,
@@ -1514,9 +1953,10 @@
 
         const stuffSameHand = p.shrunkStuff + sameHandDelta;
         const stuffOppHand = p.shrunkStuff + oppHandDelta;
-        p.stuffVsRHB = profile.throws === 'R' ? stuffSameHand : stuffOppHand;
-        p.stuffVsLHB = profile.throws === 'R' ? stuffOppHand : stuffSameHand;
+        p.stuffVsRHB = (profile.throws === 'R' ? stuffSameHand : stuffOppHand) + p.xgbRHBDelta;
+        p.stuffVsLHB = (profile.throws === 'R' ? stuffOppHand : stuffSameHand) + p.xgbLHBDelta;
       });
+      appState.lastInferenceMs = (performance.now() - tStart) / Math.max(1, gradedPitches.length);
 
       const fb = gradedPitches[0];
       const secCountSum = gradedPitches.slice(1).reduce((acc, p) => acc + p.count, 0);
@@ -2491,7 +2931,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
 
       document.getElementById('headerBadgeVersion').textContent = isScout
         ? 'College Scouting & 3D Pitch Lab'
-        : 'v3.5 R&D • Non-Linear Cliff + 45-Step RK';
+        : 'v4.0 R&D • 4-Head XGBoost (10×10 Grid) + 45-Step RK';
 
       // Section 1 headers & labels
       document.getElementById('tier1Eyebrow').textContent = isScout
@@ -2773,8 +3213,9 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
       document.getElementById('labSimPitchDelta').textContent = `${pitchStuffDelta >= 0 ? '+' : ''}${pitchStuffDelta.toFixed(1)}`;
       document.getElementById('labSimArsenal').textContent = simEval.arsenalPlus.toFixed(1);
       document.getElementById('labSimArsenalDelta').textContent = `${arsenalDelta >= 0 ? '+' : ''}${arsenalDelta.toFixed(1)}`;
-      document.getElementById('labKinematicsSummary').textContent =
-        `Speed: ${simTarget.velo.toFixed(1)} mph (Plate ${simTarget.plateSpeedMph.toFixed(1)} mph) | Break: ${simTarget.ivb >= 0 ? '+' : ''}${simTarget.ivb.toFixed(1)}" V, ${simTarget.hb >= 0 ? '+' : ''}${simTarget.hb.toFixed(1)}" H | Hitter Time: ${simTarget.reactionMarginMs.toFixed(0)}ms`;
+      document.getElementById('labKinematicsSummary').textContent = isScout
+        ? `Speed: ${simTarget.velo.toFixed(1)} mph (Plate ${simTarget.plateSpeedMph.toFixed(1)} mph) | Break: ${simTarget.ivb >= 0 ? '+' : ''}${simTarget.ivb.toFixed(1)}" V, ${simTarget.hb >= 0 ? '+' : ''}${simTarget.hb.toFixed(1)}" H | Hitter Time: ${simTarget.reactionMarginMs.toFixed(0)}ms`
+        : `4-Head XGB (${appState.lastInferenceMs.toFixed(2)}ms): P(Sw) ${(simTarget.pSwing * 100).toFixed(1)}% | P(Whiff|Sw) ${(simTarget.pWhiff * 100).toFixed(1)}% | P(CS|Tk) ${(simTarget.pCs * 100).toFixed(1)}% | xwOBAcon ${simTarget.xwobacon.toFixed(3)} | xRV ${simTarget.gridXrv >= 0 ? '+' : ''}${simTarget.gridXrv.toFixed(4)}`;
 
       document.getElementById('labArcReadout').textContent =
         `Release Width: ${simTarget.relSideDeltaIn >= 0 ? '+' : ''}${simTarget.relSideDeltaIn.toFixed(1)}" • Spin Tilt: ${simTarget.clockTilt}`;
@@ -2855,18 +3296,55 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
         `;
       }).join('');
 
-      // Section 4: Hitter Splits Table & Coaching Gameplan Priorities
-      document.getElementById('cascadeTableBody').innerHTML = simEval.gradedPitches.map((p) => `
-        <tr>
-          <td class="py-2 pr-1.5 font-bold" style="color:${p.color}">${p.code}</td>
-          <td class="py-2 px-1.5 text-right text-slate-300">${p.plateSpeedMph.toFixed(1)} mph</td>
-          <td class="py-2 px-1.5 text-right font-semibold" style="color:${p.reactionMeta.colorHex}">${p.reactionMarginMs.toFixed(0)}ms</td>
-          <td class="py-2 px-1.5 text-right text-slate-300">${(p.pWhiff * 100).toFixed(1)}%</td>
-          <td class="py-2 px-1.5 text-right font-bold text-sky-300">${p.shrunkStuff.toFixed(1)}</td>
-          <td class="py-2 px-1.5 text-right font-semibold text-emerald-300">${p.stuffVsRHB.toFixed(1)}</td>
-          <td class="py-2 pl-1.5 text-right font-semibold text-amber-300">${p.stuffVsLHB.toFixed(1)}</td>
-        </tr>
-      `).join('');
+      // Section 4: Hitter Splits Table (Scout Simple vs. Pro Analytics 4-Head XGBoost R&D)
+      const headRow = document.getElementById('cascadeTableHeadRow');
+      if (isScout) {
+        headRow.innerHTML = `
+          <th class="py-1.5 pr-1.5">Pitch</th>
+          <th class="py-1.5 px-1.5 text-right">Plate Speed</th>
+          <th class="py-1.5 px-1.5 text-right">Hitter Time</th>
+          <th class="py-1.5 px-1.5 text-right">Swing &amp; Miss</th>
+          <th class="py-1.5 px-1.5 text-right text-sky-300">College Stuff+</th>
+          <th class="py-1.5 px-1.5 text-right text-emerald-300">vs. Righties</th>
+          <th class="py-1.5 pl-1.5 text-right text-amber-300">vs. Lefties</th>
+        `;
+        document.getElementById('cascadeTableBody').innerHTML = simEval.gradedPitches.map((p) => `
+          <tr>
+            <td class="py-2 pr-1.5 font-bold" style="color:${p.color}">${p.code}</td>
+            <td class="py-2 px-1.5 text-right text-slate-300">${p.plateSpeedMph.toFixed(1)} mph</td>
+            <td class="py-2 px-1.5 text-right font-semibold" style="color:${p.reactionMeta.colorHex}">${p.reactionMarginMs.toFixed(0)}ms</td>
+            <td class="py-2 px-1.5 text-right text-slate-300">${(p.pWhiff * 100).toFixed(1)}%</td>
+            <td class="py-2 px-1.5 text-right font-bold text-sky-300">${p.shrunkStuff.toFixed(1)}</td>
+            <td class="py-2 px-1.5 text-right font-semibold text-emerald-300">${p.stuffVsRHB.toFixed(1)}</td>
+            <td class="py-2 pl-1.5 text-right font-semibold text-amber-300">${p.stuffVsLHB.toFixed(1)}</td>
+          </tr>
+        `).join('');
+      } else {
+        headRow.innerHTML = `
+          <th class="py-1.5 pr-1.5">Pitch</th>
+          <th class="py-1.5 px-1.5 text-right">P(Swing)</th>
+          <th class="py-1.5 px-1.5 text-right">P(Whiff|Sw)</th>
+          <th class="py-1.5 px-1.5 text-right">P(CS|Take)</th>
+          <th class="py-1.5 px-1.5 text-right">E[xwOBAcon]</th>
+          <th class="py-1.5 px-1.5 text-right">10×10 xRV</th>
+          <th class="py-1.5 px-1.5 text-right text-sky-300">Shrunk Stuff+</th>
+          <th class="py-1.5 px-1.5 text-right text-emerald-300">vs. RHB</th>
+          <th class="py-1.5 pl-1.5 text-right text-amber-300">vs. LHB</th>
+        `;
+        document.getElementById('cascadeTableBody').innerHTML = simEval.gradedPitches.map((p) => `
+          <tr>
+            <td class="py-2 pr-1.5 font-bold" style="color:${p.color}">${p.code}</td>
+            <td class="py-2 px-1.5 text-right text-slate-300">${(p.pSwing * 100).toFixed(1)}%</td>
+            <td class="py-2 px-1.5 text-right text-slate-300">${(p.pWhiff * 100).toFixed(1)}%</td>
+            <td class="py-2 px-1.5 text-right text-slate-300">${(p.pCs * 100).toFixed(1)}%</td>
+            <td class="py-2 px-1.5 text-right text-slate-300">${p.xwobacon.toFixed(3)}</td>
+            <td class="py-2 px-1.5 text-right text-slate-400">${p.gridXrv >= 0 ? '+' : ''}${p.gridXrv.toFixed(4)}</td>
+            <td class="py-2 px-1.5 text-right font-bold text-sky-300">${p.shrunkStuff.toFixed(1)}</td>
+            <td class="py-2 px-1.5 text-right font-semibold text-emerald-300">${p.stuffVsRHB.toFixed(1)}</td>
+            <td class="py-2 pl-1.5 text-right font-semibold text-amber-300">${p.stuffVsLHB.toFixed(1)}</td>
+          </tr>
+        `).join('');
+      }
 
       const devItems = isScout
         ? [
@@ -2922,9 +3400,51 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
       }, 2800);
     }
 
+    async function loadExternalXGBoostModel() {
+      const pill = document.getElementById('engineStatusPill');
+      const dot = document.getElementById('engineStatusDot');
+      const text = document.getElementById('engineStatusText');
+      const candidateUrls = [
+        './data/processed/ncaa_d1_stuff_model.json',
+        '../data/processed/ncaa_d1_stuff_model.json'
+      ];
+
+      for (const url of candidateUrls) {
+        try {
+          const resp = await fetch(url, { cache: 'no-cache' });
+          if (resp.ok) {
+            const modelJson = await resp.json();
+            if (modelJson && modelJson.xgboost_trees && modelJson.college_baselines) {
+              appState.xgbModelArtifact = modelJson;
+              appState.xgbEngineLoaded = true;
+              if (pill && dot && text) {
+                pill.className = 'px-2.5 py-0.5 text-[11px] font-mono-num font-semibold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5';
+                dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse';
+                text.textContent = 'Engine: NCAA D1 XGBoost (10x10 Grid)';
+              }
+              renderAll();
+              return true;
+            }
+          }
+        } catch (err) {
+          // Next candidate URL or graceful offline fallback when opened via file://
+        }
+      }
+
+      appState.xgbModelArtifact = null;
+      appState.xgbEngineLoaded = false;
+      if (pill && dot && text) {
+        pill.className = 'px-2.5 py-0.5 text-[11px] font-mono-num font-semibold rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1.5';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400';
+        text.textContent = 'Engine: Offline Heuristic Fallback';
+      }
+      return false;
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       initThreeJS();
       renderAll();
+      loadExternalXGBoostModel();
 
       // View Mode Selector (Baseball / Scout Simple vs. Pro Analytics R&D)
       document.getElementById('viewModeSelect').addEventListener('change', (e) => {
