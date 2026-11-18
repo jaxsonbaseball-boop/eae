@@ -2,8 +2,15 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project Apex v4.0 — High School-to-College Pitching Scout Card &amp; 3D Pitch Lab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Apex A+" />
+  <meta name="theme-color" content="#070b14" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%23070b14'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='210' fill='%2338bdf8'%3EA+%3C/text%3E%3C/svg%3E" />
+  <title>Project Apex v4.5 — Mobile-First Pitching Scout Card &amp; 3D Pitch Lab</title>
   <script src="./web/stuff_model_inference.js"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -117,6 +124,32 @@
     body.dossier-preview-mode #tunnelCardsColumn {
       grid-column: span 12 / span 12 !important;
     }
+    html, body {
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    @media (max-width: 767px) {
+      button, select {
+        min-height: 44px;
+      }
+      input[type="range"] {
+        min-height: 44px;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 26px;
+        height: 26px;
+        border-radius: 9999px;
+        background: #38bdf8;
+        cursor: pointer;
+        border: 2px solid #0f172a;
+      }
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-sky-500 selection:text-slate-950">
@@ -163,98 +196,117 @@
   </div>
 
   <!-- Top Navigation & Control Bar -->
-  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md no-print">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-      <!-- Brand Title -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 via-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-sky-500/20 font-mono-num font-extrabold text-white text-lg">
-          A+
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">PROJECT APEX</h1>
-            <span id="headerBadgeVersion" class="px-2 py-0.5 text-[11px] font-mono-num font-semibold uppercase tracking-wider rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
-              College Scouting &amp; 3D Pitch Lab
-            </span>
-            <span id="engineStatusPill" class="px-2.5 py-0.5 text-[11px] font-mono-num font-semibold rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1.5" title="Loads ./data/processed/ncaa_d1_stuff_model.json via fetch() when served over HTTP/HTTPS, or falls back to offline heuristic engine under file://">
-              <span id="engineStatusDot" class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-              <span id="engineStatusText">Engine: Offline Heuristic Fallback</span>
-            </span>
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/92 backdrop-blur-md no-print pt-[env(safe-area-inset-top)]">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2.5">
+      <!-- Compact Brand + Mobile Pitcher Selector + Drawer Button -->
+      <div class="flex items-center justify-between gap-2 w-full md:w-auto">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-gradient-to-br from-sky-400 via-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-sky-500/20 font-mono-num font-extrabold text-white text-base sm:text-lg">
+            A+
           </div>
-          <p class="text-xs text-slate-400">High School TrackMan Bullpen to NCAA Division 1 Scouting &amp; Development</p>
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <h1 class="text-sm sm:text-lg font-extrabold tracking-tight text-white truncate">PROJECT APEX</h1>
+              <span id="headerBadgeVersion" class="hidden sm:inline-flex px-2 py-0.5 text-[11px] font-mono-num font-semibold uppercase tracking-wider rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                College Scouting &amp; 3D Pitch Lab
+              </span>
+              <span id="engineStatusPill" class="px-2 py-0.5 text-[10px] sm:text-[11px] font-mono-num font-semibold rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1.5" title="Loads ./data/processed/ncaa_d1_stuff_model.json via fetch() when served over HTTP/HTTPS, or falls back to offline heuristic engine under file://">
+                <span id="engineStatusDot" class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                <span id="engineStatusText" class="truncate max-w-[140px] sm:max-w-none">Engine: Offline Heuristic Fallback</span>
+              </span>
+            </div>
+            <p class="hidden sm:block text-xs text-slate-400">High School TrackMan Bullpen to NCAA Division 1 Scouting &amp; Development</p>
+          </div>
         </div>
+
+        <!-- Mobile Drawer Toggle Button (< 768px) -->
+        <button id="mobileDrawerBtn" type="button" aria-expanded="false" class="md:hidden touch-target shrink-0 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-sky-300 text-xs font-bold flex items-center gap-1.5">
+          <span>Controls / Upload</span>
+          <span id="mobileDrawerChevron" class="text-[10px]">▼</span>
+        </button>
       </div>
 
-      <!-- Global Controls: View Mode (Scout vs R&D), Pitcher Profile, Grade Mode, Pacing, Upload & Export -->
-      <div class="flex flex-wrap items-center gap-2">
-        <!-- Requirement 1: Global "Coach/Scout View" vs. "R&D Analyst View" Toggle -->
-        <div class="flex flex-col">
-          <label for="viewModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-sky-300 mb-0.5">Display Language</label>
-          <select id="viewModeSelect" class="bg-sky-950/70 border border-sky-500/50 text-sky-200 text-xs rounded-lg px-2.5 py-1.5 font-bold focus:outline-none focus:border-sky-400">
-            <option value="scout">View: Baseball / Scout (Simple)</option>
-            <option value="rnd">View: Pro Analytics (R&amp;D)</option>
-          </select>
-        </div>
-
-        <div class="flex flex-col">
+      <!-- Always-Visible Pitcher Selector on Mobile + Full Controls on Desktop / Expanded Drawer -->
+      <div class="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
+        <div class="flex flex-col w-full md:w-auto">
           <label for="pitcherSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Bullpen Session</label>
-          <select id="pitcherSelect" class="bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-2.5 py-1.5 font-medium focus:outline-none focus:border-sky-400">
-            <option value="rowland">Quinn Rowland (RHP — Coquitlam Reds)</option>
-            <option value="hutchings">Liam Hutchings (RHP — Coquitlam Reds)</option>
-            <option value="d1_ace">NCAA D1 Friday Starter (Benchmark)</option>
+          <select id="pitcherSelect" class="touch-target w-full md:w-auto bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-2.5 py-2 md:py-1.5 font-medium focus:outline-none focus:border-sky-400">
+            <option value="prospect_01">Prospect #01 — Projectable Low-3/4 RHP (83.0 mph FF / Fade CH / Gyro SL)</option>
+            <option value="prospect_02">Prospect #02 — Developing HS RHP (77.2 mph FF / 11-5 CU / CH)</option>
+            <option value="prospect_03">Prospect #03 — High-Spin Carry RHP (90.5 mph FF 20&quot; IVB / 12-6 CU / CH)</option>
+            <option value="prospect_04">Prospect #04 — Cross-Body Sidearm LHP (84.5 mph SI / Sweeper / CH)</option>
+            <option value="prospect_05">Prospect #05 — Power Sinker/Sweeper RHP (91.8 mph SI / 16&quot; SW / Hard SL)</option>
+            <option value="prospect_06">Prospect #06 — Over-the-Top LHP (88.2 mph FF / Hammer CU / SSW CH)</option>
+            <option value="prospect_07">Prospect #07 — Command/Tunneling RHP (86.4 mph FF / Cutter / Splitter)</option>
+            <option value="prospect_08">Prospect #08 — Raw Fr/So LHP (79.5 mph FF / Slurve / CH)</option>
+            <option value="prospect_09">Prospect #09 — D1 Mid-Week Reliever RHP (92.5 mph FF / Gyro SL / FS)</option>
+            <option value="d1_ace">NCAA D1 Friday Ace Benchmark (94.2 mph FF / Gyro SL / Split-CH)</option>
           </select>
         </div>
 
-        <div class="flex flex-col">
-          <label for="gradeModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-amber-300 mb-0.5">Grade Mode</label>
-          <select id="gradeModeSelect" class="bg-slate-900 border border-amber-500/50 text-amber-200 text-xs rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:border-amber-400">
-            <option value="present">Present D1 Reality (Current Velo)</option>
-            <option value="projected">3-Year College Growth Projection (+5 mph)</option>
-          </select>
+        <!-- Slide-Down Mobile Drawer / Desktop Inline Controls -->
+        <div id="headerControlsPanel" class="hidden md:flex flex-wrap items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80">
+          <div class="flex flex-col flex-1 min-w-[150px] md:flex-none">
+            <label for="viewModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-sky-300 mb-0.5">Display Language</label>
+            <select id="viewModeSelect" class="touch-target bg-sky-950/70 border border-sky-500/50 text-sky-200 text-xs rounded-lg px-2.5 py-1.5 font-bold focus:outline-none focus:border-sky-400">
+              <option value="scout">View: Baseball / Scout (Simple)</option>
+              <option value="rnd">View: Pro Analytics (R&amp;D)</option>
+            </select>
+          </div>
+
+          <div class="flex flex-col flex-1 min-w-[160px] md:flex-none">
+            <label for="gradeModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-amber-300 mb-0.5">Grade Mode</label>
+            <select id="gradeModeSelect" class="touch-target bg-slate-900 border border-amber-500/50 text-amber-200 text-xs rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:border-amber-400">
+              <option value="present">Present D1 Reality (Current Velo)</option>
+              <option value="projected">3-Year College Growth (+5 mph)</option>
+            </select>
+          </div>
+
+          <div class="flex flex-col flex-1 min-w-[150px] md:flex-none">
+            <label for="pacingSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Effort Adjustment</label>
+            <select id="pacingSelect" class="touch-target bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-2.5 py-1.5 font-medium focus:outline-none focus:border-sky-400">
+              <option value="raw">Bullpen Max Effort (0.0 mph)</option>
+              <option value="starter">Starter Game Pacing (-1.5 mph)</option>
+              <option value="reliever">Reliever Game Pacing (-0.5 mph)</option>
+            </select>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 w-full md:w-auto md:mt-3.5">
+            <button id="openUploadModalBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition">
+              Upload TrackMan
+            </button>
+
+            <button id="exportDossierBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 text-xs font-semibold transition">
+              Print Scout Sheet
+            </button>
+
+            <button id="copyReportBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-xs font-semibold transition">
+              Copy Report
+            </button>
+          </div>
         </div>
-
-        <div class="flex flex-col">
-          <label for="pacingSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Effort Adjustment</label>
-          <select id="pacingSelect" class="bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-2.5 py-1.5 font-medium focus:outline-none focus:border-sky-400">
-            <option value="raw">Bullpen Max Effort (0.0 mph)</option>
-            <option value="starter">Starter Game Pacing (-1.5 mph)</option>
-            <option value="reliever">Reliever Game Pacing (-0.5 mph)</option>
-          </select>
-        </div>
-
-        <button id="openUploadModalBtn" type="button" class="mt-3.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition">
-          Upload TrackMan File
-        </button>
-
-        <button id="exportDossierBtn" type="button" class="mt-3.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 text-xs font-semibold transition">
-          Print Scout Sheet
-        </button>
-
-        <button id="copyReportBtn" type="button" class="mt-3.5 px-2.5 py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-xs font-semibold transition">
-          Copy Report
-        </button>
       </div>
     </div>
 
-    <!-- Requirement 2: Plain-English Navigation Tabs -->
-    <div class="max-w-7xl mx-auto px-4 pb-2 flex items-center justify-between gap-2 overflow-x-auto">
+    <!-- Desktop / Tablet Navigation Tabs (hidden on <768px where Bottom Bar is active) -->
+    <div class="hidden md:flex max-w-7xl mx-auto px-4 pb-2 items-center justify-between gap-2 overflow-x-auto">
       <div class="flex items-center gap-1.5">
-        <button type="button" data-tier-tab="all" class="tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition whitespace-nowrap">
+        <button type="button" data-tier-tab="all" class="tier-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition whitespace-nowrap">
           Overview: All Sections
         </button>
-        <button type="button" data-tier-tab="tier1" class="tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">
+        <button type="button" data-tier-tab="tier1" class="tier-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">
           1. Player Scout Card
         </button>
-        <button type="button" data-tier-tab="tier2" class="tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">
+        <button type="button" data-tier-tab="tier2" class="tier-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">
           2. 3D Pitch Tunnel
         </button>
-        <button type="button" data-tier-tab="tier3" class="tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">
+        <button type="button" data-tier-tab="tier3" class="tier-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">
           3. Movement &amp; Spin Clock
         </button>
-        <button type="button" data-tier-tab="tier4" class="tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">
+        <button type="button" data-tier-tab="tier4" class="tier-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">
           4. Hitter Splits &amp; Range
         </button>
-        <button type="button" data-tier-tab="pitchlab" class="tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30 transition whitespace-nowrap">
+        <button type="button" data-tier-tab="pitchlab" class="tier-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30 transition whitespace-nowrap">
           5. What-If Pitch Lab
         </button>
       </div>
@@ -265,13 +317,13 @@
   </header>
 
   <!-- Main Content Container -->
-  <main class="max-w-7xl w-full mx-auto px-4 py-5 space-y-6 flex-1">
+  <main class="max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-5 pb-[calc(5.25rem+env(safe-area-inset-bottom))] md:pb-6 space-y-5 sm:space-y-6 flex-1">
 
     <!-- Printable 8.5x11 Scout Dossier Header -->
     <div id="printDossierHeader" class="hidden items-center justify-between bg-slate-900/90 border border-slate-700 rounded-xl p-4">
       <div>
         <div class="text-xs font-mono-num font-bold uppercase tracking-widest text-sky-400">PROJECT APEX • OFFICIAL COLLEGE BASEBALL SCOUTING REPORT</div>
-        <h2 id="dossierTitleName" class="text-xl font-extrabold text-white mt-0.5">Quinn Rowland • RHP</h2>
+        <h2 id="dossierTitleName" class="text-xl font-extrabold text-white mt-0.5">Prospect #01 • RHP</h2>
         <p id="dossierSubMeta" class="text-xs font-mono-num text-slate-400">TrackMan B1 Verified Bullpen • Evaluated Against NCAA Division 1 Hitters</p>
       </div>
       <div class="text-right font-mono-num">
@@ -290,13 +342,13 @@
           <span id="tier1Eyebrow" class="text-[11px] font-mono-num uppercase tracking-widest text-sky-400 font-semibold">
             1. Player Scout Card • How This Arsenal Stacks Up Against College Hitters
           </span>
-          <h2 id="pitcherHeaderName" class="text-xl sm:text-2xl font-extrabold text-white mt-0.5">Quinn Rowland • RHP</h2>
+          <h2 id="pitcherHeaderName" class="text-xl sm:text-2xl font-extrabold text-white mt-0.5">Prospect #01 • RHP</h2>
         </div>
         <div class="flex flex-wrap items-center gap-2 text-xs text-slate-400 font-mono-num">
           <span id="dualModeBannerBadge" class="px-2.5 py-1 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold">
             Showing: Present College Grade
           </span>
-          <span id="pitcherHeaderMeta" class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">Coquitlam Reds • 10/20/2026 • 15 Pitches • Low-3/4 Slot</span>
+          <span id="pitcherHeaderMeta" class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">HS Showcase Bullpen • 10/20/2026 • 15 Pitches • Low-3/4 Slot</span>
         </div>
       </div>
 
@@ -584,7 +636,7 @@
       <!-- 3D WebGL Viewport Container + Pairwise Telemetry -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
         <div id="webglCanvasWrapper" class="lg:col-span-8 relative h-96 sm:h-[450px] rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
-          <div id="webglCanvasContainer" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+          <div id="webglCanvasContainer" class="w-full h-full cursor-grab active:cursor-grabbing" style="touch-action: none;"></div>
 
           <!-- Overlay Legend inside 3D Viewport -->
           <div class="absolute top-3 left-3 bg-slate-950/90 backdrop-blur-md border border-slate-800 rounded-xl p-3 text-xs space-y-1.5 pointer-events-none max-w-xs">
@@ -733,7 +785,28 @@
 
   </main>
 
-  <footer class="max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex flex-wrap justify-between gap-2 no-print">
+  <!-- Fixed Mobile Bottom Navigation Bar (< 768px) -->
+  <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/90 px-1.5 pt-1.5 pb-[calc(0.35rem+env(safe-area-inset-bottom))] no-print">
+    <div class="grid grid-cols-5 gap-1">
+      <button type="button" data-tier-tab="tier1" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-xl py-1.5 px-1 text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40 transition">
+        <span>Scout Card</span>
+      </button>
+      <button type="button" data-tier-tab="tier2" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-xl py-1.5 px-1 text-[10px] font-semibold text-slate-400 hover:text-slate-200 transition">
+        <span>3D Tunnel</span>
+      </button>
+      <button type="button" data-tier-tab="tier3" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-xl py-1.5 px-1 text-[10px] font-semibold text-slate-400 hover:text-slate-200 transition">
+        <span>Movement</span>
+      </button>
+      <button type="button" data-tier-tab="tier4" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-xl py-1.5 px-1 text-[10px] font-semibold text-slate-400 hover:text-slate-200 transition">
+        <span>Splits</span>
+      </button>
+      <button type="button" data-tier-tab="pitchlab" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-xl py-1.5 px-1 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-500/20 transition">
+        <span>Pitch Lab</span>
+      </button>
+    </div>
+  </nav>
+
+  <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
     <span>Project Apex v4.0 • NCAA D1 4-Head XGBoost (10×10 Grid) &amp; 3D Pitch Lab</span>
     <span id="footerRightText" class="font-mono-num">Switch between "Baseball / Scout (Simple)" and "Pro Analytics (R&amp;D)" in the top bar</span>
   </footer>
@@ -1078,220 +1151,321 @@
   <!-- ========================================================================= -->
   <script>
     // =========================================================================
-    // 1. REAL BULLPEN TELEMETRY DATASETS (ROWLAND, HUTCHINGS, NCAA D1 ACE)
+    // 1. 10 ANONYMIZED PITCHER ARCHETYPES (HS SHOWCASE TO NCAA D1 ACE BENCHMARK)
     // =========================================================================
     const PITCHER_PROFILES = {
-      rowland: {
-        id: 'rowland',
-        name: 'Quinn Rowland',
+      prospect_01: {
+        id: 'prospect_01',
+        name: 'Prospect #01 — Projectable Low-3/4',
         throws: 'R',
-        team: 'Coquitlam Reds (HS Varsity)',
+        team: 'HS Showcase Bullpen',
         date: '10/20/2026',
         totalPitches: 15,
         isHighSchool: true,
         pitches: [
           {
-            code: 'FF',
-            name: 'Four-Seam Fastball',
-            color: '#38bdf8',
-            count: 5,
-            velo: 83.0,
-            maxVelo: 83.5,
-            spin: 2165,
-            ivb: 15.4,
-            hb: 13.0,
-            relHeight: 5.75,
-            relSide: 1.85,
-            ext: 6.10,
-            plateHeight: 2.65,
-            plateSide: 0.15,
-            vaa: -5.8,
-            havaa: -1.3,
-            spinEff: 89.0,
-            clockTilt: '1:30',
-            clockDeg: 45,
-            magnusIvb: 14.1,
-            magnusHb: 11.2,
-            rawXrv: 0.72,
-            muCol: 0.05,
-            sigCol: 0.68,
-            sigWithin: 11.5,
-            xrvSens: -0.115,
-            pSwing: 0.482,
-            pWhiff: 0.194,
-            pCs: 0.288,
-            xwobacon: 0.376
+            code: 'FF', name: 'Four-Seam Fastball', color: '#38bdf8', count: 5,
+            velo: 83.0, maxVelo: 83.5, spin: 2165, ivb: 15.4, hb: 13.0,
+            relHeight: 5.75, relSide: 1.85, ext: 6.10, plateHeight: 2.65, plateSide: 0.15,
+            vaa: -5.8, havaa: -1.3, spinEff: 89.0, clockTilt: '1:30', clockDeg: 45,
+            magnusIvb: 14.1, magnusHb: 11.2, rawXrv: 0.72, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
+            pSwing: 0.482, pWhiff: 0.194, pCs: 0.288, xwobacon: 0.376
           },
           {
-            code: 'CH',
-            name: 'Changeup (Circle Fade)',
-            color: '#34d399',
-            count: 5,
-            velo: 73.7,
-            maxVelo: 75.1,
-            spin: 1265,
-            ivb: 2.8,
-            hb: 17.7,
-            relHeight: 5.70,
-            relSide: 1.92,
-            ext: 6.10,
-            plateHeight: 2.05,
-            plateSide: 0.42,
-            vaa: -8.0,
-            havaa: -2.1,
-            spinEff: 78.0,
-            clockTilt: '2:30',
-            clockDeg: 75,
-            magnusIvb: 5.6,
-            magnusHb: 14.1,
-            rawXrv: -0.68,
-            muCol: -0.12,
-            sigCol: 0.66,
-            sigWithin: 15.8,
-            xrvSens: -0.065,
-            pSwing: 0.534,
-            pWhiff: 0.362,
-            pCs: 0.241,
-            xwobacon: 0.278
+            code: 'CH', name: 'Changeup (Circle Fade)', color: '#34d399', count: 5,
+            velo: 73.7, maxVelo: 75.1, spin: 1265, ivb: 2.8, hb: 17.7,
+            relHeight: 5.70, relSide: 1.92, ext: 6.10, plateHeight: 2.05, plateSide: 0.42,
+            vaa: -8.0, havaa: -2.1, spinEff: 78.0, clockTilt: '2:30', clockDeg: 75,
+            magnusIvb: 5.6, magnusHb: 14.1, rawXrv: -0.68, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
+            pSwing: 0.534, pWhiff: 0.362, pCs: 0.241, xwobacon: 0.278
           },
           {
-            code: 'SL',
-            name: 'Slider (Gyro Depth)',
-            color: '#fbbf24',
-            count: 5,
-            velo: 71.8,
-            maxVelo: 73.2,
-            spin: 2268,
-            ivb: -3.0,
-            hb: -7.2,
-            relHeight: 5.68,
-            relSide: 1.95,
-            ext: 5.80,
-            plateHeight: 1.88,
-            plateSide: -0.45,
-            vaa: -9.7,
-            havaa: 0.6,
-            spinEff: 38.0,
-            clockTilt: '8:15',
-            clockDeg: 247,
-            magnusIvb: -1.4,
-            magnusHb: -5.8,
-            rawXrv: -0.22,
-            muCol: -0.32,
-            sigCol: 0.72,
-            sigWithin: 15.2,
-            xrvSens: -0.082,
-            pSwing: 0.495,
-            pWhiff: 0.318,
-            pCs: 0.264,
-            xwobacon: 0.312
+            code: 'SL', name: 'Slider (Gyro Depth)', color: '#fbbf24', count: 5,
+            velo: 71.8, maxVelo: 73.2, spin: 2268, ivb: -3.0, hb: -7.2,
+            relHeight: 5.68, relSide: 1.95, ext: 5.80, plateHeight: 1.88, plateSide: -0.45,
+            vaa: -9.7, havaa: 0.6, spinEff: 38.0, clockTilt: '8:15', clockDeg: 247,
+            magnusIvb: -1.4, magnusHb: -5.8, rawXrv: -0.22, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
+            pSwing: 0.495, pWhiff: 0.318, pCs: 0.264, xwobacon: 0.312
           }
         ]
       },
-      hutchings: {
-        id: 'hutchings',
-        name: 'Liam Hutchings',
+      prospect_02: {
+        id: 'prospect_02',
+        name: 'Prospect #02 — Developing HS',
         throws: 'R',
-        team: 'Coquitlam Reds (HS Developing)',
+        team: 'HS Showcase Bullpen',
         date: '10/20/2026',
         totalPitches: 15,
         isHighSchool: true,
         pitches: [
           {
-            code: 'FF',
-            name: 'Four-Seam Fastball',
-            color: '#38bdf8',
-            count: 7,
-            velo: 77.2,
-            maxVelo: 78.4,
-            spin: 1982,
-            ivb: 15.5,
-            hb: 12.1,
-            relHeight: 5.65,
-            relSide: 1.80,
-            ext: 5.65,
-            plateHeight: 2.55,
-            plateSide: 0.12,
-            vaa: -6.4,
-            havaa: -1.4,
-            spinEff: 88.0,
-            clockTilt: '1:15',
-            clockDeg: 38,
-            magnusIvb: 14.5,
-            magnusHb: 10.8,
-            rawXrv: 1.35,
-            muCol: 0.05,
-            sigCol: 0.68,
-            sigWithin: 11.5,
-            xrvSens: -0.115,
-            pSwing: 0.490,
-            pWhiff: 0.148,
-            pCs: 0.272,
-            xwobacon: 0.418
+            code: 'FF', name: 'Four-Seam Fastball', color: '#38bdf8', count: 7,
+            velo: 77.2, maxVelo: 78.4, spin: 1982, ivb: 15.5, hb: 12.1,
+            relHeight: 5.65, relSide: 1.80, ext: 5.65, plateHeight: 2.55, plateSide: 0.12,
+            vaa: -6.4, havaa: -1.4, spinEff: 88.0, clockTilt: '1:15', clockDeg: 38,
+            magnusIvb: 14.5, magnusHb: 10.8, rawXrv: 1.35, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
+            pSwing: 0.490, pWhiff: 0.148, pCs: 0.272, xwobacon: 0.418
           },
           {
-            code: 'CU',
-            name: 'Curveball (11-5 Depth)',
-            color: '#a78bfa',
-            count: 5,
-            velo: 65.5,
-            maxVelo: 66.8,
-            spin: 1904,
-            ivb: -13.2,
-            hb: -7.8,
-            relHeight: 5.72,
-            relSide: 1.75,
-            ext: 5.50,
-            plateHeight: 1.75,
-            plateSide: -0.35,
-            vaa: -11.4,
-            havaa: 0.8,
-            spinEff: 68.0,
-            clockTilt: '7:30',
-            clockDeg: 225,
-            magnusIvb: -11.6,
-            magnusHb: -6.5,
-            rawXrv: 0.18,
-            muCol: -0.18,
-            sigCol: 0.70,
-            sigWithin: 16.5,
-            xrvSens: -0.070,
-            pSwing: 0.442,
-            pWhiff: 0.285,
-            pCs: 0.295,
-            xwobacon: 0.334
+            code: 'CU', name: 'Curveball (11-5 Depth)', color: '#a78bfa', count: 5,
+            velo: 65.5, maxVelo: 66.8, spin: 1904, ivb: -13.2, hb: -7.8,
+            relHeight: 5.72, relSide: 1.75, ext: 5.50, plateHeight: 1.75, plateSide: -0.35,
+            vaa: -11.4, havaa: 0.8, spinEff: 68.0, clockTilt: '7:30', clockDeg: 225,
+            magnusIvb: -11.6, magnusHb: -6.5, rawXrv: 0.18, muCol: -0.18, sigCol: 0.70, sigWithin: 16.5, xrvSens: -0.070,
+            pSwing: 0.442, pWhiff: 0.285, pCs: 0.295, xwobacon: 0.334
           },
           {
-            code: 'CH',
-            name: 'Changeup (Arm-Side Fade)',
-            color: '#34d399',
-            count: 3,
-            velo: 68.6,
-            maxVelo: 69.5,
-            spin: 1645,
-            ivb: 11.1,
-            hb: 14.9,
-            relHeight: 5.60,
-            relSide: 1.88,
-            ext: 5.60,
-            plateHeight: 2.15,
-            plateSide: 0.38,
-            vaa: -7.9,
-            havaa: -1.8,
-            spinEff: 82.0,
-            clockTilt: '2:00',
-            clockDeg: 60,
-            magnusIvb: 12.2,
-            magnusHb: 12.8,
-            rawXrv: 0.25,
-            muCol: -0.12,
-            sigCol: 0.66,
-            sigWithin: 15.8,
-            xrvSens: -0.065,
-            pSwing: 0.478,
-            pWhiff: 0.268,
-            pCs: 0.252,
-            xwobacon: 0.342
+            code: 'CH', name: 'Changeup (Arm-Side Fade)', color: '#34d399', count: 3,
+            velo: 68.6, maxVelo: 69.5, spin: 1645, ivb: 11.1, hb: 14.9,
+            relHeight: 5.60, relSide: 1.88, ext: 5.60, plateHeight: 2.15, plateSide: 0.38,
+            vaa: -7.9, havaa: -1.8, spinEff: 82.0, clockTilt: '2:00', clockDeg: 60,
+            magnusIvb: 12.2, magnusHb: 12.8, rawXrv: 0.25, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
+            pSwing: 0.478, pWhiff: 0.268, pCs: 0.252, xwobacon: 0.342
+          }
+        ]
+      },
+      prospect_03: {
+        id: 'prospect_03',
+        name: 'Prospect #03 — High-Spin Carry',
+        throws: 'R',
+        team: 'HS National Showcase',
+        date: '10/24/2026',
+        totalPitches: 18,
+        isHighSchool: true,
+        pitches: [
+          {
+            code: 'FF', name: 'Four-Seam Fastball', color: '#38bdf8', count: 8,
+            velo: 90.5, maxVelo: 91.8, spin: 2510, ivb: 20.1, hb: 7.4,
+            relHeight: 6.15, relSide: 1.55, ext: 6.35, plateHeight: 2.88, plateSide: 0.05,
+            vaa: -4.1, havaa: -1.0, spinEff: 96.0, clockTilt: '12:30', clockDeg: 15,
+            magnusIvb: 19.2, magnusHb: 6.8, rawXrv: -0.58, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
+            pSwing: 0.505, pWhiff: 0.295, pCs: 0.305, xwobacon: 0.302
+          },
+          {
+            code: 'CU', name: '12-6 Hammer Curveball', color: '#a78bfa', count: 5,
+            velo: 75.8, maxVelo: 77.0, spin: 2680, ivb: -15.4, hb: -5.2,
+            relHeight: 6.20, relSide: 1.52, ext: 6.15, plateHeight: 1.72, plateSide: -0.22,
+            vaa: -10.1, havaa: 0.5, spinEff: 84.0, clockTilt: '6:30', clockDeg: 195,
+            magnusIvb: -14.1, magnusHb: -4.4, rawXrv: -0.62, muCol: -0.18, sigCol: 0.70, sigWithin: 16.5, xrvSens: -0.070,
+            pSwing: 0.472, pWhiff: 0.375, pCs: 0.312, xwobacon: 0.275
+          },
+          {
+            code: 'CH', name: 'Changeup (Vertical Drop)', color: '#34d399', count: 5,
+            velo: 81.4, maxVelo: 82.3, spin: 1620, ivb: 5.8, hb: 13.8,
+            relHeight: 6.08, relSide: 1.62, ext: 6.28, plateHeight: 2.02, plateSide: 0.35,
+            vaa: -7.1, havaa: -1.6, spinEff: 79.0, clockTilt: '2:15', clockDeg: 68,
+            magnusIvb: 7.4, magnusHb: 11.9, rawXrv: -0.35, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
+            pSwing: 0.520, pWhiff: 0.340, pCs: 0.248, xwobacon: 0.290
+          }
+        ]
+      },
+      prospect_04: {
+        id: 'prospect_04',
+        name: 'Prospect #04 — Cross-Body Sidearm',
+        throws: 'L',
+        team: 'HS Showcase Bullpen',
+        date: '10/25/2026',
+        totalPitches: 18,
+        isHighSchool: true,
+        pitches: [
+          {
+            code: 'SI', name: 'Two-Seam Sinker', color: '#60a5fa', count: 8,
+            velo: 84.5, maxVelo: 85.9, spin: 2140, ivb: 6.2, hb: 16.4,
+            relHeight: 4.95, relSide: 2.45, ext: 6.25, plateHeight: 2.28, plateSide: -0.25,
+            vaa: -6.3, havaa: 1.9, spinEff: 91.0, clockTilt: '2:45', clockDeg: 82,
+            magnusIvb: 8.1, magnusHb: 13.8, rawXrv: 0.12, muCol: 0.08, sigCol: 0.65, sigWithin: 12.0, xrvSens: -0.108,
+            pSwing: 0.515, pWhiff: 0.195, pCs: 0.285, xwobacon: 0.332
+          },
+          {
+            code: 'SW', name: 'Frisbee Sweeper', color: '#fb923c', count: 6,
+            velo: 75.2, maxVelo: 76.5, spin: 2540, ivb: 1.8, hb: -16.8,
+            relHeight: 4.92, relSide: 2.48, ext: 6.10, plateHeight: 1.95, plateSide: 0.45,
+            vaa: -7.8, havaa: -1.4, spinEff: 62.0, clockTilt: '9:15', clockDeg: 277,
+            magnusIvb: 2.9, magnusHb: -14.2, rawXrv: -0.78, muCol: -0.38, sigCol: 0.76, sigWithin: 16.0, xrvSens: -0.078,
+            pSwing: 0.518, pWhiff: 0.398, pCs: 0.268, xwobacon: 0.268
+          },
+          {
+            code: 'CH', name: 'Changeup (Arm-Side Run)', color: '#34d399', count: 4,
+            velo: 76.8, maxVelo: 77.9, spin: 1580, ivb: 4.1, hb: 17.5,
+            relHeight: 4.90, relSide: 2.42, ext: 6.20, plateHeight: 2.05, plateSide: -0.35,
+            vaa: -7.2, havaa: 2.2, spinEff: 83.0, clockTilt: '2:45', clockDeg: 82,
+            magnusIvb: 6.0, magnusHb: 14.9, rawXrv: -0.42, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
+            pSwing: 0.525, pWhiff: 0.345, pCs: 0.244, xwobacon: 0.288
+          }
+        ]
+      },
+      prospect_05: {
+        id: 'prospect_05',
+        name: 'Prospect #05 — Power Sinker/Sweeper',
+        throws: 'R',
+        team: 'HS National Showcase',
+        date: '10/26/2026',
+        totalPitches: 20,
+        isHighSchool: true,
+        pitches: [
+          {
+            code: 'SI', name: 'Power Sinker', color: '#60a5fa', count: 9,
+            velo: 91.8, maxVelo: 93.1, spin: 2210, ivb: 8.4, hb: 16.8,
+            relHeight: 5.55, relSide: 2.05, ext: 6.30, plateHeight: 2.35, plateSide: 0.18,
+            vaa: -5.4, havaa: -1.7, spinEff: 92.0, clockTilt: '2:15', clockDeg: 68,
+            magnusIvb: 10.2, magnusHb: 14.5, rawXrv: -0.35, muCol: 0.08, sigCol: 0.65, sigWithin: 12.0, xrvSens: -0.108,
+            pSwing: 0.520, pWhiff: 0.228, pCs: 0.295, xwobacon: 0.298
+          },
+          {
+            code: 'SW', name: '16" Horizontal Sweeper', color: '#fb923c', count: 6,
+            velo: 81.2, maxVelo: 82.4, spin: 2740, ivb: 1.5, hb: -16.2,
+            relHeight: 5.52, relSide: 2.10, ext: 6.18, plateHeight: 1.98, plateSide: -0.52,
+            vaa: -7.5, havaa: 1.2, spinEff: 64.0, clockTilt: '9:00', clockDeg: 270,
+            magnusIvb: 2.6, magnusHb: -13.9, rawXrv: -1.08, muCol: -0.38, sigCol: 0.76, sigWithin: 16.0, xrvSens: -0.078,
+            pSwing: 0.542, pWhiff: 0.435, pCs: 0.274, xwobacon: 0.252
+          },
+          {
+            code: 'SL', name: 'Hard Bullet Slider', color: '#fbbf24', count: 5,
+            velo: 85.4, maxVelo: 86.2, spin: 2510, ivb: 2.2, hb: -4.8,
+            relHeight: 5.56, relSide: 2.02, ext: 6.22, plateHeight: 2.12, plateSide: -0.28,
+            vaa: -6.5, havaa: 0.4, spinEff: 32.0, clockTilt: '9:30', clockDeg: 285,
+            magnusIvb: 3.1, magnusHb: -3.5, rawXrv: -0.74, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
+            pSwing: 0.528, pWhiff: 0.380, pCs: 0.282, xwobacon: 0.274
+          }
+        ]
+      },
+      prospect_06: {
+        id: 'prospect_06',
+        name: 'Prospect #06 — Over-the-Top',
+        throws: 'L',
+        team: 'HS Showcase Bullpen',
+        date: '10/27/2026',
+        totalPitches: 18,
+        isHighSchool: true,
+        pitches: [
+          {
+            code: 'FF', name: 'Four-Seam Fastball', color: '#38bdf8', count: 8,
+            velo: 88.2, maxVelo: 89.4, spin: 2340, ivb: 18.2, hb: 7.5,
+            relHeight: 6.32, relSide: 1.38, ext: 6.18, plateHeight: 2.78, plateSide: -0.10,
+            vaa: -4.7, havaa: 1.1, spinEff: 94.0, clockTilt: '12:30', clockDeg: 15,
+            magnusIvb: 17.4, magnusHb: 6.9, rawXrv: -0.28, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
+            pSwing: 0.495, pWhiff: 0.258, pCs: 0.298, xwobacon: 0.318
+          },
+          {
+            code: 'CU', name: 'Hammer Curveball', color: '#a78bfa', count: 5,
+            velo: 74.2, maxVelo: 75.4, spin: 2560, ivb: -14.2, hb: -6.8,
+            relHeight: 6.35, relSide: 1.35, ext: 6.02, plateHeight: 1.75, plateSide: 0.28,
+            vaa: -10.5, havaa: -0.7, spinEff: 81.0, clockTilt: '6:45', clockDeg: 202,
+            magnusIvb: -12.9, magnusHb: -5.6, rawXrv: -0.54, muCol: -0.18, sigCol: 0.70, sigWithin: 16.5, xrvSens: -0.070,
+            pSwing: 0.468, pWhiff: 0.358, pCs: 0.308, xwobacon: 0.282
+          },
+          {
+            code: 'CH', name: 'SSW Changeup', color: '#34d399', count: 5,
+            velo: 79.1, maxVelo: 80.2, spin: 1490, ivb: 4.5, hb: 16.2,
+            relHeight: 6.26, relSide: 1.44, ext: 6.14, plateHeight: 2.02, plateSide: -0.35,
+            vaa: -7.5, havaa: 1.8, spinEff: 76.0, clockTilt: '2:15', clockDeg: 68,
+            magnusIvb: 7.1, magnusHb: 13.0, rawXrv: -0.48, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
+            pSwing: 0.526, pWhiff: 0.352, pCs: 0.250, xwobacon: 0.285
+          }
+        ]
+      },
+      prospect_07: {
+        id: 'prospect_07',
+        name: 'Prospect #07 — Command/Tunneling',
+        throws: 'R',
+        team: 'HS Showcase Bullpen',
+        date: '10/28/2026',
+        totalPitches: 20,
+        isHighSchool: true,
+        pitches: [
+          {
+            code: 'FF', name: 'Four-Seam Fastball', color: '#38bdf8', count: 8,
+            velo: 86.4, maxVelo: 87.6, spin: 2290, ivb: 16.8, hb: 9.2,
+            relHeight: 5.88, relSide: 1.72, ext: 6.22, plateHeight: 2.72, plateSide: 0.10,
+            vaa: -5.0, havaa: -1.2, spinEff: 93.0, clockTilt: '1:00', clockDeg: 30,
+            magnusIvb: 15.9, magnusHb: 8.4, rawXrv: 0.08, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
+            pSwing: 0.492, pWhiff: 0.224, pCs: 0.294, xwobacon: 0.342
+          },
+          {
+            code: 'FC', name: 'Tight Tunnel Cutter', color: '#f472b6', count: 6,
+            velo: 82.8, maxVelo: 83.9, spin: 2420, ivb: 8.4, hb: -3.8,
+            relHeight: 5.86, relSide: 1.74, ext: 6.18, plateHeight: 2.38, plateSide: -0.32,
+            vaa: -6.1, havaa: 0.3, spinEff: 48.0, clockTilt: '10:45', clockDeg: 322,
+            magnusIvb: 7.8, magnusHb: -2.9, rawXrv: -0.38, muCol: -0.05, sigCol: 0.64, sigWithin: 13.0, xrvSens: -0.095,
+            pSwing: 0.515, pWhiff: 0.298, pCs: 0.286, xwobacon: 0.295
+          },
+          {
+            code: 'FS', name: 'Tumbling Splitter', color: '#2dd4bf', count: 6,
+            velo: 78.9, maxVelo: 80.1, spin: 1240, ivb: 2.2, hb: 12.6,
+            relHeight: 5.85, relSide: 1.75, ext: 6.20, plateHeight: 1.88, plateSide: 0.25,
+            vaa: -7.9, havaa: -1.5, spinEff: 69.0, clockTilt: '2:00', clockDeg: 60,
+            magnusIvb: 4.4, magnusHb: 10.1, rawXrv: -0.64, muCol: -0.28, sigCol: 0.74, sigWithin: 16.8, xrvSens: -0.072,
+            pSwing: 0.535, pWhiff: 0.388, pCs: 0.242, xwobacon: 0.272
+          }
+        ]
+      },
+      prospect_08: {
+        id: 'prospect_08',
+        name: 'Prospect #08 — Raw Fr/So',
+        throws: 'L',
+        team: 'HS Underclassman Bullpen',
+        date: '10/29/2026',
+        totalPitches: 15,
+        isHighSchool: true,
+        pitches: [
+          {
+            code: 'FF', name: 'Four-Seam Fastball', color: '#38bdf8', count: 7,
+            velo: 79.5, maxVelo: 80.8, spin: 2040, ivb: 14.8, hb: 10.6,
+            relHeight: 5.72, relSide: 1.82, ext: 5.75, plateHeight: 2.58, plateSide: -0.12,
+            vaa: -6.0, havaa: 1.3, spinEff: 89.0, clockTilt: '1:15', clockDeg: 38,
+            magnusIvb: 13.7, magnusHb: 9.4, rawXrv: 1.05, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
+            pSwing: 0.486, pWhiff: 0.165, pCs: 0.278, xwobacon: 0.398
+          },
+          {
+            code: 'SL', name: 'Sweeping Slurve', color: '#fbbf24', count: 4,
+            velo: 69.8, maxVelo: 71.0, spin: 2210, ivb: -4.8, hb: -10.4,
+            relHeight: 5.68, relSide: 1.86, ext: 5.65, plateHeight: 1.85, plateSide: 0.38,
+            vaa: -9.8, havaa: -0.9, spinEff: 52.0, clockTilt: '8:00', clockDeg: 240,
+            magnusIvb: -3.6, magnusHb: -8.9, rawXrv: -0.12, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
+            pSwing: 0.475, pWhiff: 0.302, pCs: 0.272, xwobacon: 0.318
+          },
+          {
+            code: 'CH', name: 'Changeup (Arm-Side Fade)', color: '#34d399', count: 4,
+            velo: 71.4, maxVelo: 72.5, spin: 1590, ivb: 6.4, hb: 14.1,
+            relHeight: 5.66, relSide: 1.88, ext: 5.72, plateHeight: 2.12, plateSide: -0.32,
+            vaa: -8.1, havaa: 1.7, spinEff: 80.0, clockTilt: '2:15', clockDeg: 68,
+            magnusIvb: 8.0, magnusHb: 12.1, rawXrv: 0.05, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
+            pSwing: 0.492, pWhiff: 0.288, pCs: 0.250, xwobacon: 0.325
+          }
+        ]
+      },
+      prospect_09: {
+        id: 'prospect_09',
+        name: 'Prospect #09 — D1 Mid-Week Reliever',
+        throws: 'R',
+        team: 'NCAA D1 Bullpen Reference',
+        date: '10/30/2026',
+        totalPitches: 22,
+        isHighSchool: false,
+        pitches: [
+          {
+            code: 'FF', name: 'Four-Seam Fastball', color: '#38bdf8', count: 10,
+            velo: 92.5, maxVelo: 94.0, spin: 2380, ivb: 17.2, hb: 10.4,
+            relHeight: 5.78, relSide: 1.88, ext: 6.42, plateHeight: 2.75, plateSide: 0.12,
+            vaa: -4.5, havaa: -1.2, spinEff: 93.0, clockTilt: '1:00', clockDeg: 30,
+            magnusIvb: 16.3, magnusHb: 9.5, rawXrv: -0.52, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
+            pSwing: 0.504, pWhiff: 0.288, pCs: 0.298, xwobacon: 0.305
+          },
+          {
+            code: 'SL', name: 'Gyro Slider', color: '#fbbf24', count: 7,
+            velo: 83.6, maxVelo: 84.9, spin: 2540, ivb: 0.5, hb: -6.4,
+            relHeight: 5.74, relSide: 1.92, ext: 6.32, plateHeight: 1.92, plateSide: -0.44,
+            vaa: -7.6, havaa: 0.5, spinEff: 35.0, clockTilt: '8:45', clockDeg: 262,
+            magnusIvb: 1.8, magnusHb: -5.0, rawXrv: -0.96, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
+            pSwing: 0.538, pWhiff: 0.408, pCs: 0.278, xwobacon: 0.266
+          },
+          {
+            code: 'FS', name: 'Hard Splitter', color: '#2dd4bf', count: 5,
+            velo: 84.8, maxVelo: 85.9, spin: 1310, ivb: 1.8, hb: 13.4,
+            relHeight: 5.72, relSide: 1.90, ext: 6.38, plateHeight: 1.86, plateSide: 0.34,
+            vaa: -7.2, havaa: -1.6, spinEff: 66.0, clockTilt: '2:15', clockDeg: 68,
+            magnusIvb: 4.1, magnusHb: 10.8, rawXrv: -0.88, muCol: -0.28, sigCol: 0.74, sigWithin: 16.8, xrvSens: -0.072,
+            pSwing: 0.544, pWhiff: 0.412, pCs: 0.246, xwobacon: 0.262
           }
         ]
       },
@@ -1305,100 +1479,28 @@
         isHighSchool: false,
         pitches: [
           {
-            code: 'FF',
-            name: 'Four-Seam Fastball',
-            color: '#38bdf8',
-            count: 12,
-            velo: 94.2,
-            maxVelo: 96.1,
-            spin: 2440,
-            ivb: 18.8,
-            hb: 9.4,
-            relHeight: 5.55,
-            relSide: 1.95,
-            ext: 6.55,
-            plateHeight: 2.82,
-            plateSide: 0.10,
-            vaa: -4.2,
-            havaa: -1.1,
-            spinEff: 95.0,
-            clockTilt: '12:45',
-            clockDeg: 23,
-            magnusIvb: 17.9,
-            magnusHb: 8.6,
-            rawXrv: -0.82,
-            muCol: 0.05,
-            sigCol: 0.68,
-            sigWithin: 11.5,
-            xrvSens: -0.115,
-            pSwing: 0.512,
-            pWhiff: 0.315,
-            pCs: 0.304,
-            xwobacon: 0.292
+            code: 'FF', name: 'Four-Seam Fastball', color: '#38bdf8', count: 12,
+            velo: 94.2, maxVelo: 96.1, spin: 2440, ivb: 18.8, hb: 9.4,
+            relHeight: 5.55, relSide: 1.95, ext: 6.55, plateHeight: 2.82, plateSide: 0.10,
+            vaa: -4.2, havaa: -1.1, spinEff: 95.0, clockTilt: '12:45', clockDeg: 23,
+            magnusIvb: 17.9, magnusHb: 8.6, rawXrv: -0.82, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
+            pSwing: 0.512, pWhiff: 0.315, pCs: 0.304, xwobacon: 0.292
           },
           {
-            code: 'SL',
-            name: 'Gyro Slider',
-            color: '#fbbf24',
-            count: 8,
-            velo: 84.8,
-            maxVelo: 86.0,
-            spin: 2610,
-            ivb: 1.2,
-            hb: -6.8,
-            relHeight: 5.52,
-            relSide: 1.98,
-            ext: 6.45,
-            plateHeight: 1.95,
-            plateSide: -0.48,
-            vaa: -7.4,
-            havaa: 0.5,
-            spinEff: 34.0,
-            clockTilt: '9:00',
-            clockDeg: 270,
-            magnusIvb: 2.5,
-            magnusHb: -5.1,
-            rawXrv: -1.18,
-            muCol: -0.32,
-            sigCol: 0.72,
-            sigWithin: 15.2,
-            xrvSens: -0.082,
-            pSwing: 0.548,
-            pWhiff: 0.425,
-            pCs: 0.282,
-            xwobacon: 0.258
+            code: 'SL', name: 'Gyro Slider', color: '#fbbf24', count: 8,
+            velo: 84.8, maxVelo: 86.0, spin: 2610, ivb: 1.2, hb: -6.8,
+            relHeight: 5.52, relSide: 1.98, ext: 6.45, plateHeight: 1.95, plateSide: -0.48,
+            vaa: -7.4, havaa: 0.5, spinEff: 34.0, clockTilt: '9:00', clockDeg: 270,
+            magnusIvb: 2.5, magnusHb: -5.1, rawXrv: -1.18, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
+            pSwing: 0.548, pWhiff: 0.425, pCs: 0.282, xwobacon: 0.258
           },
           {
-            code: 'CH',
-            name: 'Split-Changeup',
-            color: '#34d399',
-            count: 5,
-            velo: 85.5,
-            maxVelo: 86.4,
-            spin: 1490,
-            ivb: 3.4,
-            hb: 16.8,
-            relHeight: 5.50,
-            relSide: 2.00,
-            ext: 6.50,
-            plateHeight: 2.02,
-            plateSide: 0.44,
-            vaa: -6.9,
-            havaa: -1.9,
-            spinEff: 74.0,
-            clockTilt: '2:30',
-            clockDeg: 75,
-            magnusIvb: 6.2,
-            magnusHb: 13.4,
-            rawXrv: -0.95,
-            muCol: -0.12,
-            sigCol: 0.66,
-            sigWithin: 15.8,
-            xrvSens: -0.065,
-            pSwing: 0.540,
-            pWhiff: 0.388,
-            pCs: 0.255,
-            xwobacon: 0.271
+            code: 'CH', name: 'Split-Changeup', color: '#34d399', count: 5,
+            velo: 85.5, maxVelo: 86.4, spin: 1490, ivb: 3.4, hb: 16.8,
+            relHeight: 5.50, relSide: 2.00, ext: 6.50, plateHeight: 2.02, plateSide: 0.44,
+            vaa: -6.9, havaa: -1.9, spinEff: 74.0, clockTilt: '2:30', clockDeg: 75,
+            magnusIvb: 6.2, magnusHb: 13.4, rawXrv: -0.95, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
+            pSwing: 0.540, pWhiff: 0.388, pCs: 0.255, xwobacon: 0.271
           }
         ]
       }
@@ -1418,7 +1520,8 @@
       xgbModelArtifact: null,
       xgbEngineLoaded: false,
       lastInferenceMs: 0.0,
-      currentPitcherId: 'rowland',
+      currentPitcherId: 'prospect_01',
+      mobileDrawerOpen: false,
       gradeMode: 'present', // 'present' | 'projected'
       pacingMode: 'raw', // 'raw', 'starter', 'reliever'
       activeTierTab: 'all',
@@ -1833,10 +1936,10 @@
             SpinRate: p.spin,
             SpinAxis: spinAxisTrackMan,
             RelHeight: p.relHeight,
-            RelSide: p.relSide,
+            RelSide: profile.throws === 'L' ? -Math.abs(p.relSide) : Math.abs(p.relSide),
             Extension: p.ext,
             InducedVertBreak: p.ivb,
-            HorzBreak: p.hb,
+            HorzBreak: profile.throws === 'L' ? -p.hb : p.hb,
             PlateLocHeight: p.plateHeight !== undefined ? p.plateHeight : 2.50,
             PlateLocSide: p.plateSide !== undefined ? p.plateSide : 0.0,
             VertApprAngle: p.vaa,
@@ -2232,9 +2335,9 @@
       threeScene.background = new THREE.Color(0x050811);
 
       threeCamera = new THREE.PerspectiveCamera(42, width / height, 0.1, 300);
-      threeRenderer = new THREE.WebGLRenderer({ antialias: true });
+      threeRenderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
       threeRenderer.setSize(width, height);
-      threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
       container.innerHTML = '';
       container.appendChild(threeRenderer.domElement);
 
@@ -2327,8 +2430,57 @@
         updateCameraPosition();
       }, { passive: false });
 
+      // Mobile Touch Orbit (1-finger) & Pinch Zoom (2-finger)
+      let touchDragActive = false;
+      let prevTouch = { x: 0, y: 0 };
+      let prevPinchDist = null;
+
+      domElem.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          touchDragActive = true;
+          prevPinchDist = null;
+          prevTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        } else if (e.touches.length === 2) {
+          touchDragActive = false;
+          prevPinchDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+        }
+      }, { passive: false });
+
+      domElem.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (e.touches.length === 1 && touchDragActive) {
+          const dx = e.touches[0].clientX - prevTouch.x;
+          const dy = e.touches[0].clientY - prevTouch.y;
+          prevTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          sphericalCam.theta -= dx * 0.009;
+          sphericalCam.phi = Math.max(0.25, Math.min(1.52, sphericalCam.phi - dy * 0.007));
+          updateCameraPosition();
+        } else if (e.touches.length === 2 && prevPinchDist !== null) {
+          const curDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          const deltaDist = prevPinchDist - curDist;
+          prevPinchDist = curDist;
+          sphericalCam.radius = Math.max(6, Math.min(75, sphericalCam.radius + deltaDist * 0.06));
+          updateCameraPosition();
+        }
+      }, { passive: false });
+
+      domElem.addEventListener('touchend', () => {
+        touchDragActive = false;
+        prevPinchDist = null;
+      });
+      domElem.addEventListener('touchcancel', () => {
+        touchDragActive = false;
+        prevPinchDist = null;
+      });
+
       setCameraPreset('catcher');
-      animateThreeJS();
+      syncWebGLAnimationState();
     }
 
     function setCameraPreset(presetName) {
@@ -2402,8 +2554,30 @@
       });
     }
 
+    let rafLoopId = null;
+
+    function is3DTunnelVisible() {
+      const sec2 = document.getElementById('section-tier2');
+      return Boolean(sec2 && !sec2.classList.contains('hidden') && !document.hidden);
+    }
+
+    function syncWebGLAnimationState() {
+      if (is3DTunnelVisible()) {
+        if (rafLoopId === null) {
+          rafLoopId = requestAnimationFrame(animateThreeJS);
+        }
+      } else if (rafLoopId !== null) {
+        cancelAnimationFrame(rafLoopId);
+        rafLoopId = null;
+      }
+    }
+
     function animateThreeJS() {
-      requestAnimationFrame(animateThreeJS);
+      if (!is3DTunnelVisible()) {
+        rafLoopId = null;
+        return;
+      }
+      rafLoopId = requestAnimationFrame(animateThreeJS);
       if (appState.animPlaying && animatedBalls.length > 0) {
         animClock = (animClock + 0.011) % 1.0;
         animatedBalls.forEach((b) => {
@@ -3496,30 +3670,103 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
         renderAll();
       });
 
-      // Navigation Tabs
-      document.querySelectorAll('.tier-tab-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const tab = btn.getAttribute('data-tier-tab');
-          appState.activeTierTab = tab;
-          document.querySelectorAll('.tier-tab-btn').forEach((b) => {
-            b.className = 'tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap';
-          });
-          btn.className = 'tier-tab-btn px-3 py-1 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition whitespace-nowrap';
+      function setActiveSectionTab(tab) {
+        appState.activeTierTab = tab;
+        document.querySelectorAll('.tier-tab-btn').forEach((b) => {
+          const isMatch = b.getAttribute('data-tier-tab') === tab;
+          if (b.getAttribute('data-tier-tab') === 'pitchlab') {
+            b.className = isMatch
+              ? 'tier-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500 text-white transition whitespace-nowrap'
+              : 'tier-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30 transition whitespace-nowrap';
+          } else {
+            b.className = isMatch
+              ? 'tier-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition whitespace-nowrap'
+              : 'tier-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap';
+          }
+        });
+        document.querySelectorAll('.mobile-nav-btn').forEach((b) => {
+          const isMatch = b.getAttribute('data-tier-tab') === tab;
+          b.className = isMatch
+            ? 'mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-xl py-1.5 px-1 text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40 transition'
+            : 'mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-xl py-1.5 px-1 text-[10px] font-semibold text-slate-400 hover:text-slate-200 transition';
+        });
 
-          const sections = {
-            tier1: document.getElementById('section-tier1'),
-            tier2: document.getElementById('section-tier2'),
-            tier3: document.getElementById('section-tier3'),
-            tier4: document.getElementById('section-tier4'),
-            pitchlab: document.getElementById('section-pitchlab')
-          };
-          Object.entries(sections).forEach(([key, sec]) => {
-            if (tab === 'all' || tab === key) sec.classList.remove('hidden');
-            else sec.classList.add('hidden');
-          });
-          renderAll();
+        const sections = {
+          tier1: document.getElementById('section-tier1'),
+          tier2: document.getElementById('section-tier2'),
+          tier3: document.getElementById('section-tier3'),
+          tier4: document.getElementById('section-tier4'),
+          pitchlab: document.getElementById('section-pitchlab')
+        };
+        Object.entries(sections).forEach(([key, sec]) => {
+          if (!sec) return;
+          if (tab === 'all' || tab === key) sec.classList.remove('hidden');
+          else sec.classList.add('hidden');
+        });
+
+        if (tab === 'tier2' && threeRenderer && threeCamera) {
+          const container = document.getElementById('webglCanvasContainer');
+          if (container) {
+            const w = container.clientWidth || 360;
+            const h = container.clientHeight || 360;
+            threeCamera.aspect = w / h;
+            threeCamera.updateProjectionMatrix();
+            threeRenderer.setSize(w, h);
+          }
+        }
+        renderAll();
+        syncWebGLAnimationState();
+      }
+
+      document.querySelectorAll('.tier-tab-btn, .mobile-nav-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          setActiveSectionTab(btn.getAttribute('data-tier-tab'));
         });
       });
+
+      // Mobile Slide-Down Controls / Upload Drawer
+      const mobileDrawerBtn = document.getElementById('mobileDrawerBtn');
+      const headerControlsPanel = document.getElementById('headerControlsPanel');
+      const mobileDrawerChevron = document.getElementById('mobileDrawerChevron');
+      if (mobileDrawerBtn && headerControlsPanel) {
+        mobileDrawerBtn.addEventListener('click', () => {
+          appState.mobileDrawerOpen = !appState.mobileDrawerOpen;
+          headerControlsPanel.classList.toggle('hidden', !appState.mobileDrawerOpen);
+          headerControlsPanel.classList.toggle('flex', appState.mobileDrawerOpen);
+          mobileDrawerBtn.setAttribute('aria-expanded', String(appState.mobileDrawerOpen));
+          if (mobileDrawerChevron) mobileDrawerChevron.textContent = appState.mobileDrawerOpen ? '▲' : '▼';
+        });
+      }
+
+      // Default mobile (<768px) view to Scout Card ('tier1') to avoid endless vertical scroll
+      if (window.innerWidth < 768) {
+        setActiveSectionTab('tier1');
+      }
+
+      // Pause 3D WebGL when page visibility changes (iOS Safari battery & RAM protection)
+      document.addEventListener('visibilitychange', syncWebGLAnimationState);
+
+      // ResizeObserver for crisp 2D canvas & WebGL redraws when mobile tabs become visible
+      if (typeof ResizeObserver !== 'undefined') {
+        const ro = new ResizeObserver(() => {
+          const container = document.getElementById('webglCanvasContainer');
+          if (container && threeRenderer && threeCamera && container.clientWidth > 0 && container.clientHeight > 0) {
+            threeCamera.aspect = container.clientWidth / container.clientHeight;
+            threeCamera.updateProjectionMatrix();
+            threeRenderer.setSize(container.clientWidth, container.clientHeight);
+          }
+          renderAll();
+        });
+        ['webglCanvasContainer', 'movementMatrixCanvas', 'spinClockCanvas', 'bayesForestCanvas'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el && el.parentElement) ro.observe(id === 'webglCanvasContainer' ? el : el.parentElement);
+        });
+      }
+
+      // Register Service Worker for offline field support when served over HTTP/HTTPS
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      }
 
       // Pitch Lab Target Pitch Selector
       document.getElementById('labPitchSelect').addEventListener('change', (e) => {
