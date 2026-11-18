@@ -10,8 +10,9 @@
   <meta name="theme-color" content="#070b14" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%23070b14'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='210' fill='%2338bdf8'%3EA+%3C/text%3E%3C/svg%3E" />
-  <title>Project Apex v5.0 — Mobile-First Pitching Scout Card &amp; 3D Pitch Lab</title>
+  <title>Project Apex v5.1 — Mobile-First Pitching Scout Card &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -195,6 +196,65 @@
     </div>
   </div>
 
+  <!-- Supabase Auth & Private Saved Bullpen Sessions Modal -->
+  <div id="authModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+    <div class="glass-card rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-sky-500/40 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <span class="text-[11px] font-mono-num uppercase tracking-widest text-sky-400 font-semibold">Private Cloud Bullpen Locker</span>
+          <h3 class="text-lg font-extrabold text-white">Sign In or Create Account</h3>
+        </div>
+        <button id="closeAuthModalBtn" type="button" class="touch-target px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+          Close
+        </button>
+      </div>
+
+      <!-- Signed-Out Form -->
+      <div id="authFormContainer" class="space-y-3">
+        <div>
+          <label for="authEmailInput" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">Email Address</label>
+          <input id="authEmailInput" type="email" autocomplete="email" placeholder="coach@program.edu" class="touch-target w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400" />
+        </div>
+        <div>
+          <label for="authPasswordInput" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">Password</label>
+          <input id="authPasswordInput" type="password" autocomplete="current-password" placeholder="••••••••" class="touch-target w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400" />
+        </div>
+        <div class="flex items-center gap-2 pt-1">
+          <button id="authSignInBtn" type="button" class="touch-target flex-1 px-3.5 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold transition">
+            Sign In
+          </button>
+          <button id="authSignUpBtn" type="button" class="touch-target flex-1 px-3.5 py-2 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 text-xs font-semibold transition">
+            Create Account
+          </button>
+        </div>
+      </div>
+
+      <!-- Signed-In Account Summary & Saved Sessions Manager -->
+      <div id="authSignedInContainer" class="hidden space-y-3">
+        <div class="flex items-center justify-between bg-slate-900/90 border border-emerald-500/30 rounded-xl p-3">
+          <div class="min-w-0">
+            <div class="text-[10px] font-mono-num uppercase tracking-wider text-emerald-400">Signed In Account</div>
+            <div id="authAccountEmailText" class="text-xs font-bold text-white truncate">coach@program.edu</div>
+          </div>
+          <button id="authSignOutBtn" type="button" class="touch-target px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-semibold transition">
+            Sign Out
+          </button>
+        </div>
+
+        <div>
+          <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">My Saved Bullpen Sessions</div>
+          <div id="authSavedSessionsList" class="max-h-44 overflow-y-auto space-y-1.5 text-xs font-mono-num">
+            <div class="text-slate-500 text-xs py-2">No saved sessions yet. Upload a TrackMan PDF, CSV, or JSON file to save it to your account.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="authStatusBox" class="text-xs font-mono-num text-slate-400 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
+        Guest Mode active: showing the 10 anonymized benchmark profiles. Sign in to save uploaded TrackMan PDF/CSV bullpens privately to your account.
+      </div>
+    </div>
+  </div>
+
   <!-- Top Navigation & Control Bar -->
   <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/92 backdrop-blur-md no-print pt-[env(safe-area-inset-top)]">
     <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2.5">
@@ -276,12 +336,25 @@
               Upload TrackMan
             </button>
 
+            <button id="deleteSavedSessionBtn" type="button" class="hidden touch-target flex-1 md:flex-none px-2.5 py-2 md:py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold transition">
+              Delete Session
+            </button>
+
             <button id="exportDossierBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 text-xs font-semibold transition">
               Print Scout Sheet
             </button>
 
             <button id="copyReportBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-xs font-semibold transition">
               Copy Report
+            </button>
+
+            <button id="openAuthModalBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold transition flex items-center justify-center gap-1.5">
+              <span id="headerAuthDot" class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+              <span id="headerAuthBtnText">Sign In / Account</span>
+            </button>
+
+            <button id="quickSignOutBtn" type="button" class="hidden touch-target flex-1 md:flex-none px-2.5 py-2 md:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition">
+              Sign Out
             </button>
           </div>
         </div>
@@ -807,7 +880,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>Project Apex v5.0 • NCAA D1 4-Head XGBoost (10×10 Grid) &amp; TrackMan PDF/CSV Lab</span>
+    <span>Project Apex v5.1 • NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud</span>
     <span id="footerRightText" class="font-mono-num">Switch between "Baseball / Scout (Simple)" and "Pro Analytics (R&amp;D)" in the top bar</span>
   </footer>
 
@@ -1525,6 +1598,8 @@
       lastSimEval: null,
       currentPitcherId: 'prospect_01',
       mobileDrawerOpen: false,
+      currentUser: null,
+      pendingGuestSession: null,
       gradeMode: 'present', // 'present' | 'projected'
       pacingMode: 'raw', // 'raw', 'starter', 'reliever'
       activeTierTab: 'all',
@@ -3108,7 +3183,7 @@
       });
 
       const customId = 'custom_' + Date.now();
-      PITCHER_PROFILES[customId] = {
+      const profileObj = {
         id: customId,
         name: pitcherName,
         throws,
@@ -3116,23 +3191,21 @@
         date: sessionDate,
         totalPitches: rows.length,
         isHighSchool: true,
+        isCustomSession: true,
+        supabaseRowId: null,
+        sourceType: fileName.toLowerCase().endsWith('.pdf') ? 'pdf' : (fileName.toLowerCase().endsWith('.json') ? 'json' : 'csv'),
         pitches: aggregatedPitches
       };
-
-      const sel = document.getElementById('pitcherSelect');
-      const opt = document.createElement('option');
-      opt.value = customId;
-      opt.textContent = `${pitcherName} (${throws}HP — Uploaded TrackMan N=${rows.length})`;
-      sel.appendChild(opt);
-      sel.value = customId;
+      PITCHER_PROFILES[customId] = profileObj;
 
       appState.currentPitcherId = customId;
       appState.labTargetIdx = 0;
       appState.pitchLabState = createEmptyPitchLabState(aggregatedPitches.length + 2);
+      rebuildPitcherSelectDropdown();
       syncSlidersToUI();
       renderAll();
 
-      return { pitcherName, totalRows: rows.length, pitchTypesCount: aggregatedPitches.length };
+      return { customId, profileObj, pitcherName, totalRows: rows.length, pitchTypesCount: aggregatedPitches.length };
     }
 
 
@@ -3400,7 +3473,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
 
       setLabelText('headerBadgeVersion', isScout
         ? 'College Scouting & 3D Pitch Lab'
-        : 'v5.0 R&D • 4-Head XGBoost (10×10 Grid) + PDF/CSV');
+        : 'v5.1 R&D • 4-Head XGBoost (10×10 Grid) + Cloud Auth');
 
       // Section 1 headers & labels
       setLabelText('tier1Eyebrow', isScout
@@ -3876,6 +3949,379 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
       }, 2800);
     }
 
+    // =========================================================================
+    // 6B. SUPABASE AUTH & PRIVATE SAVED BULLPEN SESSIONS (VERSION 5.1)
+    // =========================================================================
+    const SUPABASE_URL = 'https://ueacleuuymlhszkffatw.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_Q2TwDLoy1etvBYr5HTBDrw_JGqmLzXi';
+    const BENCHMARK_PROFILE_IDS = [
+      'prospect_01', 'prospect_02', 'prospect_03', 'prospect_04', 'prospect_05',
+      'prospect_06', 'prospect_07', 'prospect_08', 'prospect_09', 'd1_ace'
+    ];
+    const BENCHMARK_OPTION_LABELS = {
+      prospect_01: 'Prospect #01 — Projectable Low-3/4 RHP (83.0 mph FF / Fade CH / Gyro SL)',
+      prospect_02: 'Prospect #02 — Developing HS RHP (77.2 mph FF / 11-5 CU / CH)',
+      prospect_03: 'Prospect #03 — High-Spin Carry RHP (90.5 mph FF 20" IVB / 12-6 CU / CH)',
+      prospect_04: 'Prospect #04 — Cross-Body Sidearm LHP (84.5 mph SI / Sweeper / CH)',
+      prospect_05: 'Prospect #05 — Power Sinker/Sweeper RHP (91.8 mph SI / 16" SW / Hard SL)',
+      prospect_06: 'Prospect #06 — Over-the-Top LHP (88.2 mph FF / Hammer CU / SSW CH)',
+      prospect_07: 'Prospect #07 — Command/Tunneling RHP (86.4 mph FF / Cutter / Splitter)',
+      prospect_08: 'Prospect #08 — Raw Fr/So LHP (79.5 mph FF / Slurve / CH)',
+      prospect_09: 'Prospect #09 — D1 Mid-Week Reliever RHP (92.5 mph FF / Gyro SL / FS)',
+      d1_ace: 'NCAA D1 Friday Ace Benchmark (94.2 mph FF / Gyro SL / Split-CH)'
+    };
+
+    let supabaseClient = null;
+
+    function initSupabaseClient() {
+      if (supabaseClient) return supabaseClient;
+      if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
+        try {
+          supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (err) {
+          supabaseClient = null;
+        }
+      }
+      return supabaseClient;
+    }
+
+    function rebuildPitcherSelectDropdown() {
+      const sel = document.getElementById('pitcherSelect');
+      if (!sel) return;
+
+      const customKeys = Object.keys(PITCHER_PROFILES).filter((k) => !BENCHMARK_PROFILE_IDS.includes(k));
+      let htmlOpts = '';
+
+      if (customKeys.length > 0) {
+        htmlOpts += '<optgroup id="mySavedSessionsOptgroup" label="My Saved Sessions">';
+        customKeys.forEach((k) => {
+          const p = PITCHER_PROFILES[k];
+          const tag = p.supabaseRowId ? 'Saved' : 'Local';
+          htmlOpts += `<option value="${k}">${p.name} (${p.throws}HP — ${p.date} • N=${p.totalPitches} • ${tag})</option>`;
+        });
+        htmlOpts += '</optgroup>';
+      }
+
+      htmlOpts += '<optgroup id="benchmarkProfilesOptgroup" label="Benchmark &amp; Showcase Archetypes (10)">';
+      BENCHMARK_PROFILE_IDS.forEach((k) => {
+        if (PITCHER_PROFILES[k]) {
+          const label = BENCHMARK_OPTION_LABELS[k] || `${PITCHER_PROFILES[k].name} (${PITCHER_PROFILES[k].throws}HP)`;
+          htmlOpts += `<option value="${k}">${label}</option>`;
+        }
+      });
+      htmlOpts += '</optgroup>';
+
+      sel.innerHTML = htmlOpts;
+      if (!PITCHER_PROFILES[appState.currentPitcherId]) {
+        appState.currentPitcherId = 'prospect_01';
+      }
+      sel.value = appState.currentPitcherId;
+
+      const delBtn = document.getElementById('deleteSavedSessionBtn');
+      if (delBtn) {
+        const isCustomActive = !BENCHMARK_PROFILE_IDS.includes(appState.currentPitcherId);
+        delBtn.classList.toggle('hidden', !isCustomActive);
+      }
+
+      renderAuthSavedSessionsList();
+    }
+
+    function clearCustomSessionsFromMemory() {
+      Object.keys(PITCHER_PROFILES).forEach((k) => {
+        if (!BENCHMARK_PROFILE_IDS.includes(k)) {
+          delete PITCHER_PROFILES[k];
+        }
+      });
+      appState.pendingGuestSession = null;
+      if (!BENCHMARK_PROFILE_IDS.includes(appState.currentPitcherId)) {
+        appState.currentPitcherId = 'prospect_01';
+        appState.labTargetIdx = 0;
+        appState.pitchLabState = createEmptyPitchLabState(6);
+        syncSlidersToUI();
+      }
+      rebuildPitcherSelectDropdown();
+      renderAll();
+    }
+
+    function updateAuthUIState() {
+      const user = appState.currentUser;
+      const btnText = document.getElementById('headerAuthBtnText');
+      const dot = document.getElementById('headerAuthDot');
+      const quickOutBtn = document.getElementById('quickSignOutBtn');
+      const formContainer = document.getElementById('authFormContainer');
+      const signedInContainer = document.getElementById('authSignedInContainer');
+      const emailText = document.getElementById('authAccountEmailText');
+      const statusBox = document.getElementById('authStatusBox');
+
+      if (user && user.email) {
+        if (btnText) btnText.textContent = user.email;
+        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
+        if (quickOutBtn) quickOutBtn.classList.remove('hidden');
+        if (formContainer) formContainer.classList.add('hidden');
+        if (signedInContainer) signedInContainer.classList.remove('hidden');
+        if (emailText) emailText.textContent = user.email;
+        if (statusBox) {
+          statusBox.textContent = `Signed in as ${user.email}. Any TrackMan PDF, CSV, or JSON bullpen you upload is automatically saved to your private account.`;
+        }
+      } else {
+        if (btnText) btnText.textContent = 'Sign In / Account';
+        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
+        if (quickOutBtn) quickOutBtn.classList.add('hidden');
+        if (formContainer) formContainer.classList.remove('hidden');
+        if (signedInContainer) signedInContainer.classList.add('hidden');
+        if (statusBox) {
+          statusBox.textContent = 'Guest Mode active: showing the 10 anonymized benchmark profiles. Sign in to save uploaded TrackMan PDF/CSV bullpens privately to your account.';
+        }
+      }
+      renderAuthSavedSessionsList();
+    }
+
+    function renderAuthSavedSessionsList() {
+      const listEl = document.getElementById('authSavedSessionsList');
+      if (!listEl) return;
+      const customKeys = Object.keys(PITCHER_PROFILES).filter((k) => !BENCHMARK_PROFILE_IDS.includes(k));
+      if (!customKeys.length) {
+        listEl.innerHTML = '<div class="text-slate-500 text-xs py-2">No saved sessions yet. Upload a TrackMan PDF, CSV, or JSON file to save it to your account.</div>';
+        return;
+      }
+      listEl.innerHTML = customKeys.map((k) => {
+        const p = PITCHER_PROFILES[k];
+        return `
+          <div class="flex items-center justify-between gap-2 bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-1.5">
+            <div class="min-w-0">
+              <div class="text-xs font-bold text-white truncate">${p.name} (${p.throws}HP)</div>
+              <div class="text-[10px] text-slate-400">${p.date} • ${p.totalPitches} pitches • ${(p.sourceType || 'csv').toUpperCase()}</div>
+            </div>
+            <button type="button" data-delete-session="${k}" class="auth-delete-session-btn px-2 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-[10px] font-bold">
+              Delete
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.auth-delete-session-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const targetKey = btn.getAttribute('data-delete-session');
+          if (targetKey) deleteSavedBullpenSession(targetKey);
+        });
+      });
+    }
+
+    async function fetchUserSavedSessions() {
+      const client = initSupabaseClient();
+      if (!client || !appState.currentUser) return [];
+
+      try {
+        const { data, error } = await client
+          .from('bullpen_sessions')
+          .select('*')
+          .eq('user_id', appState.currentUser.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Remove previously loaded cloud sessions before repopulating
+        Object.keys(PITCHER_PROFILES).forEach((k) => {
+          if (k.startsWith('saved_')) delete PITCHER_PROFILES[k];
+        });
+
+        const rows = Array.isArray(data) ? data : [];
+        rows.forEach((row) => {
+          const pitchesArr = typeof row.pitches_json === 'string'
+            ? JSON.parse(row.pitches_json)
+            : (row.pitches_json || []);
+          if (!Array.isArray(pitchesArr) || !pitchesArr.length) return;
+          const pid = 'saved_' + row.id;
+          PITCHER_PROFILES[pid] = {
+            id: pid,
+            supabaseRowId: row.id,
+            name: row.pitcher_name || 'Saved Pitcher',
+            throws: row.throws || 'R',
+            team: `Saved Cloud Bullpen (${(row.source_type || 'CSV').toUpperCase()})`,
+            date: row.session_date || '11/18/2026',
+            totalPitches: Number(row.total_pitches) || pitchesArr.reduce((acc, p) => acc + (p.count || 1), 0),
+            isHighSchool: true,
+            isCustomSession: true,
+            sourceType: row.source_type || 'csv',
+            pitches: pitchesArr
+          };
+        });
+
+        rebuildPitcherSelectDropdown();
+        renderAll();
+        return rows;
+      } catch (err) {
+        const statusBox = document.getElementById('authStatusBox');
+        if (statusBox) statusBox.textContent = `Note: Could not fetch saved sessions (${err.message || 'Check database table'}).`;
+        return [];
+      }
+    }
+
+    async function saveBullpenSessionToSupabase(profileObj, sourceType = 'csv') {
+      if (!profileObj) return null;
+      const client = initSupabaseClient();
+      if (!client || !appState.currentUser) {
+        appState.pendingGuestSession = { profileObj, sourceType };
+        showToast('Loaded locally (Guest Mode) — Sign In to save this bullpen to your account');
+        return null;
+      }
+
+      try {
+        const payload = {
+          user_id: appState.currentUser.id,
+          pitcher_name: profileObj.name,
+          throws: profileObj.throws,
+          session_date: profileObj.date,
+          source_type: sourceType,
+          total_pitches: profileObj.totalPitches,
+          pitches_json: profileObj.pitches
+        };
+        const { data, error } = await client
+          .from('bullpen_sessions')
+          .insert([payload])
+          .select();
+
+        if (error) throw error;
+        const inserted = Array.isArray(data) && data[0] ? data[0] : null;
+        if (inserted && inserted.id) {
+          const newId = 'saved_' + inserted.id;
+          delete PITCHER_PROFILES[profileObj.id];
+          profileObj.id = newId;
+          profileObj.supabaseRowId = inserted.id;
+          profileObj.team = `Saved Cloud Bullpen (${sourceType.toUpperCase()})`;
+          PITCHER_PROFILES[newId] = profileObj;
+          appState.currentPitcherId = newId;
+        }
+        rebuildPitcherSelectDropdown();
+        renderAll();
+        showToast(`Saved ${profileObj.name} to your private account!`);
+        return inserted;
+      } catch (err) {
+        showToast(`Loaded locally (Cloud save error: ${err.message || 'check network'})`);
+        return null;
+      }
+    }
+
+    async function deleteSavedBullpenSession(profileId) {
+      const target = PITCHER_PROFILES[profileId];
+      if (!target || BENCHMARK_PROFILE_IDS.includes(profileId)) return;
+
+      const client = initSupabaseClient();
+      if (client && appState.currentUser && target.supabaseRowId) {
+        try {
+          await client
+            .from('bullpen_sessions')
+            .delete()
+            .eq('id', target.supabaseRowId)
+            .eq('user_id', appState.currentUser.id);
+        } catch (err) {
+          // Proceed with local removal even if network call fails
+        }
+      }
+
+      delete PITCHER_PROFILES[profileId];
+      if (appState.currentPitcherId === profileId) {
+        appState.currentPitcherId = 'prospect_01';
+        appState.labTargetIdx = 0;
+        appState.pitchLabState = createEmptyPitchLabState(6);
+        syncSlidersToUI();
+      }
+      rebuildPitcherSelectDropdown();
+      renderAll();
+      showToast(`Deleted session: ${target.name}`);
+    }
+
+    async function handleAuthSignIn(email, password) {
+      const client = initSupabaseClient();
+      const statusBox = document.getElementById('authStatusBox');
+      if (!client) {
+        if (statusBox) statusBox.textContent = 'Supabase client unavailable (check internet connection).';
+        return null;
+      }
+      if (!email || !password) {
+        if (statusBox) statusBox.textContent = 'Please enter both email and password.';
+        return null;
+      }
+      if (statusBox) statusBox.textContent = 'Signing in...';
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+      if (error) {
+        if (statusBox) statusBox.textContent = `Sign In Error: ${error.message}`;
+        showToast(`Sign In Error: ${error.message}`);
+        return null;
+      }
+      appState.currentUser = (data && data.user) || (data && data.session && data.session.user) || { id: 'user', email };
+      updateAuthUIState();
+      if (appState.pendingGuestSession) {
+        const pending = appState.pendingGuestSession;
+        appState.pendingGuestSession = null;
+        await saveBullpenSessionToSupabase(pending.profileObj, pending.sourceType);
+      }
+      await fetchUserSavedSessions();
+      showToast(`Signed in as ${appState.currentUser.email}`);
+      return appState.currentUser;
+    }
+
+    async function handleAuthSignUp(email, password) {
+      const client = initSupabaseClient();
+      const statusBox = document.getElementById('authStatusBox');
+      if (!client) {
+        if (statusBox) statusBox.textContent = 'Supabase client unavailable (check internet connection).';
+        return null;
+      }
+      if (!email || !password) {
+        if (statusBox) statusBox.textContent = 'Please enter both email and password.';
+        return null;
+      }
+      if (statusBox) statusBox.textContent = 'Creating account...';
+      const { data, error } = await client.auth.signUp({ email, password });
+      if (error) {
+        if (statusBox) statusBox.textContent = `Sign Up Error: ${error.message}`;
+        showToast(`Sign Up Error: ${error.message}`);
+        return null;
+      }
+      if (data && data.user && data.session) {
+        appState.currentUser = data.user;
+        updateAuthUIState();
+        if (appState.pendingGuestSession) {
+          const pending = appState.pendingGuestSession;
+          appState.pendingGuestSession = null;
+          await saveBullpenSessionToSupabase(pending.profileObj, pending.sourceType);
+        }
+        await fetchUserSavedSessions();
+        showToast(`Account created & signed in as ${data.user.email}`);
+      } else {
+        if (statusBox) statusBox.textContent = 'Account created! Check your email if confirmation is required, or click Sign In.';
+        showToast('Account created!');
+      }
+      return data ? data.user : null;
+    }
+
+    async function handleAuthSignOut() {
+      const client = initSupabaseClient();
+      if (client && client.auth) {
+        try {
+          await client.auth.signOut();
+        } catch (err) {}
+      }
+      appState.currentUser = null;
+      clearCustomSessionsFromMemory();
+      updateAuthUIState();
+      showToast('Signed out — Guest Mode active (10 benchmark profiles)');
+    }
+
+    async function checkExistingSupabaseSession() {
+      const client = initSupabaseClient();
+      if (!client || !client.auth) return;
+      try {
+        const { data } = await client.auth.getSession();
+        if (data && data.session && data.session.user) {
+          appState.currentUser = data.session.user;
+          updateAuthUIState();
+          await fetchUserSavedSessions();
+        }
+      } catch (err) {}
+    }
+
     async function loadExternalXGBoostModel() {
       const pill = document.getElementById('engineStatusPill');
       const dot = document.getElementById('engineStatusDot');
@@ -3958,6 +4404,10 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
           appState.labTargetIdx = 0;
           const pCount = PITCHER_PROFILES[appState.currentPitcherId].pitches.length;
           appState.pitchLabState = createEmptyPitchLabState(pCount + 2);
+          const delBtn = document.getElementById('deleteSavedSessionBtn');
+          if (delBtn) {
+            delBtn.classList.toggle('hidden', BENCHMARK_PROFILE_IDS.includes(appState.currentPitcherId));
+          }
           syncSlidersToUI();
           renderAll();
         });
@@ -4163,14 +4613,15 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
             try {
               const res = await ingestTrackManPDF(ev.target.result, file.name);
               const typesStr = (res.pitchTypesList || []).join(', ');
+              await saveBullpenSessionToSupabase(res.profileObj, 'pdf');
               if (statusBox) {
-                statusBox.textContent = `Loaded ${res.pitcherName} (${res.layoutDetected}): ${res.totalRows} pitches across ${res.pitchTypesCount} pitch types (${typesStr}).`;
+                const saveNote = appState.currentUser ? 'Saved to your private account.' : 'Guest Mode (local only) — Sign In to save.';
+                statusBox.textContent = `Loaded ${res.pitcherName} (${res.layoutDetected}): ${res.totalRows} pitches across ${res.pitchTypesCount} pitch types (${typesStr}). ${saveNote}`;
               }
               if (uploadModal) {
                 uploadModal.classList.add('hidden');
                 uploadModal.classList.remove('flex');
               }
-              showToast(`PDF Loaded: ${res.pitcherName} (${res.totalRows} pitches • ${typesStr})`);
             } catch (err) {
               if (statusBox) statusBox.textContent = `PDF Error: ${err.message}`;
               showToast(`PDF Error: ${err.message}`);
@@ -4178,15 +4629,19 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
           };
           reader.readAsArrayBuffer(file);
         } else {
-          reader.onload = (ev) => {
+          reader.onload = async (ev) => {
             try {
+              const srcType = /\.json$/i.test(file.name) ? 'json' : 'csv';
               const res = parseTrackManCSVOrJSON(ev.target.result, file.name);
-              if (statusBox) statusBox.textContent = `Loaded ${res.pitcherName}: ${res.totalRows} pitches across ${res.pitchTypesCount} pitch types.`;
+              await saveBullpenSessionToSupabase(res.profileObj, srcType);
+              if (statusBox) {
+                const saveNote = appState.currentUser ? 'Saved to your private account.' : 'Guest Mode (local only) — Sign In to save.';
+                statusBox.textContent = `Loaded ${res.pitcherName}: ${res.totalRows} pitches across ${res.pitchTypesCount} pitch types. ${saveNote}`;
+              }
               if (uploadModal) {
                 uploadModal.classList.add('hidden');
                 uploadModal.classList.remove('flex');
               }
-              showToast(`Loaded ${res.pitcherName} (${res.totalRows} pitches)`);
             } catch (err) {
               if (statusBox) statusBox.textContent = `Error reading file: ${err.message}`;
             }
@@ -4309,13 +4764,68 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
 
       window.addEventListener('resize', scheduleCanvasAnd3DRedraw);
 
-      // 2. Initialize 3D WebGL (protected by try/catch), always run initial renderAll(), then set mobile tab & async XGBoost load
+      // Auth Modal & Saved Sessions Event Listeners
+      const authModal = document.getElementById('authModal');
+      const openAuthBtn = document.getElementById('openAuthModalBtn');
+      const closeAuthBtn = document.getElementById('closeAuthModalBtn');
+      const signInBtn = document.getElementById('authSignInBtn');
+      const signUpBtn = document.getElementById('authSignUpBtn');
+      const signOutBtn = document.getElementById('authSignOutBtn');
+      const quickSignOutBtn = document.getElementById('quickSignOutBtn');
+      const deleteSessionBtn = document.getElementById('deleteSavedSessionBtn');
+
+      if (openAuthBtn && authModal) {
+        openAuthBtn.addEventListener('click', () => {
+          updateAuthUIState();
+          authModal.classList.remove('hidden');
+          authModal.classList.add('flex');
+        });
+      }
+      if (closeAuthBtn && authModal) {
+        closeAuthBtn.addEventListener('click', () => {
+          authModal.classList.add('hidden');
+          authModal.classList.remove('flex');
+        });
+      }
+      if (signInBtn) {
+        signInBtn.addEventListener('click', async () => {
+          const emailEl = document.getElementById('authEmailInput');
+          const passEl = document.getElementById('authPasswordInput');
+          await handleAuthSignIn(emailEl ? emailEl.value.trim() : '', passEl ? passEl.value : '');
+        });
+      }
+      if (signUpBtn) {
+        signUpBtn.addEventListener('click', async () => {
+          const emailEl = document.getElementById('authEmailInput');
+          const passEl = document.getElementById('authPasswordInput');
+          await handleAuthSignUp(emailEl ? emailEl.value.trim() : '', passEl ? passEl.value : '');
+        });
+      }
+      if (signOutBtn) {
+        signOutBtn.addEventListener('click', async () => {
+          await handleAuthSignOut();
+        });
+      }
+      if (quickSignOutBtn) {
+        quickSignOutBtn.addEventListener('click', async () => {
+          await handleAuthSignOut();
+        });
+      }
+      if (deleteSessionBtn) {
+        deleteSessionBtn.addEventListener('click', async () => {
+          await deleteSavedBullpenSession(appState.currentPitcherId);
+        });
+      }
+
+      // 2. Initialize 3D WebGL (protected by try/catch), rebuild dropdown, run initial renderAll(), then load XGBoost & Supabase session
+      rebuildPitcherSelectDropdown();
       initThreeJS();
       renderAll();
       if (window.innerWidth < 768) {
         setActiveSectionTab('tier1');
       }
       loadExternalXGBoostModel();
+      checkExistingSupabaseSession();
 
       if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
