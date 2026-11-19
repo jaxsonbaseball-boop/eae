@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.4 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.5 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -608,6 +608,33 @@
           <span id="quickWinsSubtitle" class="text-[11px] font-mono-num text-slate-400">Ranked by realistic Arsenal+ gain &amp; coaching feasibility</span>
         </div>
         <div id="quickWinsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        <div id="quickWinsCommandNote" class="hidden mt-3 rounded-md bg-[#151921] border border-[#262c36] px-3 py-2 text-xs text-slate-300 leading-relaxed"></div>
+      </div>
+
+      <!-- Athlete Progression Panel (shown when selected athlete has 2+ saved sessions) -->
+      <div id="athleteProgressionCard" class="hidden mt-4 rounded-lg bg-[#10141b] border border-[#262c36] p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
+            <span id="athleteProgressionTitle" class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">Athlete Progression (2 Sessions)</span>
+          </div>
+          <span id="athleteProgressionSpan" class="text-[11px] font-mono-num text-slate-400">Session 1 → Current</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
+          <div id="athleteProgressionDeltas" class="lg:col-span-5 grid grid-cols-3 gap-2"></div>
+          <div class="lg:col-span-7 rounded-md bg-[#151921] border border-[#1f252e] p-2.5 flex flex-col justify-between">
+            <div class="flex items-center justify-between text-[10px] font-mono-num text-slate-400 mb-1">
+              <span>Arsenal+ Trendline Across Saved Sessions</span>
+              <span id="athleteProgressionSparkLabel" class="text-[#60a5fa]">Present D1 Scale</span>
+            </div>
+            <div class="relative h-24 w-full">
+              <canvas id="athleteProgressionCanvas" class="w-full h-full"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div id="athleteProgressionPills" class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-[#1f252e]"></div>
       </div>
     </section>
 
@@ -983,7 +1010,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.4 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.5 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between "Baseball / Scout (Simple)" and "Pro Analytics (R&amp;D)" in the top bar</span>
   </footer>
 
@@ -2684,7 +2711,25 @@
 
       candidates.sort((a, b) => b.weightedScore - a.weightedScore);
       const positive = candidates.filter((c) => c.arsenalGain > 0.05);
-      return (positive.length >= 2 ? positive : candidates).slice(0, 2);
+      const top2 = (positive.length >= 2 ? positive : candidates).slice(0, 2);
+
+      // Command & Pitch-Shape Consistency coaching note
+      const cmdFlags = [];
+      profile.pitches.forEach((p) => {
+        if (typeof p.zonePct === 'number' && Number.isFinite(p.zonePct) && p.zonePct < 45.0) {
+          cmdFlags.push(`${p.code} Zone% is ${p.zonePct.toFixed(0)}% (<45%) — prioritize strike-throwing command before chasing extra break`);
+        }
+        const highIvbSd = typeof p.ivbSd === 'number' && Number.isFinite(p.ivbSd) && p.ivbSd > 2.5;
+        const highHbSd = typeof p.hbSd === 'number' && Number.isFinite(p.hbSd) && p.hbSd > 2.5;
+        if (highIvbSd || highHbSd) {
+          const sdParts = [];
+          if (highIvbSd) sdParts.push(`IVB ±${p.ivbSd.toFixed(1)}"`);
+          if (highHbSd) sdParts.push(`HB ±${p.hbSd.toFixed(1)}"`);
+          cmdFlags.push(`${p.code} shape variance is elevated (${sdParts.join(', ')}) — standardize finger pressure & release slot for tighter repeatability`);
+        }
+      });
+      top2.commandNote = cmdFlags.length ? cmdFlags.join(' • ') : null;
+      return top2;
     }
 
     // =========================================================================
@@ -3520,20 +3565,79 @@
         const vals = arr.map(fn).filter((v) => Number.isFinite(v));
         return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : defVal;
       };
+      const sdOf = (vals) => {
+        if (!vals || vals.length < 2) return null;
+        const m = vals.reduce((a, b) => a + b, 0) / vals.length;
+        const variance = vals.reduce((acc, v) => acc + Math.pow(v - m, 2), 0) / (vals.length - 1);
+        return Number(Math.sqrt(Math.max(0, variance)).toFixed(2));
+      };
+      const parsePctField = (rawVal) => {
+        if (rawVal === undefined || rawVal === null || rawVal === '') return NaN;
+        const num = parseFloat(String(rawVal).replace('%', '').trim());
+        if (!Number.isFinite(num)) return NaN;
+        return (num >= 0 && num <= 1.0) ? num * 100.0 : num;
+      };
 
       const aggregatedPitches = Object.entries(groups).map(([code, grp]) => {
         const meta = PITCH_TYPE_META[code] || PITCH_TYPE_META.FF;
+        const isSummaryRow = grp.some((r) => Boolean(r._pdfIsSummary));
         const velos = grp.map((r) => parseFloat(getField(r, ['RelSpeed', 'Velo', 'ReleaseSpeed', 'Velocity'], NaN))).filter(Number.isFinite);
+        const ivbs = grp.map((r) => parseFloat(getField(r, ['InducedVertBreak', 'IVB', 'InducedVerticalBreak'], NaN))).filter(Number.isFinite);
+        const hbs = grp.map((r) => parseFloat(getField(r, ['HorzBreak', 'HB', 'HorizontalBreak'], NaN))).filter(Number.isFinite);
         const velo = velos.length ? velos.reduce((a, b) => a + b, 0) / velos.length : (code === 'FF' ? 85.0 : 75.0);
         const maxVelo = velos.length ? Math.max(...velos) : velo + 1.1;
         const spin = meanOf(grp, (r) => parseFloat(getField(r, ['SpinRate', 'Spin', 'TotalSpin'], NaN)), code === 'CH' ? 1550 : 2150);
-        const ivb = meanOf(grp, (r) => parseFloat(getField(r, ['InducedVertBreak', 'IVB', 'InducedVerticalBreak'], NaN)), code === 'FF' ? 16.0 : code === 'CH' ? 5.5 : -3.5);
-        const hb = meanOf(grp, (r) => parseFloat(getField(r, ['HorzBreak', 'HB', 'HorizontalBreak'], NaN)), code === 'FF' ? 11.0 : code === 'CH' ? 15.0 : -6.5);
+        const ivb = ivbs.length ? ivbs.reduce((a, b) => a + b, 0) / ivbs.length : (code === 'FF' ? 16.0 : code === 'CH' ? 5.5 : -3.5);
+        const hb = hbs.length ? hbs.reduce((a, b) => a + b, 0) / hbs.length : (code === 'FF' ? 11.0 : code === 'CH' ? 15.0 : -6.5);
         const relHeight = meanOf(grp, (r) => parseFloat(getField(r, ['RelHeight', 'ReleaseHeight', 'z0'], NaN)), 5.75);
         const relSide = meanOf(grp, (r) => parseFloat(getField(r, ['RelSide', 'ReleaseSide', 'x0'], NaN)), 1.85);
         const ext = meanOf(grp, (r) => parseFloat(getField(r, ['Extension', 'RelExtension', 'Ext'], NaN)), 6.00);
         const plateHeight = meanOf(grp, (r) => parseFloat(getField(r, ['PlateLocHeight', 'PlateZ', 'pz'], NaN)), 2.45);
         const plateSide = meanOf(grp, (r) => parseFloat(getField(r, ['PlateLocSide', 'PlateX', 'px'], NaN)), 0.0);
+
+        // Zone% from PlateLocHeight / PlateLocSide or explicit Zone% column
+        let zonePct = null;
+        const coordRows = grp
+          .map((r) => ({
+            pz: parseFloat(getField(r, ['PlateLocHeight', 'PlateZ', 'pz'], NaN)),
+            px: parseFloat(getField(r, ['PlateLocSide', 'PlateX', 'px'], NaN))
+          }))
+          .filter((pt) => Number.isFinite(pt.pz) && Number.isFinite(pt.px));
+        if (!isSummaryRow && coordRows.length > 0) {
+          const inZoneCnt = coordRows.filter((pt) => pt.pz >= 1.50 && pt.pz <= 3.50 && Math.abs(pt.px) <= 0.833).length;
+          zonePct = Number(((inZoneCnt / coordRows.length) * 100.0).toFixed(1));
+        } else {
+          const explicitZones = grp.map((r) => parsePctField(getField(r, ['Zone%', 'ZonePct', 'InZone%', 'InZonePct'], NaN))).filter(Number.isFinite);
+          if (explicitZones.length) {
+            zonePct = Number((explicitZones.reduce((a, b) => a + b, 0) / explicitZones.length).toFixed(1));
+          }
+        }
+
+        // Strike% from PitchCall or explicit Strike% column
+        let strikePct = null;
+        const callRows = grp
+          .map((r) => getField(r, ['PitchCall', 'Call', 'PitchResult'], ''))
+          .map((c) => String(c || '').trim())
+          .filter((c) => c.length > 0);
+        if (!isSummaryRow && callRows.length > 0) {
+          const strikeCnt = callRows.filter((c) => {
+            const norm = c.toLowerCase().replace(/[^a-z]/g, '');
+            return norm === 'strikecalled' || norm === 'strikeswinging' || norm === 'foulball' ||
+                   norm === 'foulballnotfieldable' || norm === 'foulballfieldable' || norm === 'inplay' ||
+                   norm.includes('strike') || norm.includes('foul') || norm.includes('inplay');
+          }).length;
+          strikePct = Number(((strikeCnt / callRows.length) * 100.0).toFixed(1));
+        } else {
+          const explicitStrikes = grp.map((r) => parsePctField(getField(r, ['Strike%', 'StrikePct', 'Str%', 'StrPct'], NaN))).filter(Number.isFinite);
+          if (explicitStrikes.length) {
+            strikePct = Number((explicitStrikes.reduce((a, b) => a + b, 0) / explicitStrikes.length).toFixed(1));
+          }
+        }
+
+        // Per-pitch-type standard deviations (null for single-row summary PDFs or count < 2)
+        const veloSd = (!isSummaryRow && grp.length >= 2) ? sdOf(velos) : null;
+        const ivbSd = (!isSummaryRow && grp.length >= 2) ? sdOf(ivbs) : null;
+        const hbSd = (!isSummaryRow && grp.length >= 2) ? sdOf(hbs) : null;
         const spinEff = meanOf(grp, (r) => parseFloat(getField(r, ['SpinEfficiency', 'SpinEff', 'TrueSpinPct'], NaN)), code === 'FF' ? 90.0 : code === 'CH' ? 78.0 : 45.0);
         const clockDeg = meanOf(grp, (r) => parseTiltToDegrees(getField(r, ['SpinAxis', 'Tilt', 'SpinTilt'], null)), code === 'FF' ? 40 : code === 'CH' ? 70 : 245);
         const clockTilt = degToClockString(clockDeg);
@@ -3586,7 +3690,12 @@
           pSwing,
           pWhiff,
           pCs,
-          xwobacon
+          xwobacon,
+          zonePct,
+          strikePct,
+          veloSd,
+          ivbSd,
+          hbSd
         };
       });
 
@@ -3716,7 +3825,9 @@
           relH: findIdx(['relheight', 'relh', 'releaseheight']),
           relS: findIdx(['relside', 'rels', 'releaseside']),
           ext: findIdx(['extension', 'ext']),
-          vaa: findIdx(['vaa', 'vertapprangle'])
+          vaa: findIdx(['vaa', 'vertapprangle']),
+          zonePct: findIdx(['zone%', 'zonepct', 'inzone', 'inzone%']),
+          strikePct: findIdx(['strike%', 'strikepct', 'str%'])
         };
         if (idxMap.velo !== -1 && (idxMap.ivb !== -1 || idxMap.spin !== -1 || idxMap.pitch !== -1)) {
           return idxMap;
@@ -3753,6 +3864,8 @@
         let relSVal = 1.85;
         let extVal = 6.00;
         let vaaVal = NaN;
+        let zonePctVal = NaN;
+        let strikePctVal = NaN;
 
         if (headerTokens && tokens.length >= 4) {
           const getNumAt = (idx) => {
@@ -3770,6 +3883,8 @@
           if (Number.isFinite(getNumAt(headerTokens.relS))) relSVal = Math.abs(getNumAt(headerTokens.relS));
           if (Number.isFinite(getNumAt(headerTokens.ext))) extVal = getNumAt(headerTokens.ext);
           vaaVal = getNumAt(headerTokens.vaa);
+          zonePctVal = getNumAt(headerTokens.zonePct);
+          strikePctVal = getNumAt(headerTokens.strikePct);
         }
 
         // Positional fallback when table spacing collapsed or header wasn't matched
@@ -3812,7 +3927,9 @@
           RelHeight: relHVal,
           RelSide: relSVal,
           Extension: extVal,
-          VertApprAngle: Number.isFinite(vaaVal) ? vaaVal : undefined
+          VertApprAngle: Number.isFinite(vaaVal) ? vaaVal : undefined,
+          ZonePct: Number.isFinite(zonePctVal) ? zonePctVal : undefined,
+          StrikePct: Number.isFinite(strikePctVal) ? strikePctVal : undefined
         });
       }
 
@@ -3830,8 +3947,9 @@
       const expandedRows = [];
       parsedRows.forEach((r) => {
         const repeatN = isSummaryTable ? Math.min(60, Math.max(1, r._pdfCount)) : 1;
+        const rowObj = isSummaryTable ? { ...r, _pdfIsSummary: true } : r;
         for (let k = 0; k < repeatN; k++) {
-          expandedRows.push(r);
+          expandedRows.push(rowObj);
         }
       });
 
@@ -3863,17 +3981,17 @@
       return parseTrackManPDFLines(allLines, fileName);
     }
 
-    const SAMPLE_TRACKMAN_CSV = `Pitcher,PitcherThrows,Date,TaggedPitchType,RelSpeed,SpinRate,SpinAxis,RelHeight,RelSide,Extension,InducedVertBreak,HorzBreak,PlateLocHeight,PlateLocSide
-Marcus Vance,R,10/28/2026,Fastball,89.4,2340,1:15,5.82,1.78,6.35,17.9,11.2,2.75,0.12
-Marcus Vance,R,10/28/2026,Fastball,90.1,2385,1:15,5.80,1.81,6.40,18.4,10.8,2.88,-0.08
-Marcus Vance,R,10/28/2026,Fastball,89.8,2360,1:15,5.81,1.79,6.38,18.1,11.5,2.62,0.21
-Marcus Vance,R,10/28/2026,Fastball,89.2,2315,1:15,5.79,1.82,6.32,17.6,11.0,2.50,0.05
-Marcus Vance,R,10/28/2026,Slider,79.6,2520,8:45,5.76,1.85,6.15,0.8,-8.4,1.92,-0.42
-Marcus Vance,R,10/28/2026,Slider,80.2,2565,8:45,5.74,1.87,6.18,1.2,-7.9,1.85,-0.38
-Marcus Vance,R,10/28/2026,Slider,79.8,2540,8:45,5.75,1.86,6.16,0.5,-8.8,1.78,-0.51
-Marcus Vance,R,10/28/2026,ChangeUp,80.4,1510,2:30,5.72,1.88,6.30,4.2,16.4,2.04,0.38
-Marcus Vance,R,10/28/2026,ChangeUp,80.9,1545,2:30,5.73,1.86,6.32,4.6,15.9,1.95,0.44
-Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0.31`;
+    const SAMPLE_TRACKMAN_CSV = `Pitcher,PitcherThrows,Date,TaggedPitchType,PitchCall,RelSpeed,SpinRate,SpinAxis,RelHeight,RelSide,Extension,InducedVertBreak,HorzBreak,PlateLocHeight,PlateLocSide
+Marcus Vance,R,10/28/2026,Fastball,StrikeCalled,89.4,2340,1:15,5.82,1.78,6.35,17.9,11.2,2.75,0.12
+Marcus Vance,R,10/28/2026,Fastball,StrikeSwinging,90.1,2385,1:15,5.80,1.81,6.40,18.4,10.8,2.88,-0.08
+Marcus Vance,R,10/28/2026,Fastball,FoulBall,89.8,2360,1:15,5.81,1.79,6.38,18.1,11.5,2.62,0.21
+Marcus Vance,R,10/28/2026,Fastball,BallCalled,89.2,2315,1:15,5.79,1.82,6.32,17.6,11.0,3.62,0.94
+Marcus Vance,R,10/28/2026,Slider,StrikeSwinging,79.6,2520,8:45,5.76,1.85,6.15,0.8,-8.4,1.92,-0.42
+Marcus Vance,R,10/28/2026,Slider,BallCalled,80.2,2565,8:45,5.74,1.87,6.18,1.2,-7.9,1.35,-0.98
+Marcus Vance,R,10/28/2026,Slider,StrikeCalled,79.8,2540,8:45,5.75,1.86,6.16,0.5,-8.8,1.78,-0.51
+Marcus Vance,R,10/28/2026,ChangeUp,InPlay,80.4,1510,2:30,5.72,1.88,6.30,4.2,16.4,2.04,0.38
+Marcus Vance,R,10/28/2026,ChangeUp,StrikeSwinging,80.9,1545,2:30,5.73,1.86,6.32,4.6,15.9,1.95,0.44
+Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.38,0.92`;
 
     // =========================================================================
     // 6. DOM RENDERING: SEAMLESS "SCOUT VIEW" vs "PRO ANALYTICS (R&D)" TOGGLE
@@ -3888,7 +4006,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
 
       setLabelText('headerBadgeVersion', isScout
         ? 'Easy Arsenal Evaluation'
-        : 'v5.4 R&D • Easy Arsenal Evaluation (10×10 Grid)');
+        : 'v5.5 R&D • Easy Arsenal Evaluation (10×10 Grid)');
 
       // Section 1 headers & labels
       setLabelText('tier1Eyebrow', '01 / SCOUT CARD');
@@ -4101,13 +4219,25 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-slate-800/80 text-[11px] font-mono-num text-slate-300">
+          <div class="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-[#1f252e] text-[11px] font-mono-num text-slate-300">
             <div>Velo: <span class="text-white font-semibold">${p.velo.toFixed(1)}</span></div>
             <div>Plate: <span class="text-slate-200 font-semibold">${p.plateSpeedMph.toFixed(1)}</span></div>
             <div>Angle: <span class="text-white font-semibold">${p.vaa.toFixed(1)}°</span></div>
-            <div class="col-span-2">Break: <span class="text-sky-300 font-semibold">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}" V / ${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}" H</span></div>
+            <div class="col-span-2">Break: <span class="text-[#60a5fa] font-semibold">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}" V / ${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}" H</span></div>
             <div>Time: <span class="font-semibold" style="color:${p.reactionMeta.colorHex}">${p.reactionMarginMs.toFixed(0)}ms</span></div>
           </div>
+          ${(typeof p.zonePct === 'number' || typeof p.strikePct === 'number' || typeof p.veloSd === 'number' || typeof p.ivbSd === 'number' || typeof p.hbSd === 'number') ? `
+          <div class="pt-1.5 border-t border-[#1f252e] space-y-1">
+            ${(typeof p.zonePct === 'number' || typeof p.strikePct === 'number') ? `
+            <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-mono-num">
+              ${typeof p.zonePct === 'number' ? `<span class="px-1.5 py-0.5 rounded bg-[#10141b] border border-[#262c36] text-slate-200">Zone%: <strong class="${p.zonePct < 45 ? 'text-amber-300' : 'text-emerald-300'}">${p.zonePct.toFixed(0)}%</strong></span>` : ''}
+              ${typeof p.strikePct === 'number' ? `<span class="px-1.5 py-0.5 rounded bg-[#10141b] border border-[#262c36] text-slate-200">Strike%: <strong class="${p.strikePct < 55 ? 'text-amber-300' : 'text-emerald-300'}">${p.strikePct.toFixed(0)}%</strong></span>` : ''}
+            </div>` : ''}
+            ${(typeof p.veloSd === 'number' || typeof p.ivbSd === 'number' || typeof p.hbSd === 'number') ? `
+            <div class="text-[10px] font-mono-num text-slate-400">
+              Consistency: Velo ±${typeof p.veloSd === 'number' ? p.veloSd.toFixed(1) : '—'} | IVB ±${typeof p.ivbSd === 'number' ? p.ivbSd.toFixed(1) : '—'}" | HB ±${typeof p.hbSd === 'number' ? p.hbSd.toFixed(1) : '—'}"
+            </div>` : ''}
+          </div>` : ''}
         </div>
       `;
       }).join('');
@@ -4201,7 +4331,20 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
             showToast(`Loaded "${selected.title}" into What-If Pitch Lab`);
           });
         });
+
+        const cmdNoteEl = document.getElementById('quickWinsCommandNote');
+        if (cmdNoteEl) {
+          if (quickWinsList && quickWinsList.commandNote) {
+            cmdNoteEl.innerHTML = `<strong class="text-amber-300 font-mono-num uppercase text-[10px] tracking-wider mr-1.5">Command &amp; Consistency Note:</strong>${quickWinsList.commandNote}`;
+            cmdNoteEl.classList.remove('hidden');
+          } else {
+            cmdNoteEl.textContent = '';
+            cmdNoteEl.classList.add('hidden');
+          }
+        }
       }
+
+      renderAthleteProgressionPanel(profile);
 
       // Requirement 4: Update What-If Pitch Lab Panel with Pitching-Coach Prose
       const labSelect = document.getElementById('labPitchSelect');
@@ -4459,6 +4602,207 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
       return supabaseClient;
     }
 
+    function normalizeAthleteName(name) {
+      return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function getSessionSortTime(p) {
+      if (p && p.createdAt) {
+        const ts = Date.parse(p.createdAt);
+        if (Number.isFinite(ts)) return ts;
+      }
+      if (p && p.date) {
+        const ts = Date.parse(p.date);
+        if (Number.isFinite(ts)) return ts;
+      }
+      return 0;
+    }
+
+    function getAthleteSavedSessionGroup(profile) {
+      if (!profile || BENCHMARK_PROFILE_IDS.includes(profile.id)) return [];
+      const normName = normalizeAthleteName(profile.name);
+      if (!normName) return [];
+      const matches = Object.keys(PITCHER_PROFILES)
+        .filter((k) => !BENCHMARK_PROFILE_IDS.includes(k))
+        .map((k) => PITCHER_PROFILES[k])
+        .filter((p) => p && normalizeAthleteName(p.name) === normName);
+      matches.sort((a, b) => getSessionSortTime(a) - getSessionSortTime(b) || String(a.id).localeCompare(String(b.id)));
+      return matches;
+    }
+
+    let lastProgressionSeries = [];
+
+    function drawAthleteProgressionSparkline(series, activeProfileId) {
+      const canvas = document.getElementById('athleteProgressionCanvas');
+      if (!canvas || !series || series.length < 2) return;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.max(rect.width, 240);
+      const h = Math.max(rect.height, 84);
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+
+      const vals = series.map((s) => s.arsenalPlus);
+      const minV = Math.min(...vals, 95) - 4;
+      const maxV = Math.max(...vals, 105) + 4;
+      const padL = 28;
+      const padR = 22;
+      const padT = 16;
+      const padB = 18;
+      const plotW = Math.max(40, w - padL - padR);
+      const plotH = Math.max(24, h - padT - padB);
+
+      const xOf = (i) => padL + (series.length === 1 ? plotW / 2 : (i / (series.length - 1)) * plotW);
+      const yOf = (v) => padT + plotH - ((v - minV) / Math.max(1e-6, maxV - minV)) * plotH;
+
+      // D1 100 reference line if in range
+      if (100 >= minV && 100 <= maxV) {
+        const y100 = yOf(100);
+        ctx.save();
+        ctx.strokeStyle = '#262c36';
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padL, y100);
+        ctx.lineTo(w - padR, y100);
+        ctx.stroke();
+        ctx.fillStyle = '#64748b';
+        ctx.font = '9px JetBrains Mono, monospace';
+        ctx.fillText('100', 4, y100 + 3);
+        ctx.restore();
+      }
+
+      // Trendline
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      series.forEach((pt, i) => {
+        const x = xOf(i);
+        const y = yOf(pt.arsenalPlus);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Points & labels
+      series.forEach((pt, i) => {
+        const x = xOf(i);
+        const y = yOf(pt.arsenalPlus);
+        const isActive = pt.id === activeProfileId;
+        ctx.fillStyle = isActive ? '#60a5fa' : '#151921';
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y, isActive ? 4.5 : 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = isActive ? '#ffffff' : '#94a3b8';
+        ctx.font = (isActive ? 'bold ' : '') + '9px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(pt.arsenalPlus.toFixed(1), x, y - 7);
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(`S${i + 1}`, x, h - 4);
+      });
+    }
+
+    function renderAthleteProgressionPanel(activeProfile) {
+      const card = document.getElementById('athleteProgressionCard');
+      if (!card) return;
+      const group = getAthleteSavedSessionGroup(activeProfile);
+      if (group.length < 2) {
+        lastProgressionSeries = [];
+        card.classList.add('hidden');
+        return;
+      }
+
+      card.classList.remove('hidden');
+      const series = group.map((sess, idx) => {
+        const emptyLab = createEmptyPitchLabState(sess.pitches.length);
+        const ev = evaluateFullPipeline(sess, appState.pacingMode, emptyLab, appState.coupledSlotArc, 'present');
+        const fbVelo = ev.gradedPitches[0] ? ev.gradedPitches[0].velo : 0;
+        const secPitches = ev.gradedPitches.slice(1);
+        const bestSec = secPitches.length
+          ? [...secPitches].sort((a, b) => b.shrunkStuff - a.shrunkStuff)[0]
+          : ev.gradedPitches[0];
+        return {
+          id: sess.id,
+          sessionNum: idx + 1,
+          date: sess.date || 'Session',
+          arsenalPlus: ev.arsenalPlus,
+          fbVelo,
+          bestSecStuff: bestSec ? bestSec.shrunkStuff : 0,
+          bestSecCode: bestSec ? bestSec.code : '—'
+        };
+      });
+      lastProgressionSeries = series;
+
+      const first = series[0];
+      const cur = series.find((s) => s.id === activeProfile.id) || series[series.length - 1];
+      const dArs = cur.arsenalPlus - first.arsenalPlus;
+      const dVelo = cur.fbVelo - first.fbVelo;
+      const dSec = cur.bestSecStuff - first.bestSecStuff;
+
+      const titleEl = document.getElementById('athleteProgressionTitle');
+      if (titleEl) titleEl.textContent = `Athlete Progression (${series.length} Sessions) — ${activeProfile.name}`;
+      const spanEl = document.getElementById('athleteProgressionSpan');
+      if (spanEl) spanEl.textContent = `Session 1 (${first.date}) → Session ${cur.sessionNum} (${cur.date})`;
+
+      const fmtDelta = (v, unit = '') => `${v >= 0 ? '+' : ''}${v.toFixed(1)}${unit}`;
+      const clsDelta = (v) => v > 0.05 ? 'text-emerald-400' : (v < -0.05 ? 'text-rose-400' : 'text-slate-400');
+
+      const deltasEl = document.getElementById('athleteProgressionDeltas');
+      if (deltasEl) {
+        deltasEl.innerHTML = `
+          <div class="rounded-md bg-[#151921] border border-[#1f252e] p-2.5 flex flex-col justify-between">
+            <div class="text-[10px] font-mono-num uppercase text-slate-400">Arsenal+</div>
+            <div class="text-base font-extrabold font-mono-num text-white mt-0.5">${cur.arsenalPlus.toFixed(1)}</div>
+            <div class="text-[11px] font-mono-num font-bold ${clsDelta(dArs)}">${fmtDelta(dArs)} vs S1</div>
+          </div>
+          <div class="rounded-md bg-[#151921] border border-[#1f252e] p-2.5 flex flex-col justify-between">
+            <div class="text-[10px] font-mono-num uppercase text-slate-400">FB Velo</div>
+            <div class="text-base font-extrabold font-mono-num text-white mt-0.5">${cur.fbVelo.toFixed(1)}</div>
+            <div class="text-[11px] font-mono-num font-bold ${clsDelta(dVelo)}">${fmtDelta(dVelo, ' mph')}</div>
+          </div>
+          <div class="rounded-md bg-[#151921] border border-[#1f252e] p-2.5 flex flex-col justify-between">
+            <div class="text-[10px] font-mono-num uppercase text-slate-400">Best Sec (${cur.bestSecCode})</div>
+            <div class="text-base font-extrabold font-mono-num text-white mt-0.5">${cur.bestSecStuff.toFixed(1)}</div>
+            <div class="text-[11px] font-mono-num font-bold ${clsDelta(dSec)}">${fmtDelta(dSec)} vs S1</div>
+          </div>
+        `;
+      }
+
+      const pillsEl = document.getElementById('athleteProgressionPills');
+      if (pillsEl) {
+        pillsEl.innerHTML = series.map((s) => {
+          const isCur = s.id === activeProfile.id;
+          const btnCls = isCur
+            ? 'bg-[#3b82f6] text-white border-[#3b82f6]'
+            : 'bg-[#151921] text-slate-300 border-[#262c36] hover:bg-[#1e2530]';
+          return `<button type="button" data-prog-session-id="${s.id}" class="prog-session-pill px-2.5 py-1 rounded border text-[11px] font-mono-num font-semibold transition ${btnCls}">Session ${s.sessionNum} • ${s.date} (${s.arsenalPlus.toFixed(1)})</button>`;
+        }).join('');
+
+        document.querySelectorAll('.prog-session-pill').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const targetId = btn.getAttribute('data-prog-session-id');
+            if (!targetId || !PITCHER_PROFILES[targetId]) return;
+            appState.currentPitcherId = targetId;
+            appState.labTargetIdx = 0;
+            appState.pitchLabState = createEmptyPitchLabState(PITCHER_PROFILES[targetId].pitches.length + 2);
+            const sel = document.getElementById('pitcherSelect');
+            if (sel) sel.value = targetId;
+            syncSlidersToUI();
+            renderAll();
+          });
+        });
+      }
+
+      drawAthleteProgressionSparkline(series, activeProfile.id);
+    }
+
     function rebuildPitcherSelectDropdown() {
       const sel = document.getElementById('pitcherSelect');
       if (!sel) return;
@@ -4468,10 +4812,24 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
 
       if (customKeys.length > 0) {
         htmlOpts += '<optgroup id="mySavedSessionsOptgroup" label="My Saved Sessions">';
+        const groupedByAthlete = {};
         customKeys.forEach((k) => {
           const p = PITCHER_PROFILES[k];
-          const tag = p.supabaseRowId ? 'Saved' : 'Local';
-          htmlOpts += `<option value="${k}">${p.name} (${p.throws}HP — ${p.date} • N=${p.totalPitches} • ${tag})</option>`;
+          const norm = normalizeAthleteName(p.name) || k;
+          if (!groupedByAthlete[norm]) groupedByAthlete[norm] = [];
+          groupedByAthlete[norm].push(p);
+        });
+        Object.values(groupedByAthlete).forEach((grp) => {
+          grp.sort((a, b) => getSessionSortTime(a) - getSessionSortTime(b) || String(a.id).localeCompare(String(b.id)));
+          const total = grp.length;
+          grp.forEach((p, idx) => {
+            if (total >= 2) {
+              htmlOpts += `<option value="${p.id}">${p.name} • ${p.date} (Session ${idx + 1} of ${total})</option>`;
+            } else {
+              const tag = p.supabaseRowId ? 'Saved' : 'Local';
+              htmlOpts += `<option value="${p.id}">${p.name} • ${p.date} (${p.throws}HP • N=${p.totalPitches} • ${tag})</option>`;
+            }
+          });
         });
         htmlOpts += '</optgroup>';
       }
@@ -4706,6 +5064,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
             throws: row.throws || 'R',
             team: `Saved Cloud Bullpen (${(row.source_type || 'CSV').toUpperCase()})`,
             date: row.session_date || '11/18/2026',
+            createdAt: row.created_at || null,
             totalPitches: Number(row.total_pitches) || pitchesArr.reduce((acc, p) => acc + (p.count || 1), 0),
             isHighSchool: true,
             isCustomSession: true,
@@ -5001,6 +5360,9 @@ Marcus Vance,R,10/28/2026,ChangeUp,80.1,1485,2:30,5.71,1.89,6.28,3.8,16.8,1.88,0
           drawMovementMatrix(appState.lastBaselineEval, appState.lastSimEval);
           drawSpinClock(appState.lastSimEval);
           drawBayesForestPlot(appState.lastSimEval);
+          if (lastProgressionSeries.length >= 2) {
+            drawAthleteProgressionSparkline(lastProgressionSeries, appState.currentPitcherId);
+          }
         }
       });
     }
