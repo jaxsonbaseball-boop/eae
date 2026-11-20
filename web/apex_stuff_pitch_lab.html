@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.5 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.7 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -78,6 +78,7 @@
       #uploadModal,
       #authModal,
       #contactModal,
+      #renameSessionModal,
       #toastBanner,
       #webglCanvasWrapper {
         display: none !important;
@@ -182,6 +183,19 @@
         <button id="uploadGateSignInBtn" type="button" class="touch-target shrink-0 px-3 py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
           Sign In / Sign Up
         </button>
+      </div>
+
+      <!-- Assign to Athlete Folder -->
+      <div id="uploadAthleteFolderBox" class="rounded-lg bg-[#10141b] border border-[#262c36] p-3 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <label for="uploadAthleteFolderSelect" class="text-[11px] font-semibold uppercase tracking-wider text-slate-300">Assign to Athlete Folder</label>
+          <span class="text-[10px] font-mono-num text-slate-400">Groups sessions for progression</span>
+        </div>
+        <select id="uploadAthleteFolderSelect" class="touch-target w-full rounded-md bg-[#151921] border border-[#262c36] px-2.5 py-2 text-xs text-slate-100 font-medium focus:outline-none focus:border-[#3b82f6]">
+          <option value="__auto__">Auto-detect from file</option>
+          <option value="__new__">+ Create New Athlete Folder...</option>
+        </select>
+        <input id="newAthleteFolderInput" type="text" placeholder="Enter new athlete folder name (e.g., Marcus Vance)" class="hidden touch-target w-full rounded-md bg-[#151921] border border-[#3b82f6] px-3 py-2 text-xs text-white focus:outline-none" />
       </div>
 
       <!-- Drag and Drop Zone -->
@@ -336,6 +350,42 @@
     </div>
   </div>
 
+  <!-- Move / Rename Athlete Folder Modal -->
+  <div id="renameSessionModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
+    <div class="glass-card rounded-lg max-w-md w-full p-5 sm:p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-[#262c36] pb-3">
+        <div>
+          <span class="text-[11px] font-mono-num uppercase tracking-widest text-[#60a5fa] font-semibold">Saved Session Organization</span>
+          <h3 class="text-base font-bold text-white">Move / Rename Athlete Folder</h3>
+        </div>
+        <button id="closeRenameModalBtn" type="button" class="touch-target px-2.5 py-1 rounded-md bg-[#1e2530] hover:bg-[#262f3d] text-slate-300 border border-[#333c4a] text-xs font-semibold">
+          Cancel
+        </button>
+      </div>
+      <div class="space-y-3">
+        <div id="renameCurrentSessionInfo" class="text-xs font-mono-num text-slate-400 bg-[#10141b] border border-[#1f252e] rounded-md px-3 py-2">
+          Current session
+        </div>
+        <div>
+          <label for="renameAthleteFolderSelect" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">Target Athlete Folder</label>
+          <select id="renameAthleteFolderSelect" class="touch-target w-full rounded-md bg-[#10141b] border border-[#262c36] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#3b82f6]">
+            <option value="__new__">+ Create New Athlete Folder...</option>
+          </select>
+        </div>
+        <div id="renameNewNameWrapper">
+          <label for="renameAthleteNewNameInput" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">Athlete Folder Name</label>
+          <input id="renameAthleteNewNameInput" type="text" placeholder="Enter athlete name..." class="touch-target w-full rounded-md bg-[#10141b] border border-[#262c36] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#3b82f6]" />
+        </div>
+        <div id="renameStatusBox" class="hidden text-xs font-mono-num text-amber-300 bg-[#10141b] border border-[#262c36] rounded-md px-3 py-2"></div>
+        <div class="flex items-center justify-end gap-2 pt-1">
+          <button id="confirmRenameSessionBtn" type="button" class="touch-target px-4 py-2 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
+            Save Athlete Folder
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Top Navigation & Control Bar -->
   <header class="sticky top-0 z-40 border-b border-[#262c36] bg-[#10141b] no-print pt-[env(safe-area-inset-top)]">
     <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex flex-col md:flex-row md:items-center md:justify-between gap-2.5">
@@ -420,6 +470,10 @@
           <div class="flex flex-wrap items-center gap-1.5 w-full md:w-auto md:mt-3.5">
             <button id="openUploadModalBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
               Upload TrackMan
+            </button>
+
+            <button id="renameSavedSessionBtn" type="button" class="hidden touch-target flex-1 md:flex-none px-2.5 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-[#60a5fa] border border-[#262c36] text-xs font-semibold transition">
+              Move / Rename Athlete
             </button>
 
             <button id="deleteSavedSessionBtn" type="button" class="hidden touch-target flex-1 md:flex-none px-2.5 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-rose-400 border border-[#262c36] text-xs font-semibold transition">
@@ -1010,7 +1064,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.5 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.7 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between "Baseball / Scout (Simple)" and "Pro Analytics (R&amp;D)" in the top bar</span>
   </footer>
 
@@ -3491,7 +3545,8 @@
 
     function normalizePitchCode(rawTag) {
       const s = String(rawTag || 'FF').trim().toUpperCase();
-      if (s.includes('SINK') || s === 'SI' || s === 'FT' || s.includes('TWO')) return 'SI';
+      if (s.includes('4-SEAM') || s.includes('FOUR-SEAM') || s.includes('4SEAM') || s.includes('FOURSEAM')) return 'FF';
+      if (s.includes('SINK') || s === 'SI' || s === 'FT' || s.includes('TWO') || s.includes('2-SEAM') || s.includes('2SEAM')) return 'SI';
       if (s.includes('CUT') || s === 'FC') return 'FC';
       if (s.includes('SWEEP') || s === 'SW' || s === 'ST') return 'SW';
       if (s.includes('SLID') || s === 'SL') return 'SL';
@@ -3585,7 +3640,8 @@
         const ivbs = grp.map((r) => parseFloat(getField(r, ['InducedVertBreak', 'IVB', 'InducedVerticalBreak'], NaN))).filter(Number.isFinite);
         const hbs = grp.map((r) => parseFloat(getField(r, ['HorzBreak', 'HB', 'HorizontalBreak'], NaN))).filter(Number.isFinite);
         const velo = velos.length ? velos.reduce((a, b) => a + b, 0) / velos.length : (code === 'FF' ? 85.0 : 75.0);
-        const maxVelo = velos.length ? Math.max(...velos) : velo + 1.1;
+        const explicitMaxVelos = grp.map((r) => parseFloat(getField(r, ['MaxVelo', 'MaxRelSpeed'], NaN))).filter(Number.isFinite);
+        const maxVelo = explicitMaxVelos.length ? Math.max(...explicitMaxVelos) : (velos.length ? Math.max(...velos) : velo + 1.1);
         const spin = meanOf(grp, (r) => parseFloat(getField(r, ['SpinRate', 'Spin', 'TotalSpin'], NaN)), code === 'CH' ? 1550 : 2150);
         const ivb = ivbs.length ? ivbs.reduce((a, b) => a + b, 0) / ivbs.length : (code === 'FF' ? 16.0 : code === 'CH' ? 5.5 : -3.5);
         const hb = hbs.length ? hbs.reduce((a, b) => a + b, 0) / hbs.length : (code === 'FF' ? 11.0 : code === 'CH' ? 15.0 : -6.5);
@@ -3736,12 +3792,18 @@
     // =========================================================================
     // 5B. CLIENT-SIDE TRACKMAN PDF REPORT PARSER (MOZILLA PDF.JS)
     // =========================================================================
+    function normalizePDFTextLine(str) {
+      return String(str || '')
+        .replace(/[\u2212\u2012\u2013]/g, '-')
+        .replace(/[\u00A0\u2007\u202F]/g, ' ');
+    }
+
     function reconstructLinesFromPDFItems(items, yTolerancePx = 3.0) {
       if (!items || !items.length) return [];
       const cleaned = items
-        .filter((it) => it && typeof it.str === 'string' && it.str.trim().length > 0 && Array.isArray(it.transform))
+        .filter((it) => it && typeof it.str === 'string' && normalizePDFTextLine(it.str).trim().length > 0 && Array.isArray(it.transform))
         .map((it) => ({
-          str: it.str.trim(),
+          str: normalizePDFTextLine(it.str).trim(),
           x: Number(it.transform[4]) || 0,
           y: Number(it.transform[5]) || 0
         }));
@@ -3769,16 +3831,18 @@
 
       return lineGroups.map((grp) => {
         grp.items.sort((a, b) => a.x - b.x);
-        return grp.items.map((it) => it.str).join('  ');
+        return normalizePDFTextLine(grp.items.map((it) => it.str).join('  '));
       });
     }
 
     function extractTrackManPDFMetadata(lines, fileName) {
       let pitcherName = fileName.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').trim() || 'Uploaded PDF Pitcher';
       let throws = 'R';
+      let throwsExplicit = false;
       let sessionDate = '11/18/2026';
 
-      for (const line of lines.slice(0, 35)) {
+      for (const rawLine of lines.slice(0, 35)) {
+        const line = normalizePDFTextLine(rawLine);
         const nameMatch = line.match(/(?:Pitcher|Player|Name)\s*[:\-]\s*([A-Za-z0-9#.,'\- ]{2,45})/i);
         if (nameMatch && nameMatch[1]) {
           pitcherName = nameMatch[1].split(/\s{2,}|Throws|Hand|Date/i)[0].trim();
@@ -3787,13 +3851,254 @@
                             line.match(/\b(LHP|RHP)\b/i);
         if (throwsMatch && throwsMatch[1]) {
           throws = throwsMatch[1].trim().toUpperCase().startsWith('L') ? 'L' : 'R';
+          throwsExplicit = true;
         }
-        const dateMatch = line.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}-\d{2}-\d{2})/);
+        const dateMatch = line.match(/(\d{4}-\d{2}-\d{2}|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
         if (dateMatch && dateMatch[1]) {
           sessionDate = dateMatch[1];
         }
       }
-      return { pitcherName, throws, sessionDate };
+      return { pitcherName, throws, throwsExplicit, sessionDate };
+    }
+
+    function detectTreadAthleticsHeader(normLines) {
+      const aliasPatterns = [
+        { key: 'pitcher', re: /^pitcher$/i },
+        { key: 'pitch', re: /^(?:pitch|pitch\s*type)$/i },
+        { key: 'count', re: /^(?:#|count|n|pitches)$/i },
+        { key: 'avgVelo', re: /^avg\.?\s*velo(?:city)?$/i },
+        { key: 'maxVelo', re: /^max\.?\s*velo(?:city)?$/i },
+        { key: 'vert', re: /^(?:vert|ivb|vert\.?\s*break)$/i },
+        { key: 'horz', re: /^(?:horz|hb|horz\.?\s*break)$/i },
+        { key: 'avgSpin', re: /^(?:avg\.?\s*spin|spin\s*rate|spin)$/i },
+        { key: 'height', re: /^(?:height|rel\.?\s*height|rel\s*h)$/i },
+        { key: 'side', re: /^(?:side|rel\.?\s*side|rel\s*s)$/i },
+        { key: 'ext', re: /^(?:extension|ext\.?)$/i },
+        { key: 'tilt', re: /^(?:tilt|spin\s*tilt|spin\s*axis)$/i },
+        { key: 'zonePct', re: /^(?:zone\s*%|zone\s*pct|in\s*zone\s*%)$/i },
+        { key: 'strikePct', re: /^(?:strike\s*%|strike\s*pct|str\s*%)$/i }
+      ];
+
+      function parseTreadHeaderLine(line) {
+        let tokens = line.split(/\s{2,}|\t+/).map((t) => t.trim()).filter(Boolean);
+        // Fallback for single-space-separated Tread headers
+        if (tokens.length < 5) {
+          const singleRe = /AVG\.?\s+VELO|MAX\.?\s+VELO|AVG\.?\s+SPIN|PITCH\s+TYPE|SPIN\s+TILT|SPIN\s+AXIS|ZONE\s*%|STRIKE\s*%|PITCHER|PITCH|#|VERT|HORZ|HEIGHT|SIDE|EXTENSION|EXT|TILT/gi;
+          const m = line.match(singleRe);
+          if (m && m.length >= 5) tokens = m.map((s) => s.trim());
+        }
+        if (tokens.length < 5) return null;
+
+        const colMap = {};
+        tokens.forEach((tok, idx) => {
+          for (const { key, re } of aliasPatterns) {
+            if (colMap[key] === undefined && re.test(tok)) {
+              colMap[key] = idx;
+              break;
+            }
+          }
+        });
+
+        const treadSpecificCount = ['avgVelo', 'maxVelo', 'vert', 'horz', 'avgSpin', 'height', 'side']
+          .filter((k) => colMap[k] !== undefined && /^(?:avg|max|vert|horz|height|side)/i.test(tokens[colMap[k]]))
+          .length;
+
+        if (colMap.pitch !== undefined && colMap.avgVelo !== undefined && treadSpecificCount >= 3) {
+          const orderedAfterPitch = Object.entries(colMap)
+            .filter(([k, idx]) => k !== 'pitch' && k !== 'pitcher' && idx > colMap.pitch)
+            .sort((a, b) => a[1] - b[1])
+            .map(([k]) => k);
+          return { colMap, orderedAfterPitch };
+        }
+        return null;
+      }
+
+      for (let i = 0; i < normLines.length; i++) {
+        const res = parseTreadHeaderLine(normLines[i]);
+        if (res) {
+          return { headerLineIdx: i, ...res };
+        }
+      }
+      return null;
+    }
+
+    function parseTreadAthleticsPDFLines(normLines, fileName, headerInfo) {
+      const treadPitchRegex = /\b(4-?Seam(?:\s+Fastball)?|Four-?Seam(?:\s+Fastball)?|2-?Seam(?:\s+Fastball)?|Two-?Seam(?:\s+Fastball)?|Fastball|Sinker|Cutter|Sweeper|Slider|Knuckle-?\s*Curve|Curveball|Changeup|Change|Splitter|Split-?Finger|Split|FF|FA|SI|FT|FC|SW|ST|SL|CU|KC|CH|FS)\b/i;
+      const boilerplateWords = new Set([
+        'tread', 'athletics', 'trackman', 'data', 'breakdown', 'pitch', 'metrics',
+        'summary', 'report', 'movement', 'release', 'location', 'profile', 'pitcher',
+        'total', 'totals', 'average', 'averages', 'all', 'pitches', 'page', 'table',
+        'avg', 'max', 'velo', 'vert', 'horz', 'spin', 'height', 'side', 'extension',
+        'bullpen', 'live', 'session', 'overview', 'chart', 'charts', 'velocity', 'break'
+      ]);
+
+      function isLikelyNameFragment(text) {
+        const clean = String(text || '').replace(/[|,]+/g, ' ').trim();
+        if (!clean || clean.length < 2 || clean.length > 42 || /\d/.test(clean)) return false;
+        const words = clean.split(/\s+/);
+        if (words.length < 1 || words.length > 3) return false;
+        if (!words.every((w) => /^[A-Z][a-zA-Z'.-]*$/.test(w))) return false;
+        if (words.some((w) => boilerplateWords.has(w.toLowerCase()))) return false;
+        return true;
+      }
+
+      // Extract Page 1 metadata (Date YYYY-MM-DD, explicit throws, and Page 1 pitcher name)
+      const baseMeta = extractTrackManPDFMetadata(normLines, fileName);
+      let page1Name = null;
+      let sessionDate = baseMeta.sessionDate;
+      const preHeaderEnd = Math.min(normLines.length, Math.max(headerInfo.headerLineIdx, 15));
+
+      for (let i = 0; i < preHeaderEnd; i++) {
+        const line = normLines[i].trim();
+        const isoDate = line.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+        if (isoDate && isoDate[1]) {
+          sessionDate = isoDate[1];
+        }
+        const labeledName = line.match(/(?:Pitcher|Player|Athlete|Name)\s*[:\-]\s*([A-Za-z][A-Za-z'.\- ]{1,42})/i);
+        if (labeledName && labeledName[1]) {
+          const cand = labeledName[1].split(/\s{2,}|Throws|Hand|Date|\d{4}-\d{2}-\d{2}/i)[0].trim();
+          if (isLikelyNameFragment(cand)) page1Name = cand;
+        }
+        if (!page1Name) {
+          const stripped = line.replace(/\b\d{4}-\d{2}-\d{2}\b/g, '').replace(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g, '').replace(/\b(LHP|RHP)\b/gi, '').trim();
+          const parts = stripped.split(/\s{2,}|\s*\|\s*/).map((s) => s.trim()).filter(Boolean);
+          for (const part of parts) {
+            if (isLikelyNameFragment(part) && part.split(/\s+/).length >= 2) {
+              page1Name = part;
+              break;
+            }
+          }
+        }
+      }
+
+      const wrappedPitcherParts = [];
+      const treadRows = [];
+      const orderedCols = headerInfo.orderedAfterPitch;
+
+      for (let i = headerInfo.headerLineIdx + 1; i < normLines.length; i++) {
+        const line = normLines[i].trim();
+        if (!line) continue;
+        // Stop if we hit a subsequent unrelated report section after collecting pitch rows
+        if (treadRows.length > 0 && /^(?:release\s+point|pitch\s+movement|location\s+plot|zone\s+chart|page\s+\d+|notes?\b)/i.test(line)) {
+          break;
+        }
+        if (/^(?:total|totals|all\s+pitches|average|avg)\b/i.test(line)) continue;
+
+        const tagMatch = line.match(treadPitchRegex);
+        if (!tagMatch) {
+          // Capture wrapped multi-line pitcher name fragments sitting directly above/between rows
+          if (wrappedPitcherParts.length < 3 && isLikelyNameFragment(line)) {
+            line.split(/\s+/).forEach((w) => {
+              if (!wrappedPitcherParts.includes(w)) wrappedPitcherParts.push(w);
+            });
+          }
+          continue;
+        }
+
+        const beforePitch = line.slice(0, tagMatch.index).trim();
+        if (beforePitch && wrappedPitcherParts.length < 3 && isLikelyNameFragment(beforePitch)) {
+          beforePitch.split(/\s+/).forEach((w) => {
+            if (!wrappedPitcherParts.includes(w)) wrappedPitcherParts.push(w);
+          });
+        }
+
+        const afterPitch = line.slice(tagMatch.index + tagMatch[0].length).trim();
+        const tiltMatch = afterPitch.match(/\b(1[0-2]|[1-9]):([0-5]\d)\b/);
+        const tiltStr = tiltMatch ? `${tiltMatch[1]}:${tiltMatch[2]}` : null;
+        const afterPitchNoTilt = afterPitch.replace(/\b(1[0-2]|[1-9]):[0-5]\d\b/g, ' ');
+        const nums = (afterPitchNoTilt.match(/-?\d+(?:\.\d+)?/g) || []).map(Number).filter(Number.isFinite);
+        if (nums.length < 3) continue;
+
+        const vals = {};
+        const numericCols = orderedCols.filter((k) => k !== 'tilt');
+        numericCols.forEach((colKey, idx) => {
+          if (idx < nums.length) vals[colKey] = nums[idx];
+        });
+
+        const code = normalizePitchCode(tagMatch[1]);
+        const veloVal = vals.avgVelo;
+        if (!Number.isFinite(veloVal) || veloVal < 55.0 || veloVal > 105.0) continue;
+
+        const countVal = (Number.isFinite(vals.count) && vals.count >= 1 && vals.count <= 120)
+          ? Math.round(vals.count)
+          : 1;
+        const maxVeloVal = Number.isFinite(vals.maxVelo) ? vals.maxVelo : undefined;
+        const ivbVal = Number.isFinite(vals.vert) ? vals.vert : (code === 'FF' ? 15.8 : code === 'CH' ? 5.5 : -2.5);
+        const hbVal = Number.isFinite(vals.horz) ? vals.horz : (code === 'FF' ? 10.5 : code === 'CH' ? 14.5 : -6.5);
+        const spinVal = Number.isFinite(vals.avgSpin) ? vals.avgSpin : (code === 'CH' ? 1550 : 2150);
+        const relHVal = Number.isFinite(vals.height) ? vals.height : 5.75;
+        const rawSideVal = Number.isFinite(vals.side) ? vals.side : 1.85;
+        const extVal = Number.isFinite(vals.ext) ? vals.ext : 6.00;
+
+        treadRows.push({
+          TaggedPitchType: code,
+          _pdfCount: countVal,
+          RelSpeed: veloVal,
+          MaxVelo: maxVeloVal,
+          SpinRate: spinVal,
+          SpinAxis: tiltStr || (code === 'FF' ? '1:15' : code === 'CH' ? '2:15' : '8:45'),
+          InducedVertBreak: ivbVal,
+          HorzBreak: hbVal,
+          RelHeight: relHVal,
+          RelSide: Math.abs(rawSideVal),
+          _rawSide: rawSideVal,
+          _rawHorz: hbVal,
+          Extension: extVal,
+          ZonePct: Number.isFinite(vals.zonePct) ? vals.zonePct : undefined,
+          StrikePct: Number.isFinite(vals.strikePct) ? vals.strikePct : undefined
+        });
+      }
+
+      if (!treadRows.length) return null;
+
+      // Resolve final pitcher name: prefer Page 1 name, then wrapped PITCHER cell name, then filename
+      const wrappedName = wrappedPitcherParts.length ? wrappedPitcherParts.join(' ') : null;
+      const finalPitcherName = page1Name || wrappedName || baseMeta.pitcherName;
+
+      // Infer Throws when not explicitly printed in PDF text:
+      // L if fastball (FF/SI) HORZ < -3.0 or SIDE < -0.5 (Pitcher's View), otherwise R
+      let finalThrows = baseMeta.throws;
+      if (!baseMeta.throwsExplicit) {
+        const fbRow = treadRows.find((r) => r.TaggedPitchType === 'FF' || r.TaggedPitchType === 'SI');
+        if (fbRow && ((Number.isFinite(fbRow._rawHorz) && fbRow._rawHorz < -3.0) || (Number.isFinite(fbRow._rawSide) && fbRow._rawSide < -0.5))) {
+          finalThrows = 'L';
+        } else {
+          finalThrows = 'R';
+        }
+      }
+
+      const typeCounts = {};
+      const expandedRows = [];
+      treadRows.forEach((r) => {
+        typeCounts[r.TaggedPitchType] = (typeCounts[r.TaggedPitchType] || 0) + 1;
+        const rowObj = {
+          Pitcher: finalPitcherName,
+          Throws: finalThrows,
+          Date: sessionDate,
+          TaggedPitchType: r.TaggedPitchType,
+          RelSpeed: r.RelSpeed,
+          MaxVelo: r.MaxVelo,
+          SpinRate: r.SpinRate,
+          SpinAxis: r.SpinAxis,
+          InducedVertBreak: r.InducedVertBreak,
+          HorzBreak: r.HorzBreak,
+          RelHeight: r.RelHeight,
+          RelSide: r.RelSide,
+          Extension: r.Extension,
+          ZonePct: r.ZonePct,
+          StrikePct: r.StrikePct,
+          _pdfIsSummary: true
+        };
+        const repeatN = Math.min(60, Math.max(1, r._pdfCount));
+        for (let k = 0; k < repeatN; k++) {
+          expandedRows.push(rowObj);
+        }
+      });
+
+      const res = parseTrackManCSVOrJSON(JSON.stringify(expandedRows), fileName);
+      res.layoutDetected = 'Tread Athletics Summary Table';
+      res.pitchTypesList = Object.keys(typeCounts);
+      return res;
     }
 
     function parseTrackManPDFLines(lines, fileName = 'TrackMan_Report.pdf') {
@@ -3801,7 +4106,16 @@
         throw new Error('No selectable text found in this PDF. It appears to be a scanned image; please export a text-based TrackMan PDF or CSV.');
       }
 
-      const meta = extractTrackManPDFMetadata(lines, fileName);
+      const normLines = lines.map(normalizePDFTextLine);
+
+      // Additive branch: Tread Athletics "TrackMan Data Breakdown" Pitch Metrics summary table
+      const treadHeader = detectTreadAthleticsHeader(normLines);
+      if (treadHeader) {
+        const treadRes = parseTreadAthleticsPDFLines(normLines, fileName, treadHeader);
+        if (treadRes) return treadRes;
+      }
+
+      const meta = extractTrackManPDFMetadata(normLines, fileName);
       const pitchTagRegex = /\b(Four-?Seam|4-?Seam|Fastball|Two-?Seam|2-?Seam|Sinker|Cutter|Sweeper|Slider|Curveball|Knuckle-?Curve|Changeup|Change|Splitter|Split|FF|FA|SI|FT|FC|SW|ST|SL|CU|KC|CH|FS)\b/i;
 
       let headerTokens = null;
@@ -3835,7 +4149,7 @@
         return null;
       }
 
-      for (const line of lines) {
+      for (const line of normLines) {
         const tokens = splitTokens(line);
         if (tokens.length >= 4) {
           const maybeHeader = mapHeaderIndex(tokens);
@@ -4006,7 +4320,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isScout
         ? 'Easy Arsenal Evaluation'
-        : 'v5.5 R&D • Easy Arsenal Evaluation (10×10 Grid)');
+        : 'v5.7 R&D • Easy Arsenal Evaluation (10×10 Grid)');
 
       // Section 1 headers & labels
       setLabelText('tier1Eyebrow', '01 / SCOUT CARD');
@@ -4803,6 +5117,103 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       drawAthleteProgressionSparkline(series, activeProfile.id);
     }
 
+    function getExistingAthleteFolders() {
+      const seen = new Map();
+      Object.keys(PITCHER_PROFILES).forEach((k) => {
+        if (BENCHMARK_PROFILE_IDS.includes(k)) return;
+        const p = PITCHER_PROFILES[k];
+        if (!p || !p.name) return;
+        const norm = normalizeAthleteName(p.name);
+        if (norm && !seen.has(norm)) {
+          seen.set(norm, String(p.name).trim());
+        }
+      });
+      return Array.from(seen.values()).sort((a, b) => a.localeCompare(b));
+    }
+
+    function populateAthleteFolderDropdowns() {
+      const folders = getExistingAthleteFolders();
+
+      const uploadSel = document.getElementById('uploadAthleteFolderSelect');
+      if (uploadSel) {
+        const prevVal = uploadSel.value || '__auto__';
+        let opts = '<option value="__auto__">Auto-detect from file</option>';
+        folders.forEach((fname) => {
+          opts += `<option value="${fname.replace(/"/g, '&quot;')}">${fname}</option>`;
+        });
+        opts += '<option value="__new__">+ Create New Athlete Folder...</option>';
+        uploadSel.innerHTML = opts;
+        if (prevVal === '__auto__' || prevVal === '__new__' || folders.includes(prevVal)) {
+          uploadSel.value = prevVal;
+        } else {
+          uploadSel.value = '__auto__';
+        }
+        const newInput = document.getElementById('newAthleteFolderInput');
+        if (newInput) {
+          newInput.classList.toggle('hidden', uploadSel.value !== '__new__');
+        }
+      }
+
+      const renameSel = document.getElementById('renameAthleteFolderSelect');
+      if (renameSel) {
+        const prevVal = renameSel.value || '__new__';
+        let opts = '';
+        folders.forEach((fname) => {
+          opts += `<option value="${fname.replace(/"/g, '&quot;')}">${fname}</option>`;
+        });
+        opts += '<option value="__new__">+ Create New Athlete Folder...</option>';
+        renameSel.innerHTML = opts;
+        if (prevVal === '__new__' || folders.includes(prevVal)) {
+          renameSel.value = prevVal;
+        } else {
+          renameSel.value = '__new__';
+        }
+      }
+    }
+
+    function getSelectedUploadAthleteFolderName() {
+      const sel = document.getElementById('uploadAthleteFolderSelect');
+      if (!sel || sel.value === '__auto__') return null;
+      if (sel.value === '__new__') {
+        const inp = document.getElementById('newAthleteFolderInput');
+        const txt = inp ? inp.value.trim() : '';
+        return txt.length > 0 ? txt : null;
+      }
+      const chosen = String(sel.value || '').trim();
+      return chosen.length > 0 ? chosen : null;
+    }
+
+    async function renameSavedBullpenSession(profileId, newAthleteName) {
+      const target = PITCHER_PROFILES[profileId];
+      const cleanName = String(newAthleteName || '').trim();
+      if (!target || BENCHMARK_PROFILE_IDS.includes(profileId) || !cleanName) return false;
+
+      const client = initSupabaseClient();
+      const statusEl = document.getElementById('renameStatusBox');
+      if (client && appState.currentUser && target.supabaseRowId) {
+        try {
+          const { error } = await client
+            .from('bullpen_sessions')
+            .update({ pitcher_name: cleanName })
+            .eq('id', target.supabaseRowId)
+            .eq('user_id', appState.currentUser.id);
+          if (error) throw error;
+        } catch (err) {
+          if (statusEl) {
+            statusEl.textContent = `Cloud update failed (${err.message || 'check RLS UPDATE policy'}), updated locally.`;
+            statusEl.classList.remove('hidden');
+          }
+        }
+      }
+
+      target.name = cleanName;
+      appState.baselineCache.key = null;
+      rebuildPitcherSelectDropdown();
+      renderAll();
+      showToast(`Moved session to Athlete Folder: ${cleanName}`);
+      return true;
+    }
+
     function rebuildPitcherSelectDropdown() {
       const sel = document.getElementById('pitcherSelect');
       if (!sel) return;
@@ -4849,12 +5260,13 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       }
       sel.value = appState.currentPitcherId;
 
+      const isCustomActive = !BENCHMARK_PROFILE_IDS.includes(appState.currentPitcherId);
       const delBtn = document.getElementById('deleteSavedSessionBtn');
-      if (delBtn) {
-        const isCustomActive = !BENCHMARK_PROFILE_IDS.includes(appState.currentPitcherId);
-        delBtn.classList.toggle('hidden', !isCustomActive);
-      }
+      if (delBtn) delBtn.classList.toggle('hidden', !isCustomActive);
+      const renBtn = document.getElementById('renameSavedSessionBtn');
+      if (renBtn) renBtn.classList.toggle('hidden', !isCustomActive);
 
+      populateAthleteFolderDropdowns();
       renderAuthSavedSessionsList();
     }
 
@@ -5389,10 +5801,11 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           appState.labTargetIdx = 0;
           const pCount = PITCHER_PROFILES[appState.currentPitcherId].pitches.length;
           appState.pitchLabState = createEmptyPitchLabState(pCount + 2);
+          const isBench = BENCHMARK_PROFILE_IDS.includes(appState.currentPitcherId);
           const delBtn = document.getElementById('deleteSavedSessionBtn');
-          if (delBtn) {
-            delBtn.classList.toggle('hidden', BENCHMARK_PROFILE_IDS.includes(appState.currentPitcherId));
-          }
+          if (delBtn) delBtn.classList.toggle('hidden', isBench);
+          const renBtn = document.getElementById('renameSavedSessionBtn');
+          if (renBtn) renBtn.classList.toggle('hidden', isBench);
           syncSlidersToUI();
           renderAll();
         });
@@ -5568,8 +5981,18 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       if (openUploadBtn && uploadModal) {
         openUploadBtn.addEventListener('click', () => {
           updateUploadGateUI();
+          populateAthleteFolderDropdowns();
           uploadModal.classList.remove('hidden');
           uploadModal.classList.add('flex');
+        });
+      }
+      const uploadFolderSel = document.getElementById('uploadAthleteFolderSelect');
+      const newFolderInp = document.getElementById('newAthleteFolderInput');
+      if (uploadFolderSel && newFolderInp) {
+        uploadFolderSel.addEventListener('change', () => {
+          const isNew = uploadFolderSel.value === '__new__';
+          newFolderInp.classList.toggle('hidden', !isNew);
+          if (isNew) newFolderInp.focus();
         });
       }
       const closeUploadBtn = document.getElementById('closeUploadModalBtn');
@@ -5622,6 +6045,14 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           reader.onload = async (ev) => {
             try {
               const res = await ingestTrackManPDF(ev.target.result, file.name);
+              const folderOverride = getSelectedUploadAthleteFolderName();
+              if (folderOverride && res && res.profileObj) {
+                res.profileObj.name = folderOverride;
+                res.pitcherName = folderOverride;
+                if (PITCHER_PROFILES[res.profileObj.id]) PITCHER_PROFILES[res.profileObj.id].name = folderOverride;
+                rebuildPitcherSelectDropdown();
+                renderAll();
+              }
               const typesStr = (res.pitchTypesList || []).join(', ');
               uploadRawPdfToSupabaseStorage(file).catch(() => {});
               await saveBullpenSessionToSupabase(res.profileObj, 'pdf');
@@ -5644,6 +6075,14 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             try {
               const srcType = /\.json$/i.test(file.name) ? 'json' : 'csv';
               const res = parseTrackManCSVOrJSON(ev.target.result, file.name);
+              const folderOverride = getSelectedUploadAthleteFolderName();
+              if (folderOverride && res && res.profileObj) {
+                res.profileObj.name = folderOverride;
+                res.pitcherName = folderOverride;
+                if (PITCHER_PROFILES[res.profileObj.id]) PITCHER_PROFILES[res.profileObj.id].name = folderOverride;
+                rebuildPitcherSelectDropdown();
+                renderAll();
+              }
               await saveBullpenSessionToSupabase(res.profileObj, srcType);
               if (statusBox) {
                 const saveNote = appState.currentUser ? 'Saved to your private account.' : 'Guest Mode (local only) — Sign In to save.';
@@ -5834,6 +6273,74 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       if (deleteSessionBtn) {
         deleteSessionBtn.addEventListener('click', async () => {
           await deleteSavedBullpenSession(appState.currentPitcherId);
+        });
+      }
+
+      const renameModal = document.getElementById('renameSessionModal');
+      const openRenameBtn = document.getElementById('renameSavedSessionBtn');
+      const closeRenameBtn = document.getElementById('closeRenameModalBtn');
+      const renameFolderSel = document.getElementById('renameAthleteFolderSelect');
+      const renameNewNameWrap = document.getElementById('renameNewNameWrapper');
+      const renameNewNameInput = document.getElementById('renameAthleteNewNameInput');
+      const confirmRenameBtn = document.getElementById('confirmRenameSessionBtn');
+      const renameInfoEl = document.getElementById('renameCurrentSessionInfo');
+      const renameStatusEl = document.getElementById('renameStatusBox');
+
+      if (openRenameBtn && renameModal) {
+        openRenameBtn.addEventListener('click', () => {
+          const cur = PITCHER_PROFILES[appState.currentPitcherId];
+          if (!cur || BENCHMARK_PROFILE_IDS.includes(appState.currentPitcherId)) return;
+          populateAthleteFolderDropdowns();
+          if (renameInfoEl) {
+            renameInfoEl.textContent = `Active Session: ${cur.name} (${cur.throws}HP • ${cur.date} • N=${cur.totalPitches})`;
+          }
+          if (renameStatusEl) renameStatusEl.classList.add('hidden');
+          if (renameFolderSel) {
+            renameFolderSel.value = '__new__';
+          }
+          if (renameNewNameWrap) renameNewNameWrap.classList.remove('hidden');
+          if (renameNewNameInput) renameNewNameInput.value = cur.name || '';
+          renameModal.classList.remove('hidden');
+          renameModal.classList.add('flex');
+        });
+      }
+      if (closeRenameBtn && renameModal) {
+        closeRenameBtn.addEventListener('click', () => {
+          renameModal.classList.add('hidden');
+          renameModal.classList.remove('flex');
+        });
+      }
+      if (renameFolderSel && renameNewNameWrap && renameNewNameInput) {
+        renameFolderSel.addEventListener('change', () => {
+          const isNew = renameFolderSel.value === '__new__';
+          renameNewNameWrap.classList.toggle('hidden', !isNew);
+          if (!isNew) {
+            renameNewNameInput.value = renameFolderSel.value;
+          } else {
+            const cur = PITCHER_PROFILES[appState.currentPitcherId];
+            renameNewNameInput.value = cur ? cur.name : '';
+            renameNewNameInput.focus();
+          }
+        });
+      }
+      if (confirmRenameBtn) {
+        confirmRenameBtn.addEventListener('click', async () => {
+          const isNew = !renameFolderSel || renameFolderSel.value === '__new__';
+          const targetName = isNew
+            ? (renameNewNameInput ? renameNewNameInput.value.trim() : '')
+            : String(renameFolderSel.value || '').trim();
+          if (!targetName) {
+            if (renameStatusEl) {
+              renameStatusEl.textContent = 'Please enter or select an Athlete Folder name.';
+              renameStatusEl.classList.remove('hidden');
+            }
+            return;
+          }
+          const ok = await renameSavedBullpenSession(appState.currentPitcherId, targetName);
+          if (ok && renameModal) {
+            renameModal.classList.add('hidden');
+            renameModal.classList.remove('flex');
+          }
         });
       }
 
