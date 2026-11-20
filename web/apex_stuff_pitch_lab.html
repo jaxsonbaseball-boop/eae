@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.7 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.9 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -79,6 +79,7 @@
       #authModal,
       #contactModal,
       #renameSessionModal,
+      #passwordRecoveryModal,
       #toastBanner,
       #webglCanvasWrapper {
         display: none !important;
@@ -152,6 +153,84 @@
         cursor: pointer;
         border: 2px solid #0d1015;
       }
+    }
+
+    /* v5.9 High-Contrast Outdoor/Mobile Readability & Tap/Hover Info Tooltips */
+    .glass-card .text-slate-400,
+    .glass-card-subtle .text-slate-400 {
+      color: #cbd5e1;
+    }
+    .glass-card .text-slate-500,
+    .glass-card-subtle .text-slate-500 {
+      color: #94a3b8;
+    }
+    #cascadeTableBody td,
+    #cascadeTableHeadRow th {
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .eae-card-data {
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .eae-info-tip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      min-height: 16px !important;
+      min-width: 16px !important;
+      margin-left: 3px;
+      border-radius: 9999px;
+      background-color: #1e2530;
+      border: 1px solid #475569;
+      color: #cbd5e1;
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+    .eae-info-tip:hover,
+    .eae-info-tip:focus,
+    .eae-info-tip.tip-open {
+      background-color: #3b82f6;
+      border-color: #60a5fa;
+      color: #ffffff;
+      outline: none;
+    }
+    .eae-info-tip::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      right: 0;
+      width: 220px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background-color: #0d1015;
+      border: 1px solid #3b82f6;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.35;
+      text-align: left;
+      white-space: normal;
+      z-index: 60;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s ease;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+    }
+    .eae-info-tip:hover::after,
+    .eae-info-tip:focus::after,
+    .eae-info-tip.tip-open::after {
+      opacity: 1;
+      visibility: visible;
     }
   </style>
 </head>
@@ -240,19 +319,32 @@
 
       <!-- Signed-Out Form -->
       <div id="authFormContainer" class="space-y-2.5">
+        <div class="grid grid-cols-2 gap-1 p-1 rounded-md bg-[#10141b] border border-[#262c36]">
+          <button id="authModeSignInTab" type="button" class="touch-target px-3 py-1.5 rounded text-xs font-semibold bg-[#3b82f6] text-white transition">
+            Sign In
+          </button>
+          <button id="authModeSignUpTab" type="button" class="touch-target px-3 py-1.5 rounded text-xs font-semibold text-slate-400 hover:text-slate-200 transition">
+            Create Account
+          </button>
+        </div>
         <div>
           <label for="authEmailInput" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">Email Address</label>
-          <input id="authEmailInput" type="email" autocomplete="email" placeholder="coach@program.edu" class="touch-target w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400" />
+          <input id="authEmailInput" type="email" autocomplete="email" placeholder="coach@program.edu" class="touch-target w-full rounded-md bg-[#10141b] border border-[#262c36] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#3b82f6]" />
         </div>
         <div>
-          <label for="authPasswordInput" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">Password</label>
-          <input id="authPasswordInput" type="password" autocomplete="current-password" placeholder="••••••••" class="touch-target w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400" />
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <label for="authPasswordInput" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300">Password</label>
+            <button id="authForgotPasswordBtn" type="button" class="text-[11px] font-medium text-[#60a5fa] hover:text-blue-300 underline underline-offset-2 transition">
+              Forgot password?
+            </button>
+          </div>
+          <input id="authPasswordInput" type="password" autocomplete="current-password" placeholder="••••••••" class="touch-target w-full rounded-md bg-[#10141b] border border-[#262c36] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#3b82f6]" />
         </div>
-        <div class="pt-1 border-t border-slate-800/80 space-y-2">
-          <div class="text-[10px] font-mono-num uppercase tracking-wider text-indigo-300">Profile Details (For New Account Sign Up)</div>
+        <div id="authSignUpFieldsSection" class="hidden pt-2 border-t border-[#262c36] space-y-2">
+          <div class="text-[10px] font-mono-num uppercase tracking-wider text-[#60a5fa]">Profile Details (For New Account Sign Up)</div>
           <div>
             <label for="authRoleSelect" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">Role <span class="text-rose-400">*</span></label>
-            <select id="authRoleSelect" required class="touch-target w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400">
+            <select id="authRoleSelect" required class="touch-target w-full rounded-md bg-[#10141b] border border-[#262c36] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#3b82f6]">
               <option value="">Select your role...</option>
               <option value="HS Coach">HS Coach</option>
               <option value="College Coach">College Coach</option>
@@ -264,11 +356,11 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label for="authFullNameInput" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">Full Name <span class="text-slate-500">(Optional)</span></label>
-              <input id="authFullNameInput" type="text" autocomplete="name" placeholder="Coach Alex Rivera" class="touch-target w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400" />
+              <input id="authFullNameInput" type="text" autocomplete="name" placeholder="Coach Alex Rivera" class="touch-target w-full rounded-md bg-[#10141b] border border-[#262c36] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#3b82f6]" />
             </div>
             <div>
               <label for="authOrganizationInput" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">Team / Organization <span class="text-slate-500">(Optional)</span></label>
-              <input id="authOrganizationInput" type="text" autocomplete="organization" placeholder="State University Baseball" class="touch-target w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400" />
+              <input id="authOrganizationInput" type="text" autocomplete="organization" placeholder="State University Baseball" class="touch-target w-full rounded-md bg-[#10141b] border border-[#262c36] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#3b82f6]" />
             </div>
           </div>
         </div>
@@ -279,7 +371,7 @@
           <button id="authSignInBtn" type="button" class="touch-target flex-1 px-3.5 py-2 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
             Sign In
           </button>
-          <button id="authSignUpBtn" type="button" class="touch-target flex-1 px-3.5 py-2 rounded-md bg-[#1e2530] hover:bg-[#262f3d] text-slate-200 border border-[#333c4a] text-xs font-semibold transition">
+          <button id="authSignUpBtn" type="button" class="hidden touch-target flex-1 px-3.5 py-2 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
             Create Account
           </button>
         </div>
@@ -310,6 +402,38 @@
 
       <div id="authStatusBox" class="text-xs font-mono-num text-slate-400 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
         Guest Mode active: showing the 15 anonymized benchmark profiles. Sign in to upload and save TrackMan PDF/CSV bullpens privately to your account.
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Recovery ("Set New Password") Modal -->
+  <div id="passwordRecoveryModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
+    <div class="glass-card rounded-lg max-w-md w-full p-5 sm:p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-[#262c36] pb-3">
+        <div>
+          <span class="text-[11px] font-mono-num uppercase tracking-widest text-[#60a5fa] font-semibold">Account Recovery</span>
+          <h3 class="text-lg font-extrabold text-white">Set New Password</h3>
+        </div>
+        <button id="closePasswordRecoveryModalBtn" type="button" class="touch-target px-2.5 py-1 rounded-md bg-[#1e2530] hover:bg-[#262f3d] text-slate-300 border border-[#333c4a] text-xs font-semibold">
+          Close
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label for="recoveryNewPasswordInput" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">New Password</label>
+          <input id="recoveryNewPasswordInput" type="password" minlength="6" autocomplete="new-password" placeholder="At least 6 characters" class="touch-target w-full rounded-md bg-[#10141b] border border-[#262c36] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#3b82f6]" />
+        </div>
+        <div>
+          <label for="recoveryConfirmPasswordInput" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">Confirm New Password</label>
+          <input id="recoveryConfirmPasswordInput" type="password" minlength="6" autocomplete="new-password" placeholder="Re-enter new password" class="touch-target w-full rounded-md bg-[#10141b] border border-[#262c36] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#3b82f6]" />
+        </div>
+        <div id="recoveryStatusBox" class="text-xs font-mono-num text-slate-400 bg-[#10141b] border border-[#262c36] rounded-md p-3">
+          Enter a new password (minimum 6 characters) to complete account recovery.
+        </div>
+        <button id="recoveryUpdatePasswordBtn" type="button" class="touch-target w-full px-4 py-2 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
+          Update Password
+        </button>
       </div>
     </div>
   </div>
@@ -443,10 +567,11 @@
         <!-- Slide-Down Mobile Drawer / Desktop Inline Controls -->
         <div id="headerControlsPanel" class="hidden md:flex flex-wrap items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-[#262c36]">
           <div class="flex flex-col flex-1 min-w-[150px] md:flex-none">
-            <label for="viewModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Display Language</label>
-            <select id="viewModeSelect" class="touch-target bg-[#151921] border border-[#262c36] text-slate-100 text-xs rounded-md px-2.5 py-1.5 font-medium focus:outline-none focus:border-[#3b82f6]">
-              <option value="scout">View: Baseball / Scout (Simple)</option>
-              <option value="rnd">View: Pro Analytics (R&amp;D)</option>
+            <label for="viewModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-300 mb-0.5">View Mode</label>
+            <select id="viewModeSelect" class="touch-target bg-[#151921] border border-[#262c36] text-slate-100 text-[13px] rounded-md px-2.5 py-1.5 font-medium focus:outline-none focus:border-[#3b82f6]">
+              <option value="player">Player / Parent</option>
+              <option value="scout" selected>Coach / Scout</option>
+              <option value="rnd">Front Office / Quant</option>
             </select>
           </div>
 
@@ -1015,8 +1140,10 @@
         <!-- Hitter Splits Table & Coaching Priorities -->
         <div class="lg:col-span-7 flex flex-col justify-between space-y-4">
           <div class="glass-card-subtle rounded-xl p-3.5 overflow-x-auto">
-            <div id="cascadeTableTopTitle" class="text-xs font-semibold text-slate-200 mb-2">Pitch Effectiveness vs. Right-Handed &amp; Left-Handed College Hitters</div>
-            <table class="w-full text-left border-collapse text-xs font-mono-num">
+            <div id="cascadeTableTopTitle" class="text-[13px] font-semibold text-slate-100 mb-2">Pitch Effectiveness vs. Right-Handed &amp; Left-Handed College Hitters</div>
+            <div id="playerPitchCardsContainer" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            <div id="cascadeTableWrapper" class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-[13px] font-mono-num">
               <thead>
                 <tr id="cascadeTableHeadRow" class="border-b border-slate-800 text-slate-400 text-[11px]">
                   <th class="py-1.5 pr-1.5">Pitch</th>
@@ -1030,6 +1157,7 @@
               </thead>
               <tbody id="cascadeTableBody" class="divide-y divide-slate-800/60"></tbody>
             </table>
+            </div>
           </div>
 
           <div class="rounded-xl bg-slate-900/90 border border-slate-800 p-4">
@@ -1064,8 +1192,8 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.7 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
-    <span id="footerRightText" class="font-mono-num">Switch between "Baseball / Scout (Simple)" and "Pro Analytics (R&amp;D)" in the top bar</span>
+    <span>EAE v5.9 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span id="footerRightText" class="font-mono-num">Switch between Player / Parent, Coach / Scout, and Front Office / Quant in the top bar</span>
   </footer>
 
   <!-- ========================================================================= -->
@@ -2289,7 +2417,7 @@
       const tStart = performance.now();
       const pacingDiscount = pacingMode === 'starter' ? -1.5 : pacingMode === 'reliever' ? -0.5 : 0.0;
       const isProjectionActive = gradeMode === 'projected';
-      const isScoutView = appState.viewMode === 'scout';
+      const isScoutView = appState.viewMode === 'scout' || appState.viewMode === 'player';
 
       const workingPitches = profile.pitches.map((p, idx) => {
         const pDeltas = (pitchLabStateMap && pitchLabStateMap[idx])
@@ -2661,6 +2789,7 @@
           id: 'fb_velo',
           title: `Add +2.0 mph ${fbP.code} Velocity`,
           badge: 'Velocity Lever',
+          playerCue: `Work on adding 2 mph to your ${fbP.name} (to ${(fbP.velo + 2.0).toFixed(1)} mph) through leg drive and strength training — a faster fastball makes every other pitch harder to hit.`,
           scoutCue: `Build +2.0 mph on the ${fbP.name} (to ${(fbP.velo + 2.0).toFixed(1)} mph) via lower-half drive and offseason strength to compress hitter reaction time and unlock offspeed.`,
           rndCue: `ΔRelSpeed +2.0 mph on ${fbP.code} raises FB Anchor Viability γ and reduces batter reaction margin at 23.8 ft.`
         }, fbIdx, labMap, 0.82);
@@ -2674,6 +2803,7 @@
           id: 'stride_ext',
           title: 'Add +3.5" Stride Extension',
           badge: 'Mechanics Quick Win',
+          playerCue: 'Finish your stride 3 to 4 inches closer to home plate on every throw so your pitches get on hitters quicker without throwing harder.',
           scoutCue: 'Gain +3.5 inches of release extension toward home plate across the full arsenal to make every pitch play faster without extra arm stress.',
           rndCue: 'ΔExtension +3.5" (+0.29 ft) across all pitch types increases perceived velocity and trims total flight time.'
         }, 0, labMap, 1.08);
@@ -2690,6 +2820,7 @@
           id: 'ch_sep',
           title: `More ${chP.code} Drop & Arm-Side Fade`,
           badge: 'Grip Quick Win',
+          playerCue: `Let the ${chP.name} fall off your fingers with a slightly deeper grip so it drops and fades more away from your fastball.`,
           scoutCue: `Pronate through release or deepen the ${chP.name} grip to add -2.5" drop and +2.5" arm-side fade, widening movement separation off the fastball.`,
           rndCue: `ΔIVB -2.5", ΔHB +2.5" on ${chP.code} expands FB-${chP.code} separation vector and SSW seam-shift profile.`
         }, chIdx, labMap, 1.18);
@@ -2706,6 +2837,7 @@
           id: 'brk_sweep',
           title: `Add +3.0" ${swP.code} Horizontal Sweep`,
           badge: 'Grip Quick Win',
+          playerCue: `Experiment with shifting your fingers slightly off-center on the ${swP.name} to get a few extra inches of side-to-side sweep across the plate.`,
           scoutCue: `Shift grip slightly off-center on the ${swP.name} to generate -3.0" extra glove-side sweep and sharper late plate separation.`,
           rndCue: `ΔHB -3.0" glove-side sweep on ${swP.code} boosts 10×10 grid whiff probability and late divergence.`
         }, swIdx, labMap, 1.12);
@@ -2718,6 +2850,7 @@
           id: 'brk_tighten',
           title: `Tighten ${brkP.code} (+2.0 mph / -2.0" Drop)`,
           badge: 'Grip Quick Win',
+          playerCue: `Throw your ${brkP.name} with the same fast arm speed as your fastball so it stays tighter and breaks later near the plate.`,
           scoutCue: `Stay behind the ${brkP.name} longer with aggressive hand speed (+2.0 mph, -2.0" tighter drop) so it tunnels later before diving out of the zone.`,
           rndCue: `ΔRelSpeed +2.0 mph, ΔIVB -2.0" on ${brkP.code} compresses reaction margin and sharpens vertical break profile.`
         }, brkIdx, labMap, 1.12);
@@ -2733,6 +2866,7 @@
           id: 'ff_ride',
           title: 'Add +2.0" Fastball Carry / Ride',
           badge: 'Spin Efficiency Win',
+          playerCue: `Stay directly behind the baseball at release so your fastball has cleaner backspin and more upward carry through the top of the strike zone.`,
           scoutCue: `Get cleanly behind the baseball at 12:30–1:00 tilt to lift Four-Seam ride from +${ffP.ivb.toFixed(1)}" to +${(ffP.ivb + 2.0).toFixed(1)}" and flatten approach angle up in the zone.`,
           rndCue: `ΔIVB +2.0" on FF (base ${ffP.ivb.toFixed(1)}" < 18.0") flattens VAA and elevates top-of-zone whiff probability.`
         }, ffIdx, labMap, 1.10);
@@ -2755,6 +2889,7 @@
                 id: 'rel_align',
                 title: `Align ${secP.code} Release Slot with ${fbP.code}`,
                 badge: 'Tunneling Quick Win',
+                playerCue: `Try releasing your ${secP.name} from the exact same arm slot as your fastball so hitters can't tell which pitch is coming out of your hand.`,
                 scoutCue: `Your ${secP.name} releases ${worstPair.dRelIn.toFixed(1)}" away from your fastball; matching slot height (${clampedRelH >= 0 ? '+' : ''}${clampedRelH.toFixed(1)}") hides the pitch longer at the hitter's decision point.`,
                 rndCue: `ΔRelHeight ${clampedRelH >= 0 ? '+' : ''}${clampedRelH.toFixed(1)}" on ${secP.code} closes ${worstPair.dRelIn.toFixed(1)}" release gap and raises pairwise tunnel synergy.`
               }, secIdx, labMap, 1.25);
@@ -3250,11 +3385,11 @@
       const cx = w / 2;
       const cy = h / 2;
       const scale = Math.min(w, h) / 52;
-      const isScout = appState.viewMode === 'scout';
+      const isPlain = appState.viewMode === 'player' || appState.viewMode === 'scout';
 
       ctx.clearRect(0, 0, w, h);
 
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = '#1f2937';
       ctx.lineWidth = 1;
       for (let inch = -24; inch <= 24; inch += 6) {
         const x = cx + inch * scale;
@@ -3263,17 +3398,34 @@
         ctx.beginPath(); ctx.moveTo(12, y); ctx.lineTo(w - 12, y); ctx.stroke();
       }
 
-      ctx.strokeStyle = '#475569';
-      ctx.lineWidth = 1.5;
+      // Subtle 0,0 reference crosshair
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.6;
       ctx.beginPath(); ctx.moveTo(cx, 8); ctx.lineTo(cx, h - 8); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(8, cy); ctx.lineTo(w - 8, cy); ctx.stroke();
 
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '10px JetBrains Mono, monospace';
-      ctx.fillText(isScout ? '+24" Vertical Ride' : '+24" IVB (Ride)', cx + 6, 18);
-      ctx.fillText(isScout ? '-24" Vertical Drop' : '-24" IVB (Drop)', cx + 6, h - 10);
-      ctx.fillText(isScout ? '<- Glove-Side Break' : '<- Glove-Side (-HB)', 14, cy - 6);
-      ctx.fillText(isScout ? 'Arm-Side Run ->' : 'Arm-Side (+HB) ->', w - 115, cy - 6);
+      ctx.font = '600 10px JetBrains Mono, monospace';
+      ctx.fillText('0,0', cx + 4, cy + 12);
+
+      // Subtle D1 FF reference crosshair marker (+10.5" HB, +16.8" IVB)
+      const d1RefX = cx + 10.5 * scale;
+      const d1RefY = cy - 16.8 * scale;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(d1RefX - 5, d1RefY); ctx.lineTo(d1RefX + 5, d1RefY);
+      ctx.moveTo(d1RefX, d1RefY - 5); ctx.lineTo(d1RefX, d1RefY + 5);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '600 11px JetBrains Mono, monospace';
+      ctx.fillText(isPlain ? '+24" Vertical Ride' : '+24" IVB (Ride)', cx + 6, 18);
+      ctx.fillText(isPlain ? '-24" Vertical Drop' : '-24" IVB (Drop)', cx + 6, h - 10);
+      ctx.fillText(isPlain ? '<- Glove-Side Break' : '<- Glove-Side (-HB)', 14, cy - 7);
+      ctx.fillText(isPlain ? 'Arm-Side Run ->' : 'Arm-Side (+HB) ->', w - 122, cy - 7);
 
       const d1Clouds = [
         { label: 'College FF Avg', hb: 10.5, ivb: 16.8, rx: 4.0, ry: 3.2 },
@@ -3358,9 +3510,30 @@
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 11px Inter, sans-serif';
-        ctx.fillText(`${p.code} (${p.shrunkStuff.toFixed(0)})`, px + 9, py + 4);
+        const lblText = `${p.code} ${p.shrunkStuff.toFixed(0)}`;
+        ctx.font = 'bold 12px JetBrains Mono, monospace';
+        const tw = ctx.measureText(lblText).width;
+        const padX = 5;
+        const boxW = tw + padX * 2;
+        const boxH = 18;
+        let lx = px + 9;
+        if (lx + boxW > w - 6) lx = px - boxW - 9;
+        let ly = py - boxH / 2;
+        if (ly < 6) ly = 6;
+        if (ly + boxH > h - 6) ly = h - boxH - 6;
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(13, 16, 21, 0.92)';
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 1.25;
+        ctx.beginPath();
+        ctx.rect(lx, ly, boxW, boxH);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#f8fafc';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(lblText, lx + padX, ly + boxH / 2 + 0.5);
+        ctx.restore();
       });
     }
 
@@ -3446,7 +3619,7 @@
 
       const w = widthPx;
       const h = heightPx;
-      const isScout = appState.viewMode === 'scout';
+      const isScout = appState.viewMode === 'scout' || appState.viewMode === 'player';
       ctx.clearRect(0, 0, w, h);
 
       const minS = 50;
@@ -4315,12 +4488,106 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       if (el) el.textContent = val;
     }
 
-    function applyViewModeLabels() {
-      const isScout = appState.viewMode === 'scout';
+    const EAE_VIEW_MODE_STORAGE_KEY = 'eae_view_mode_v59';
+    const EAE_VALID_VIEW_MODES = ['player', 'scout', 'rnd'];
 
-      setLabelText('headerBadgeVersion', isScout
-        ? 'Easy Arsenal Evaluation'
-        : 'v5.7 R&D • Easy Arsenal Evaluation (10×10 Grid)');
+    function getSavedManualViewMode() {
+      try {
+        const v = window.localStorage && window.localStorage.getItem(EAE_VIEW_MODE_STORAGE_KEY);
+        return EAE_VALID_VIEW_MODES.includes(v) ? v : null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function setViewMode(mode, opts = {}) {
+      const normalized = EAE_VALID_VIEW_MODES.includes(mode) ? mode : 'scout';
+      appState.viewMode = normalized;
+      const sel = document.getElementById('viewModeSelect');
+      if (sel && sel.value !== normalized) sel.value = normalized;
+      if (opts.persist) {
+        try {
+          if (window.localStorage) window.localStorage.setItem(EAE_VIEW_MODE_STORAGE_KEY, normalized);
+        } catch (err) {}
+      }
+      if (!opts.skipRender) renderAll();
+      if (!opts.silent) {
+        const label = normalized === 'player'
+          ? 'Player / Parent View (Plain English)'
+          : (normalized === 'rnd' ? 'Front Office / Quant View (Full Telemetry)' : 'Coach / Scout View');
+        showToast(`Switched to ${label}`);
+      }
+    }
+
+    function maybeApplyRoleDefaultViewMode(roleStr) {
+      if (getSavedManualViewMode()) return;
+      const normRole = String(roleStr || '').trim().toLowerCase();
+      if ((normRole === 'player' || normRole === 'parent') && appState.viewMode !== 'player') {
+        setViewMode('player', { persist: false, silent: true });
+      }
+    }
+
+    function getStuffTierBadge(stuffVal) {
+      if (stuffVal >= 115) {
+        return { label: '115+ Plus', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
+      }
+      if (stuffVal >= 105) {
+        return { label: '105–114 Above Avg', cls: 'bg-[#3b82f6]/20 text-[#93c5fd] border-[#3b82f6]/50' };
+      }
+      if (stuffVal >= 95) {
+        return { label: '95–104 D1 Avg', cls: 'bg-slate-700/60 text-slate-200 border-slate-500/50' };
+      }
+      return { label: '<95 Developing', cls: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
+    }
+
+    function buildPlainPitchTakeaway(p, fb) {
+      const isFb = p.code === 'FF' || p.code === 'SI' || p.code === 'FC';
+      if (isFb) {
+        if (p.shrunkStuff >= 110) {
+          return `Strong ${p.velo.toFixed(1)} mph velocity with ${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}" of vertical ride makes this a true college-level fastball.`;
+        }
+        if (p.shrunkStuff >= 95) {
+          return `Solid ${p.velo.toFixed(1)} mph speed and ${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}" of vertical ride give hitters a tough look when located in the zone.`;
+        }
+        return `Good ${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}" vertical ride, and adding velocity from ${p.velo.toFixed(1)} mph is the biggest lever to push this grade higher.`;
+      }
+      const veloGap = fb ? (fb.velo - p.velo) : 8.0;
+      if (p.code === 'CH' || p.code === 'FS') {
+        return `Drops ${Math.abs(p.ivb).toFixed(1)}" with ${Math.abs(p.hb).toFixed(1)}" of arm-side fade and a ${veloGap.toFixed(1)} mph speed gap off the fastball to keep hitters off balance.`;
+      }
+      if (p.shrunkStuff >= 105) {
+        return `Sharp ${Math.abs(p.hb).toFixed(1)}" horizontal break and ${p.ivb.toFixed(1)}" vertical shape make this a reliable swing-and-miss weapon.`;
+      }
+      return `Shows ${Math.abs(p.hb).toFixed(1)}" of horizontal break at ${p.velo.toFixed(1)} mph; throwing it with firm arm speed will make the late break play up even more.`;
+    }
+
+    function infoTipHTML(term, definition) {
+      const safeDef = String(definition).replace(/"/g, '&quot;');
+      return `${term}<button type="button" class="eae-info-tip" aria-label="Definition of ${term}" data-tip="${safeDef}">?</button>`;
+    }
+
+    function computePitchCswPct(p) {
+      // Called Strike + Whiff % proxy from 4-head cascade probabilities
+      const pSw = typeof p.pSwing === 'number' ? p.pSwing : 0.49;
+      const pWh = typeof p.pWhiff === 'number' ? p.pWhiff : 0.25;
+      const pCs = typeof p.pCs === 'number' ? p.pCs : 0.28;
+      return ((pSw * pWh) + ((1.0 - pSw) * pCs)) * 100.0;
+    }
+
+    function applyViewModeLabels() {
+      const mode = appState.viewMode || 'scout';
+      const isPlayer = mode === 'player';
+      const isScout = mode === 'scout' || isPlayer;
+
+      setLabelText('headerBadgeVersion', isPlayer
+        ? 'Player / Parent View'
+        : (mode === 'scout' ? 'Coach / Scout View' : 'v5.9 Front Office • Quant Telemetry (10×10 Grid)'));
+      setLabelText('quickWinsHeaderTitle', isPlayer
+        ? 'What to Work On Next'
+        : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
+      setLabelText('quickWinsSubtitle', isPlayer
+        ? 'Top 2 simple bullpen focus areas'
+        : 'Ranked by realistic Arsenal+ gain & coaching feasibility');
 
       // Section 1 headers & labels
       setLabelText('tier1Eyebrow', '01 / SCOUT CARD');
@@ -4402,7 +4669,9 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
     function renderAll() {
       applyViewModeLabels();
-      const isScout = appState.viewMode === 'scout';
+      const mode = appState.viewMode || 'scout';
+      const isPlayer = mode === 'player';
+      const isScout = mode === 'scout' || isPlayer;
       const profile = PITCHER_PROFILES[appState.currentPitcherId];
       const cacheKey = `${appState.currentPitcherId}|${appState.pacingMode}|${appState.coupledSlotArc}|${appState.xgbEngineLoaded}`;
       if (appState.baselineCache.key !== cacheKey) {
@@ -4483,8 +4752,62 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       document.getElementById('gaugeArsenalMarker').style.left = `${arsLeft}%`;
       document.getElementById('gaugeProjectedMarker').style.left = `${projLeft}%`;
 
-      // Requirement 1: Tier 1 Pitch Shape Cards (Scout Mode: "College Stuff+" & "Confidence: High/Med/Low (N=5 pitches)")
-      const pillsHTML = simEval.gradedPitches.map((p, idx) => {
+      // Tier 1 Pitch Grade Cards (Player/Parent plain-English cards vs Coach/Scout & Quant cards)
+      const totalSessionPitches = simEval.gradedPitches.reduce((acc, x) => acc + (x.count || 0), 0) || 1;
+      const buildPlayerPitchCardHTML = (p) => {
+        const usagePct = Math.round(((p.count || 0) / totalSessionPitches) * 100);
+        const tierBadge = getStuffTierBadge(p.shrunkStuff);
+        const zoneStr = (typeof p.zonePct === 'number' && Number.isFinite(p.zonePct)) ? `${p.zonePct.toFixed(0)}%` : '—';
+        const takeaway = buildPlainPitchTakeaway(p, fb);
+        return `
+        <div class="rounded-lg bg-[#151921] border ${p.hasActiveLabDelta ? 'border-[#3b82f6]' : 'border-[#262c36]'} p-4 flex flex-col justify-between space-y-2.5 eae-card-data">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-3 h-3 rounded-full shrink-0" style="background:${p.color}"></span>
+              <div class="min-w-0">
+                <div class="font-bold text-sm text-white truncate">${p.name}</div>
+                <div class="text-xs font-mono-num text-[#cbd5e1]">Usage: ${usagePct}% (${p.count} pitches)</div>
+              </div>
+            </div>
+            <span class="shrink-0 px-2 py-0.5 rounded border text-xs font-mono-num font-bold ${tierBadge.cls}">
+              ${tierBadge.label}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 rounded-md bg-[#10141b] border border-[#1f252e] p-2.5 text-center font-mono-num">
+            <div>
+              <div class="text-[11px] text-[#94a3b8]">Avg Velo</div>
+              <div class="text-base font-extrabold text-white">${p.velo.toFixed(1)} <span class="text-[11px] font-normal text-[#cbd5e1]">mph</span></div>
+            </div>
+            <div>
+              <div class="text-[11px] text-[#94a3b8]">Stuff+</div>
+              <div class="text-base font-extrabold text-[#60a5fa]">${p.shrunkStuff.toFixed(0)}</div>
+            </div>
+            <div>
+              <div class="text-[11px] text-[#94a3b8]">Strike Zone%</div>
+              <div class="text-base font-extrabold text-white">${zoneStr}</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-[13px] font-mono-num text-[#cbd5e1]">
+            <div class="rounded bg-[#10141b] border border-[#1f252e] px-2.5 py-1.5 flex justify-between">
+              <span class="text-[#94a3b8]">Vertical Ride (in)</span>
+              <strong class="text-white">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}"</strong>
+            </div>
+            <div class="rounded bg-[#10141b] border border-[#1f252e] px-2.5 py-1.5 flex justify-between">
+              <span class="text-[#94a3b8]">Horizontal Break (in)</span>
+              <strong class="text-white">${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}"</strong>
+            </div>
+          </div>
+
+          <p class="text-[13px] text-[#cbd5e1] leading-relaxed">${takeaway}</p>
+        </div>
+        `;
+      };
+
+      const pillsHTML = isPlayer
+        ? simEval.gradedPitches.map((p) => buildPlayerPitchCardHTML(p)).join('')
+        : simEval.gradedPitches.map((p, idx) => {
         const presP = presentBaselineEval.gradedPitches[idx];
         const projP = projectedBaselineEval.gradedPitches[idx];
         const stuffLabel = isScout ? 'College Stuff+' : 'Shrunk Stuff+';
@@ -4595,7 +4918,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const qwContainer = document.getElementById('quickWinsContainer');
       if (qwContainer) {
         qwContainer.innerHTML = quickWinsList.map((qw, idx) => {
-          const cueText = isScout ? qw.scoutCue : qw.rndCue;
+          const cueText = isPlayer ? (qw.playerCue || qw.scoutCue) : (mode === 'scout' ? qw.scoutCue : qw.rndCue);
           const gainPrefix = qw.arsenalGain >= 0 ? '+' : '';
           return `
             <div class="rounded-xl bg-slate-950/85 border border-slate-800 p-3.5 flex flex-col justify-between gap-2.5">
@@ -4770,49 +5093,74 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         `;
       }).join('');
 
-      // Section 4: Hitter Splits Table (Scout Simple vs. Pro Analytics 4-Head XGBoost R&D)
+      // Section 4: 3-Mode Breakdown (Player Pitch Grade Cards vs Coach/Scout vs Front Office/Quant Telemetry)
       const headRow = document.getElementById('cascadeTableHeadRow');
-      if (isScout) {
+      const tableWrapper = document.getElementById('cascadeTableWrapper');
+      const playerCardsEl = document.getElementById('playerPitchCardsContainer');
+      if (isPlayer) {
+        if (tableWrapper) tableWrapper.classList.add('hidden');
+        if (playerCardsEl) {
+          playerCardsEl.classList.remove('hidden');
+          playerCardsEl.innerHTML = simEval.gradedPitches.map((p) => buildPlayerPitchCardHTML(p)).join('');
+        }
+        setLabelText('cascadeTableTopTitle', 'Pitch-by-Pitch Grade Cards (Plain English)');
+      } else if (mode === 'scout') {
+        if (playerCardsEl) playerCardsEl.classList.add('hidden');
+        if (tableWrapper) tableWrapper.classList.remove('hidden');
         headRow.innerHTML = `
-          <th class="py-1.5 pr-1.5">Pitch</th>
-          <th class="py-1.5 px-1.5 text-right">Plate Speed</th>
-          <th class="py-1.5 px-1.5 text-right">Hitter Time</th>
-          <th class="py-1.5 px-1.5 text-right">Swing &amp; Miss</th>
-          <th class="py-1.5 px-1.5 text-right text-sky-300">College Stuff+</th>
-          <th class="py-1.5 px-1.5 text-right text-emerald-300">vs. Righties</th>
-          <th class="py-1.5 pl-1.5 text-right text-amber-300">vs. Lefties</th>
+          <th class="py-2 pr-1.5">Pitch</th>
+          <th class="py-2 px-1.5 text-right">Velo</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML('IVB', 'Induced Vertical Break (in): upward carry/ride (+) or downward drop (-) caused by spin, excluding gravity.')}</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML('HB', 'Horizontal Break (in): arm-side run (+) or glove-side sweep (-) from the pitcher perspective.')}</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML('VAA', 'Vertical Approach Angle (deg): steepness of the pitch crossing home plate; flatter angles play up in the zone.')}</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML('CSW%', 'Called Strike + Whiff %: share of pitches earning a called strike or swing-and-miss.')}</th>
+          <th class="py-2 px-1.5 text-right text-sky-300">${infoTipHTML('Stuff+', '100-scale pitch quality grade anchored to NCAA D1 average (100 = D1 avg, 115+ = Plus).')}</th>
+          <th class="py-2 px-1.5 text-right text-emerald-300">vs. Righties</th>
+          <th class="py-2 pl-1.5 text-right text-amber-300">vs. Lefties</th>
         `;
         document.getElementById('cascadeTableBody').innerHTML = simEval.gradedPitches.map((p) => `
           <tr>
             <td class="py-2 pr-1.5 font-bold" style="color:${p.color}">${p.code}</td>
-            <td class="py-2 px-1.5 text-right text-slate-300">${p.plateSpeedMph.toFixed(1)} mph</td>
-            <td class="py-2 px-1.5 text-right font-semibold" style="color:${p.reactionMeta.colorHex}">${p.reactionMarginMs.toFixed(0)}ms</td>
-            <td class="py-2 px-1.5 text-right text-slate-300">${(p.pWhiff * 100).toFixed(1)}%</td>
+            <td class="py-2 px-1.5 text-right text-slate-100">${p.velo.toFixed(1)}</td>
+            <td class="py-2 px-1.5 text-right text-slate-200">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}"</td>
+            <td class="py-2 px-1.5 text-right text-slate-200">${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}"</td>
+            <td class="py-2 px-1.5 text-right text-slate-200">${p.vaa.toFixed(1)}°</td>
+            <td class="py-2 px-1.5 text-right text-slate-200">${computePitchCswPct(p).toFixed(1)}%</td>
             <td class="py-2 px-1.5 text-right font-bold text-sky-300">${p.shrunkStuff.toFixed(1)}</td>
             <td class="py-2 px-1.5 text-right font-semibold text-emerald-300">${p.stuffVsRHB.toFixed(1)}</td>
             <td class="py-2 pl-1.5 text-right font-semibold text-amber-300">${p.stuffVsLHB.toFixed(1)}</td>
           </tr>
         `).join('');
       } else {
+        if (playerCardsEl) playerCardsEl.classList.add('hidden');
+        if (tableWrapper) tableWrapper.classList.remove('hidden');
         headRow.innerHTML = `
-          <th class="py-1.5 pr-1.5">Pitch</th>
-          <th class="py-1.5 px-1.5 text-right">P(Swing)</th>
-          <th class="py-1.5 px-1.5 text-right">P(Whiff|Sw)</th>
-          <th class="py-1.5 px-1.5 text-right">P(CS|Take)</th>
-          <th class="py-1.5 px-1.5 text-right">E[xwOBAcon]</th>
-          <th class="py-1.5 px-1.5 text-right">10×10 xRV</th>
-          <th class="py-1.5 px-1.5 text-right text-sky-300">Shrunk Stuff+</th>
-          <th class="py-1.5 px-1.5 text-right text-emerald-300">vs. RHB</th>
-          <th class="py-1.5 pl-1.5 text-right text-amber-300">vs. LHB</th>
+          <th class="py-2 pr-1.5">Pitch</th>
+          <th class="py-2 px-1.5 text-right">Velo</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML('IVB', 'Induced Vertical Break (in): spin-induced vertical movement excluding gravity.')}</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML('HB', 'Horizontal Break (in): pitcher-view horizontal movement (+ arm-side, - glove-side).')}</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML('VAA', 'Vertical Approach Angle (deg) at home plate.')}</th>
+          <th class="py-2 px-1.5 text-right">HAA</th>
+          <th class="py-2 px-1.5 text-right">RelH/S</th>
+          <th class="py-2 px-1.5 text-right">Ext</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML('CSW%', 'Called Strike + Whiff % from the 10x10 location-neutralized 4-head XGBoost cascade.')}</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML('xwOBAcon', 'Expected wOBA on contact predicted by the contact quality head (lower is better for pitchers).')}</th>
+          <th class="py-2 px-1.5 text-right text-sky-300">${infoTipHTML('Stuff+', 'Empirical Bayes shrunk 100-scale Stuff+ anchored to NCAA D1 average (sigma = 10).')}</th>
+          <th class="py-2 px-1.5 text-right text-emerald-300">RHB</th>
+          <th class="py-2 pl-1.5 text-right text-amber-300">LHB</th>
         `;
         document.getElementById('cascadeTableBody').innerHTML = simEval.gradedPitches.map((p) => `
           <tr>
             <td class="py-2 pr-1.5 font-bold" style="color:${p.color}">${p.code}</td>
-            <td class="py-2 px-1.5 text-right text-slate-300">${(p.pSwing * 100).toFixed(1)}%</td>
-            <td class="py-2 px-1.5 text-right text-slate-300">${(p.pWhiff * 100).toFixed(1)}%</td>
-            <td class="py-2 px-1.5 text-right text-slate-300">${(p.pCs * 100).toFixed(1)}%</td>
-            <td class="py-2 px-1.5 text-right text-slate-300">${p.xwobacon.toFixed(3)}</td>
-            <td class="py-2 px-1.5 text-right text-slate-400">${p.gridXrv >= 0 ? '+' : ''}${p.gridXrv.toFixed(4)}</td>
+            <td class="py-2 px-1.5 text-right text-slate-100">${p.velo.toFixed(1)}</td>
+            <td class="py-2 px-1.5 text-right text-slate-200">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}</td>
+            <td class="py-2 px-1.5 text-right text-slate-200">${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}</td>
+            <td class="py-2 px-1.5 text-right text-slate-200">${p.vaa.toFixed(1)}°</td>
+            <td class="py-2 px-1.5 text-right text-slate-300">${(p.havaa !== undefined ? p.havaa : 0).toFixed(1)}°</td>
+            <td class="py-2 px-1.5 text-right text-slate-300">${p.relHeight.toFixed(2)}/${p.relSide.toFixed(2)}</td>
+            <td class="py-2 px-1.5 text-right text-slate-300">${p.ext.toFixed(2)}</td>
+            <td class="py-2 px-1.5 text-right text-slate-200">${computePitchCswPct(p).toFixed(1)}%</td>
+            <td class="py-2 px-1.5 text-right text-slate-200">${p.xwobacon.toFixed(3)}</td>
             <td class="py-2 px-1.5 text-right font-bold text-sky-300">${p.shrunkStuff.toFixed(1)}</td>
             <td class="py-2 px-1.5 text-right font-semibold text-emerald-300">${p.stuffVsRHB.toFixed(1)}</td>
             <td class="py-2 pl-1.5 text-right font-semibold text-amber-300">${p.stuffVsLHB.toFixed(1)}</td>
@@ -5342,6 +5690,20 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         const { error } = await client
           .from('profiles')
           .upsert(payload, { onConflict: 'id' });
+        if (payload.role) {
+          maybeApplyRoleDefaultViewMode(payload.role);
+        } else {
+          try {
+            const { data: profRow } = await client
+              .from('profiles')
+              .select('role')
+              .eq('id', user.id)
+              .maybeSingle();
+            if (profRow && profRow.role) {
+              maybeApplyRoleDefaultViewMode(profRow.role);
+            }
+          } catch (e) {}
+        }
         return !error;
       } catch (err) {
         // Non-blocking: never crash UI if profiles table or network is unavailable
@@ -5364,6 +5726,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       updateUploadGateUI();
       if (user && user.email) {
+        if (roleLabel) maybeApplyRoleDefaultViewMode(roleLabel);
         if (btnText) btnText.textContent = user.email;
         if (headerRoleBadge) {
           if (roleLabel) {
@@ -5678,16 +6041,228 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       showToast('Signed out — Guest Mode active (15 benchmark profiles)');
     }
 
+    let authModalMode = 'signin';
+
+    function setAuthModalMode(mode) {
+      authModalMode = mode === 'signup' ? 'signup' : 'signin';
+      const isSignIn = authModalMode === 'signin';
+      const signInTab = document.getElementById('authModeSignInTab');
+      const signUpTab = document.getElementById('authModeSignUpTab');
+      const forgotBtn = document.getElementById('authForgotPasswordBtn');
+      const signUpFields = document.getElementById('authSignUpFieldsSection');
+      const signInBtn = document.getElementById('authSignInBtn');
+      const signUpBtn = document.getElementById('authSignUpBtn');
+      const passInput = document.getElementById('authPasswordInput');
+
+      if (signInTab) {
+        signInTab.className = isSignIn
+          ? 'touch-target px-3 py-1.5 rounded text-xs font-semibold bg-[#3b82f6] text-white transition'
+          : 'touch-target px-3 py-1.5 rounded text-xs font-semibold text-slate-400 hover:text-slate-200 transition';
+      }
+      if (signUpTab) {
+        signUpTab.className = !isSignIn
+          ? 'touch-target px-3 py-1.5 rounded text-xs font-semibold bg-[#3b82f6] text-white transition'
+          : 'touch-target px-3 py-1.5 rounded text-xs font-semibold text-slate-400 hover:text-slate-200 transition';
+      }
+      if (forgotBtn) forgotBtn.classList.toggle('hidden', !isSignIn);
+      if (signUpFields) signUpFields.classList.toggle('hidden', isSignIn);
+      if (signInBtn) signInBtn.classList.toggle('hidden', !isSignIn);
+      if (signUpBtn) signUpBtn.classList.toggle('hidden', isSignIn);
+      if (passInput) passInput.setAttribute('autocomplete', isSignIn ? 'current-password' : 'new-password');
+    }
+
+    function openPasswordRecoveryModal() {
+      const authModal = document.getElementById('authModal');
+      if (authModal) {
+        authModal.classList.add('hidden');
+        authModal.classList.remove('flex');
+      }
+      const recModal = document.getElementById('passwordRecoveryModal');
+      const newPassEl = document.getElementById('recoveryNewPasswordInput');
+      const confPassEl = document.getElementById('recoveryConfirmPasswordInput');
+      const statusBox = document.getElementById('recoveryStatusBox');
+      if (newPassEl) newPassEl.value = '';
+      if (confPassEl) confPassEl.value = '';
+      if (statusBox) {
+        statusBox.className = 'text-xs font-mono-num text-slate-400 bg-[#10141b] border border-[#262c36] rounded-md p-3';
+        statusBox.textContent = 'Enter a new password (minimum 6 characters) to complete account recovery.';
+      }
+      if (recModal) {
+        recModal.classList.remove('hidden');
+        recModal.classList.add('flex');
+      }
+    }
+
+    async function handleForgotPassword(rawEmail) {
+      const email = String(rawEmail || '').trim();
+      const statusBox = document.getElementById('authStatusBox');
+      const forgotBtn = document.getElementById('authForgotPasswordBtn');
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!email || !emailRe.test(email)) {
+        if (statusBox) {
+          statusBox.textContent = 'Please enter a valid email address above before requesting a password reset link.';
+        }
+        const emailEl = document.getElementById('authEmailInput');
+        if (emailEl) emailEl.focus();
+        return false;
+      }
+
+      const client = initSupabaseClient();
+      if (!client || !client.auth) {
+        if (statusBox) statusBox.textContent = 'Supabase client unavailable (check internet connection).';
+        return false;
+      }
+
+      if (forgotBtn) {
+        forgotBtn.disabled = true;
+        forgotBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        forgotBtn.textContent = 'Sending...';
+      }
+      if (statusBox) statusBox.textContent = 'Sending password reset link...';
+
+      try {
+        const { error } = await client.auth.resetPasswordForEmail(email, {
+          redirectTo: 'https://jaxsonbaseball-boop.github.io/eae/'
+        });
+        if (error) {
+          const msg = String(error.message || 'Unable to send reset email.');
+          const isRateLimit = /rate|limit|too many|60 seconds/i.test(msg);
+          if (statusBox) {
+            statusBox.textContent = isRateLimit
+              ? `Reset Email Rate Limit: ${msg} Please wait a minute before trying again.`
+              : `Password Reset Error: ${msg}`;
+          }
+          showToast(isRateLimit ? 'Too many reset requests — wait a moment' : `Reset error: ${msg}`);
+          return false;
+        }
+        if (statusBox) {
+          statusBox.textContent = 'If an account exists for that email, a password reset link has been sent. Check your inbox and spam folder.';
+        }
+        showToast('Password reset link sent — check your inbox');
+        return true;
+      } catch (err) {
+        if (statusBox) statusBox.textContent = `Password Reset Error: ${err && err.message ? err.message : 'Network error.'}`;
+        return false;
+      } finally {
+        setTimeout(() => {
+          if (forgotBtn) {
+            forgotBtn.disabled = false;
+            forgotBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            forgotBtn.textContent = 'Forgot password?';
+          }
+        }, 1800);
+      }
+    }
+
+    async function handlePasswordRecoveryUpdate() {
+      const newPassEl = document.getElementById('recoveryNewPasswordInput');
+      const confPassEl = document.getElementById('recoveryConfirmPasswordInput');
+      const statusBox = document.getElementById('recoveryStatusBox');
+      const submitBtn = document.getElementById('recoveryUpdatePasswordBtn');
+      const recModal = document.getElementById('passwordRecoveryModal');
+
+      const password = newPassEl ? newPassEl.value : '';
+      const confirmPassword = confPassEl ? confPassEl.value : '';
+
+      if (!password || password.length < 6) {
+        if (statusBox) {
+          statusBox.className = 'text-xs font-mono-num text-amber-300 bg-[#10141b] border border-amber-500/40 rounded-md p-3';
+          statusBox.textContent = 'Password must be at least 6 characters long.';
+        }
+        if (newPassEl) newPassEl.focus();
+        return false;
+      }
+      if (password !== confirmPassword) {
+        if (statusBox) {
+          statusBox.className = 'text-xs font-mono-num text-amber-300 bg-[#10141b] border border-amber-500/40 rounded-md p-3';
+          statusBox.textContent = 'Passwords do not match. Please re-enter both fields.';
+        }
+        if (confPassEl) confPassEl.focus();
+        return false;
+      }
+
+      const client = initSupabaseClient();
+      if (!client || !client.auth) {
+        if (statusBox) statusBox.textContent = 'Supabase client unavailable (check internet connection).';
+        return false;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        submitBtn.textContent = 'Updating...';
+      }
+      if (statusBox) {
+        statusBox.className = 'text-xs font-mono-num text-slate-300 bg-[#10141b] border border-[#262c36] rounded-md p-3';
+        statusBox.textContent = 'Updating your password...';
+      }
+
+      try {
+        const { data, error } = await client.auth.updateUser({ password });
+        if (error) {
+          if (statusBox) {
+            statusBox.className = 'text-xs font-mono-num text-rose-300 bg-[#10141b] border border-rose-500/40 rounded-md p-3';
+            statusBox.textContent = `Update Password Error: ${error.message}`;
+          }
+          return false;
+        }
+        if (data && data.user) {
+          appState.currentUser = data.user;
+          updateAuthUIState();
+        }
+        if (typeof window !== 'undefined' && window.history && typeof window.history.replaceState === 'function') {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+        if (newPassEl) newPassEl.value = '';
+        if (confPassEl) confPassEl.value = '';
+        if (recModal) {
+          recModal.classList.add('hidden');
+          recModal.classList.remove('flex');
+        }
+        const authStatus = document.getElementById('authStatusBox');
+        if (authStatus) authStatus.textContent = "Password updated. You're signed in.";
+        showToast("Password updated. You're signed in.");
+        return true;
+      } catch (err) {
+        if (statusBox) {
+          statusBox.className = 'text-xs font-mono-num text-rose-300 bg-[#10141b] border border-rose-500/40 rounded-md p-3';
+          statusBox.textContent = `Update Password Error: ${err && err.message ? err.message : 'Network error.'}`;
+        }
+        return false;
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          submitBtn.textContent = 'Update Password';
+        }
+      }
+    }
+
     let supabaseAuthListenerAttached = false;
 
     async function checkExistingSupabaseSession() {
       const client = initSupabaseClient();
       if (!client || !client.auth) return;
 
+      const isRecoveryHash = () =>
+        typeof window !== 'undefined' &&
+        window.location &&
+        typeof window.location.hash === 'string' &&
+        window.location.hash.includes('type=recovery');
+
       if (!supabaseAuthListenerAttached && typeof client.auth.onAuthStateChange === 'function') {
         supabaseAuthListenerAttached = true;
         try {
           client.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+              if (session && session.user) {
+                appState.currentUser = session.user;
+                updateAuthUIState();
+              }
+              openPasswordRecoveryModal();
+              return;
+            }
             if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && session.user) {
               const prevId = appState.currentUser ? appState.currentUser.id : null;
               appState.currentUser = session.user;
@@ -5695,6 +6270,9 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
               syncUserProfileToSupabase(session.user);
               if (prevId !== session.user.id) {
                 await fetchUserSavedSessions();
+              }
+              if (isRecoveryHash()) {
+                openPasswordRecoveryModal();
               }
             } else if (event === 'SIGNED_OUT') {
               appState.currentUser = null;
@@ -5705,6 +6283,10 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         } catch (err) {}
       }
 
+      if (isRecoveryHash()) {
+        openPasswordRecoveryModal();
+      }
+
       try {
         const { data } = await client.auth.getSession();
         if (data && data.session && data.session.user) {
@@ -5712,6 +6294,9 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           updateAuthUIState();
           syncUserProfileToSupabase(data.session.user);
           await fetchUserSavedSessions();
+          if (isRecoveryHash()) {
+            openPasswordRecoveryModal();
+          }
         }
       } catch (err) {}
     }
@@ -5781,18 +6366,29 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
     window.addEventListener('DOMContentLoaded', () => {
       // 1. Attach ALL UI event listeners FIRST before Three.js or model fetching
+      const savedManualMode = getSavedManualViewMode();
+      if (savedManualMode) {
+        appState.viewMode = savedManualMode;
+      }
       const viewModeEl = document.getElementById('viewModeSelect');
       if (viewModeEl) {
+        viewModeEl.value = appState.viewMode;
         viewModeEl.addEventListener('change', (e) => {
-          appState.viewMode = e.target.value;
-          renderAll();
-          showToast(
-            appState.viewMode === 'scout'
-              ? 'Switched to Baseball / Scout View (Plain English)'
-              : 'Switched to Pro Analytics (R&D) View'
-          );
+          setViewMode(e.target.value, { persist: true, silent: false });
         });
       }
+
+      // Tap support for ? definition tooltips on touch devices
+      document.addEventListener('click', (e) => {
+        const tipBtn = e.target && e.target.closest ? e.target.closest('.eae-info-tip') : null;
+        document.querySelectorAll('.eae-info-tip.tip-open').forEach((el) => {
+          if (el !== tipBtn) el.classList.remove('tip-open');
+        });
+        if (tipBtn) {
+          e.stopPropagation();
+          tipBtn.classList.toggle('tip-open');
+        }
+      });
 
       const pitcherEl = document.getElementById('pitcherSelect');
       if (pitcherEl) {
@@ -6224,8 +6820,40 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const quickSignOutBtn = document.getElementById('quickSignOutBtn');
       const deleteSessionBtn = document.getElementById('deleteSavedSessionBtn');
 
+      const authModeSignInTab = document.getElementById('authModeSignInTab');
+      const authModeSignUpTab = document.getElementById('authModeSignUpTab');
+      const forgotPasswordBtn = document.getElementById('authForgotPasswordBtn');
+      const recoveryModal = document.getElementById('passwordRecoveryModal');
+      const closeRecoveryBtn = document.getElementById('closePasswordRecoveryModalBtn');
+      const recoverySubmitBtn = document.getElementById('recoveryUpdatePasswordBtn');
+
+      if (authModeSignInTab) {
+        authModeSignInTab.addEventListener('click', () => setAuthModalMode('signin'));
+      }
+      if (authModeSignUpTab) {
+        authModeSignUpTab.addEventListener('click', () => setAuthModalMode('signup'));
+      }
+      if (forgotPasswordBtn) {
+        forgotPasswordBtn.addEventListener('click', async () => {
+          const emailEl = document.getElementById('authEmailInput');
+          await handleForgotPassword(emailEl ? emailEl.value : '');
+        });
+      }
+      if (closeRecoveryBtn && recoveryModal) {
+        closeRecoveryBtn.addEventListener('click', () => {
+          recoveryModal.classList.add('hidden');
+          recoveryModal.classList.remove('flex');
+        });
+      }
+      if (recoverySubmitBtn) {
+        recoverySubmitBtn.addEventListener('click', async () => {
+          await handlePasswordRecoveryUpdate();
+        });
+      }
+
       if (openAuthBtn && authModal) {
         openAuthBtn.addEventListener('click', () => {
+          setAuthModalMode('signin');
           updateAuthUIState();
           authModal.classList.remove('hidden');
           authModal.classList.add('flex');
