@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.11 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.12 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -255,6 +255,36 @@
           <option value="__new__">+ Create New Athlete Folder...</option>
         </select>
         <input id="newAthleteFolderInput" type="text" placeholder="Enter new athlete folder name (e.g., Marcus Vance)" class="hidden touch-target w-full rounded-md bg-[#151921] border border-[#3b82f6] px-3 py-2 text-xs text-white focus:outline-none" />
+      </div>
+
+      <!-- Optional Athlete Context (Height & Birth Date) -->
+      <div id="uploadAthleteContextBox" class="rounded-lg bg-[#10141b] border border-[#262c36] p-3 space-y-2">
+        <div class="text-[11px] font-semibold text-slate-200">Optional Athlete Context (Improves VAA &amp; Age Context)</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label for="uploadPitcherHeightSelect" class="block text-[11px] font-medium text-[#cbd5e1] mb-1">Pitcher Height</label>
+            <select id="uploadPitcherHeightSelect" class="touch-target w-full rounded-md bg-[#151921] border border-[#262c36] px-2.5 py-2 text-xs text-slate-100 font-medium focus:outline-none focus:border-[#3b82f6]">
+              <option value="">Not Provided (Use Release Height)</option>
+              <option value="68">5'8&quot;</option>
+              <option value="69">5'9&quot;</option>
+              <option value="70">5'10&quot;</option>
+              <option value="71">5'11&quot;</option>
+              <option value="72">6'0&quot;</option>
+              <option value="73">6'1&quot;</option>
+              <option value="74">6'2&quot;</option>
+              <option value="75">6'3&quot;</option>
+              <option value="76">6'4&quot;</option>
+              <option value="77">6'5&quot;</option>
+              <option value="78">6'6&quot;</option>
+              <option value="79">6'7&quot;</option>
+              <option value="80">6'8&quot;</option>
+            </select>
+          </div>
+          <div>
+            <label for="uploadBirthDateInput" class="block text-[11px] font-medium text-[#cbd5e1] mb-1">Player Birth Date (Optional)</label>
+            <input id="uploadBirthDateInput" type="date" class="touch-target w-full rounded-md bg-[#151921] border border-[#262c36] px-2.5 py-2 text-xs text-slate-100 font-medium focus:outline-none focus:border-[#3b82f6]" />
+          </div>
+        </div>
       </div>
 
       <!-- Drag and Drop Zone -->
@@ -564,6 +594,26 @@
               <option value="raw">Bullpen Max Effort (0.0 mph)</option>
               <option value="starter">Starter Game Pacing (-1.5 mph)</option>
               <option value="reliever">Reliever Game Pacing (-0.5 mph)</option>
+            </select>
+          </div>
+
+          <div class="flex flex-col flex-1 min-w-[130px] md:flex-none">
+            <label for="sessionHeightSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-300 mb-0.5">Pitcher Height</label>
+            <select id="sessionHeightSelect" class="touch-target bg-[#151921] border border-[#262c36] text-slate-100 text-xs rounded-md px-2.5 py-1.5 font-medium focus:outline-none focus:border-[#3b82f6]">
+              <option value="">Not Provided</option>
+              <option value="68">5'8&quot;</option>
+              <option value="69">5'9&quot;</option>
+              <option value="70">5'10&quot;</option>
+              <option value="71">5'11&quot;</option>
+              <option value="72">6'0&quot;</option>
+              <option value="73">6'1&quot;</option>
+              <option value="74">6'2&quot;</option>
+              <option value="75">6'3&quot;</option>
+              <option value="76">6'4&quot;</option>
+              <option value="77">6'5&quot;</option>
+              <option value="78">6'6&quot;</option>
+              <option value="79">6'7&quot;</option>
+              <option value="80">6'8&quot;</option>
             </select>
           </div>
 
@@ -1210,7 +1260,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.11 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.12 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -2374,6 +2424,40 @@
       return Math.round(Math.min(99, Math.max(1, prob * 100)));
     }
 
+    function formatHeightInches(inches) {
+      const n = Number(inches);
+      if (!Number.isFinite(n) || n < 60 || n > 84) return null;
+      const ft = Math.floor(n / 12);
+      const rem = Math.round(n % 12);
+      return `${ft}'${rem}"`;
+    }
+
+    function computeExactAgeYears(birthDateStr, sessionDateStr) {
+      if (!birthDateStr) return null;
+      const dobMs = Date.parse(String(birthDateStr).trim());
+      if (!Number.isFinite(dobMs)) return null;
+      let refMs = Date.parse(String(sessionDateStr || '').trim());
+      if (!Number.isFinite(refMs)) refMs = Date.now();
+      const yrs = (refMs - dobMs) / (365.2425 * 86400000);
+      if (!Number.isFinite(yrs) || yrs < 5.0 || yrs > 65.0) return null;
+      return yrs.toFixed(1);
+    }
+
+    function computeExpectedVaaDeg(relSpeed, relHeightFt, relSideNorm, plateZ, plateXNorm) {
+      // Mirrors ApexStuffInference.computeExpectedVaaAndHaa vertical approach model
+      return -4.85 + 1.32 * (plateZ - 2.50) + 0.085 * (relSpeed - 91.5) - 0.85 * (relHeightFt - 5.85);
+    }
+
+    function classifyVaaVsExpected(deltaDeg) {
+      if (deltaDeg >= 0.45) {
+        return { label: 'Flat', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
+      }
+      if (deltaDeg <= -0.45) {
+        return { label: 'Steep', cls: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
+      }
+      return { label: 'Avg', cls: 'bg-slate-700/60 text-slate-200 border-slate-500/50' };
+    }
+
     function computeSub86VelocityCliff(code, velo) {
       if ((code === 'FF' || code === 'SI') && velo < 86.0) {
         const delta = 86.0 - velo;
@@ -2582,8 +2666,25 @@
         const plateSpeedMph = platePos.speedMph;
         const dragDecayPct = ((p.velo - plateSpeedMph) / Math.max(p.velo, 1.0)) * 100.0;
 
+        const hasHeightIn = Number.isFinite(Number(profile.pitcherHeightIn)) && Number(profile.pitcherHeightIn) >= 60 && Number(profile.pitcherHeightIn) <= 84;
+        const expRelHForVaa = hasHeightIn ? (Number(profile.pitcherHeightIn) / 12.0) * 0.90 : p.relHeight;
+        const signHandVaa = profile.throws === 'L' ? -1.0 : 1.0;
+        const expectedVaa = computeExpectedVaaDeg(
+          p.velo,
+          expRelHForVaa,
+          Math.abs(p.relSide),
+          p.plateHeight !== undefined ? p.plateHeight : 2.50,
+          (p.plateSide !== undefined ? p.plateSide : 0.0) * signHandVaa
+        );
+        const vaaVsExpected = p.vaa - expectedVaa;
+        const vaaTier = classifyVaaVsExpected(vaaVsExpected);
+
         return {
           ...p,
+          expectedVaa,
+          vaaVsExpected,
+          vaaTier,
+          vaaHeightAdjusted: hasHeightIn,
           slot,
           slotAngleDeg: angleDeg,
           rawStuff,
@@ -2948,6 +3049,7 @@
     let threeRenderer = null;
     let trajectoryGroup = null;
     let batterMeshGroup = null;
+    let pitcherMeshGroup = null;
     let animatedBalls = [];
     let animClock = 0;
     let isDragging3D = false;
@@ -3070,6 +3172,125 @@
       batterMeshGroup.add(batMesh);
     }
 
+    function update3DPitcherSilhouette(throwsHand, relHeight, relSide, ext, pitcherHeightIn) {
+      if (!pitcherMeshGroup || typeof THREE === 'undefined') return;
+      while (pitcherMeshGroup.children.length > 0) {
+        const ch = pitcherMeshGroup.children[0];
+        if (ch.geometry && typeof ch.geometry.dispose === 'function') ch.geometry.dispose();
+        if (ch.material && typeof ch.material.dispose === 'function') ch.material.dispose();
+        pitcherMeshGroup.remove(ch);
+      }
+
+      const throwsSign = throwsHand === 'L' ? -1.0 : 1.0;
+      const handX = -throwsSign * (Number(relSide) || 1.85);
+      const handY = Number(relHeight) || 5.85;
+      const handZ = Math.max(48.0, 60.5 - (Number(ext) || 6.10));
+
+      const moundY = 0.83;
+      const rubberZ = 60.5;
+      const heightFt = (Number.isFinite(Number(pitcherHeightIn)) && Number(pitcherHeightIn) >= 60 && Number(pitcherHeightIn) <= 84)
+        ? Number(pitcherHeightIn) / 12.0
+        : Math.max(5.5, Math.min(6.7, handY / 0.90));
+      const scale = heightFt / 6.0;
+
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.20,
+        roughness: 0.4
+      });
+      const wireMat = new THREE.LineBasicMaterial({
+        color: 0x7dd3fc,
+        transparent: true,
+        opacity: 0.62
+      });
+
+      function addWirePart(geo, pos, rot) {
+        const mesh = new THREE.Mesh(geo, bodyMat);
+        mesh.position.set(pos[0], pos[1], pos[2]);
+        if (rot) mesh.rotation.set(rot[0], rot[1], rot[2]);
+        pitcherMeshGroup.add(mesh);
+
+        const edges = new THREE.EdgesGeometry(geo);
+        const line = new THREE.LineSegments(edges, wireMat);
+        line.position.set(pos[0], pos[1], pos[2]);
+        if (rot) line.rotation.set(rot[0], rot[1], rot[2]);
+        pitcherMeshGroup.add(line);
+      }
+
+      function addLimbSegment(p1, p2, radiusTop, radiusBot) {
+        const v1 = new THREE.Vector3(p1[0], p1[1], p1[2]);
+        const v2 = new THREE.Vector3(p2[0], p2[1], p2[2]);
+        const dir = new THREE.Vector3().subVectors(v2, v1);
+        const len = Math.max(0.15, dir.length());
+        const mid = new THREE.Vector3().addVectors(v1, v2).multiplyScalar(0.5);
+        const geo = new THREE.CylinderGeometry(radiusTop, radiusBot, len, 8);
+        const mesh = new THREE.Mesh(geo, bodyMat);
+        mesh.position.copy(mid);
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+        pitcherMeshGroup.add(mesh);
+
+        const edges = new THREE.EdgesGeometry(geo);
+        const line = new THREE.LineSegments(edges, wireMat);
+        line.position.copy(mid);
+        line.quaternion.copy(mesh.quaternion);
+        pitcherMeshGroup.add(line);
+      }
+
+      // Stride-release biomechanics coordinates (oriented toward home plate at z = 0)
+      const strideZ = Math.min(rubberZ - 2.6, handZ + 0.85);
+      const hipPos = [handX * 0.22, moundY + 2.55 * scale, strideZ + 1.15];
+      const chestPos = [handX * 0.34, moundY + 4.05 * scale, strideZ + 0.35];
+      const headPos = [handX * 0.32, moundY + 4.92 * scale, strideZ + 0.10];
+      const throwShoulder = [handX * 0.52 - throwsSign * 0.32, Math.min(handY - 0.25, moundY + 4.25 * scale), strideZ + 0.25];
+      const gloveShoulder = [handX * 0.16 + throwsSign * 0.55, moundY + 4.00 * scale, strideZ + 0.45];
+      const backFoot = [-throwsSign * 0.35, moundY, rubberZ];
+      const leadFoot = [handX * 0.18 + throwsSign * 0.25, moundY - 0.18, strideZ];
+      const elbowPos = [
+        (throwShoulder[0] + handX) * 0.5 - throwsSign * 0.12,
+        (throwShoulder[1] + handY) * 0.5 + 0.12,
+        (throwShoulder[2] + handZ) * 0.5 + 0.15
+      ];
+      const gloveHand = [gloveShoulder[0] + throwsSign * 0.28, gloveShoulder[1] - 0.85 * scale, gloveShoulder[2] - 0.55];
+
+      // Legs
+      addLimbSegment(backFoot, hipPos, 0.17 * scale, 0.13 * scale);
+      addLimbSegment(leadFoot, hipPos, 0.18 * scale, 0.14 * scale);
+
+      // Torso & Head
+      addLimbSegment(hipPos, chestPos, 0.40 * scale, 0.33 * scale);
+      addWirePart(new THREE.SphereGeometry(0.34 * scale, 12, 12), headPos, null);
+
+      // Glove Arm & Throwing Arm aligned directly to (handX, handY, handZ)
+      addLimbSegment(gloveShoulder, gloveHand, 0.11 * scale, 0.09 * scale);
+      addLimbSegment(throwShoulder, elbowPos, 0.12 * scale, 0.10 * scale);
+      addLimbSegment(elbowPos, [handX, handY, handZ], 0.10 * scale, 0.08 * scale);
+
+      // Glowing release-point marker at the pitcher's hand
+      const relMarkerGeo = new THREE.SphereGeometry(0.16, 16, 16);
+      const relMarkerMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x38bdf8,
+        emissiveIntensity: 0.9,
+        transparent: true,
+        opacity: 0.92
+      });
+      const relMarker = new THREE.Mesh(relMarkerGeo, relMarkerMat);
+      relMarker.position.set(handX, handY, handZ);
+      pitcherMeshGroup.add(relMarker);
+
+      const haloGeo = new THREE.SphereGeometry(0.28, 16, 16);
+      const haloMat = new THREE.MeshBasicMaterial({
+        color: 0x60a5fa,
+        transparent: true,
+        opacity: 0.26,
+        wireframe: true
+      });
+      const haloMesh = new THREE.Mesh(haloGeo, haloMat);
+      haloMesh.position.set(handX, handY, handZ);
+      pitcherMeshGroup.add(haloMesh);
+    }
+
     function show3DUnavailableFallback(container, reason) {
       if (!container) return;
       container.innerHTML = `
@@ -3167,6 +3388,9 @@
       batterMeshGroup = new THREE.Group();
       threeScene.add(batterMeshGroup);
       update3DBatterSilhouette(appState.batterStance);
+
+      pitcherMeshGroup = new THREE.Group();
+      threeScene.add(pitcherMeshGroup);
 
       trajectoryGroup = new THREE.Group();
       threeScene.add(trajectoryGroup);
@@ -4759,7 +4983,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.11 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.12 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -4899,8 +5123,19 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       const fb = simEval.gradedPitches[0];
 
+      const heightStr = formatHeightInches(profile.pitcherHeightIn);
+      const ageStr = computeExactAgeYears(profile.birthDate, profile.date);
+      const bioBits = [];
+      if (ageStr) bioBits.push(`Age ${ageStr}`);
+      if (heightStr) bioBits.push(heightStr);
+      const bioSuffix = bioBits.length ? ` • ${bioBits.join(' • ')}` : '';
+      const sessHeightEl = document.getElementById('sessionHeightSelect');
+      if (sessHeightEl) {
+        sessHeightEl.value = profile.pitcherHeightIn ? String(profile.pitcherHeightIn) : '';
+      }
+
       const fullHeaderTitle = `${profile.name} • ${profile.throws}HP`;
-      const fullHeaderMeta = `${profile.team} • ${profile.date} • ${profile.totalPitches} Pitches • ${fb.slot} Slot`;
+      const fullHeaderMeta = `${profile.team} • ${profile.date} • ${profile.totalPitches} Pitches • ${fb.slot} Slot${bioSuffix}`;
       document.getElementById('pitcherHeaderName').textContent = fullHeaderTitle;
       document.getElementById('pitcherHeaderMeta').textContent = fullHeaderMeta;
       document.getElementById('dossierTitleName').textContent = fullHeaderTitle;
@@ -5115,6 +5350,10 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       } else {
         execText = `${profile.name}'s ${presFb.velo.toFixed(1)} mph four-seamer grades at ${presFb.shrunkStuff.toFixed(1)} Present Stuff+ (${presFb.scout2080.short} Grade) against the NCAA D1 91.5 mph baseline (reflecting the ${presFb.penaltyCliff.toFixed(1)} pt non-linear sub-88 mph velocity cliff and a ${presFb.reactionMarginMs.toFixed(0)} ms batter reaction margin). If fastball velocity reaches ${projFb.velo.toFixed(1)} mph in a +5.0 mph simulation, ${presFb.code} Stuff+ moves to ${projFb.shrunkStuff.toFixed(1)} (${projFb.scout2080.short} Grade). Headlined by a ${bestPitch.velo.toFixed(1)} mph ${bestPitch.name} (${bestPitch.shrunkStuff.toFixed(1)} Stuff+, ${bestPitch.stuffVsLHB.toFixed(1)} vs. LHB) and gated by fastball anchor viability (γ = ${simEval.gammaAnchor.toFixed(2)}× damping ${simEval.rawSynergyTotal >= 0 ? '+' : ''}${simEval.rawSynergyTotal.toFixed(1)} raw synergy to ${simEval.netSynergy >= 0 ? '+' : ''}${simEval.netSynergy.toFixed(1)}), simulated Arsenal+ moves from ${presentBaselineEval.arsenalPlus.toFixed(1)} to ${projectedBaselineEval.arsenalPlus.toFixed(1)}.`;
       }
+      if (heightStr && fb && typeof fb.vaaVsExpected === 'number') {
+        const vaaSign = fb.vaaVsExpected >= 0 ? '+' : '';
+        execText += ` At ${heightStr}, his ${fb.code} vertical approach angle is ${fb.vaaTier.label} (${vaaSign}${fb.vaaVsExpected.toFixed(1)}° vs. height-expected VAA).`;
+      }
       document.getElementById('scoutSpeakExecutiveText').textContent = execText;
 
       // Render Lowest-Hanging Fruit: Top 2 Quick Wins
@@ -5214,9 +5453,11 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       document.getElementById('labSimPitchDelta').textContent = `${pitchStuffDelta >= 0 ? '+' : ''}${pitchStuffDelta.toFixed(1)}`;
       document.getElementById('labSimArsenal').textContent = simEval.arsenalPlus.toFixed(1);
       document.getElementById('labSimArsenalDelta').textContent = `${arsenalDelta >= 0 ? '+' : ''}${arsenalDelta.toFixed(1)}`;
+      const vaaTagLabel = simTarget.vaaHeightAdjusted ? 'Height-Adj VAA' : 'VAA vs. Slot';
+      const vaaDeltaStr = `${simTarget.vaaVsExpected >= 0 ? '+' : ''}${simTarget.vaaVsExpected.toFixed(1)}°`;
       document.getElementById('labKinematicsSummary').textContent = isScout
-        ? `Speed: ${simTarget.velo.toFixed(1)} mph (Plate ${simTarget.plateSpeedMph.toFixed(1)} mph) | Break: ${simTarget.ivb >= 0 ? '+' : ''}${simTarget.ivb.toFixed(1)}" V, ${simTarget.hb >= 0 ? '+' : ''}${simTarget.hb.toFixed(1)}" H | Hitter Time: ${simTarget.reactionMarginMs.toFixed(0)}ms`
-        : `4-Head XGB (${appState.lastInferenceMs.toFixed(2)}ms): P(Sw) ${(simTarget.pSwing * 100).toFixed(1)}% | P(Whiff|Sw) ${(simTarget.pWhiff * 100).toFixed(1)}% | P(CS|Tk) ${(simTarget.pCs * 100).toFixed(1)}% | xwOBAcon ${simTarget.xwobacon.toFixed(3)} | xRV ${simTarget.gridXrv >= 0 ? '+' : ''}${simTarget.gridXrv.toFixed(4)}`;
+        ? `Speed: ${simTarget.velo.toFixed(1)} mph (Plate ${simTarget.plateSpeedMph.toFixed(1)} mph) | Break: ${simTarget.ivb >= 0 ? '+' : ''}${simTarget.ivb.toFixed(1)}" V, ${simTarget.hb >= 0 ? '+' : ''}${simTarget.hb.toFixed(1)}" H | ${vaaTagLabel}: ${simTarget.vaaTier.label} (${vaaDeltaStr}) | Hitter Time: ${simTarget.reactionMarginMs.toFixed(0)}ms`
+        : `4-Head XGB (${appState.lastInferenceMs.toFixed(2)}ms): P(Sw) ${(simTarget.pSwing * 100).toFixed(1)}% | P(Whiff|Sw) ${(simTarget.pWhiff * 100).toFixed(1)}% | ${vaaTagLabel}: ${simTarget.vaaTier.label} (${vaaDeltaStr}) | xwOBAcon ${simTarget.xwobacon.toFixed(3)} | xRV ${simTarget.gridXrv >= 0 ? '+' : ''}${simTarget.gridXrv.toFixed(4)}`;
 
       document.getElementById('labArcReadout').textContent =
         `Release Width: ${simTarget.relSideDeltaIn >= 0 ? '+' : ''}${simTarget.relSideDeltaIn.toFixed(1)}" • Spin Tilt: ${simTarget.clockTilt}`;
@@ -5317,6 +5558,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           <th class="py-2 px-1.5 text-right">${infoTipHTML('IVB', 'Induced Vertical Break (in): upward carry/ride (+) or downward drop (-) caused by spin, excluding gravity.')}</th>
           <th class="py-2 px-1.5 text-right">${infoTipHTML('HB', 'Horizontal Break (in): arm-side run (+) or glove-side sweep (-) from the pitcher perspective.')}</th>
           <th class="py-2 px-1.5 text-right">${infoTipHTML('VAA', 'Vertical Approach Angle (deg): steepness of the pitch crossing home plate; flatter angles play up in the zone.')}</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML(fb.vaaHeightAdjusted ? 'Height-Adj VAA' : 'VAA vs. Slot', fb.vaaHeightAdjusted ? 'Actual VAA minus expected VAA for this pitcher height (0.90 x height). Positive (+) is flatter than expected; negative (-) is steeper.' : 'Actual VAA minus expected VAA for this release height. Set Pitcher Height to compare against height-expected release.')}</th>
           <th class="py-2 px-1.5 text-right">${infoTipHTML('CSW%', 'Called Strike + Whiff %: share of pitches earning a called strike or swing-and-miss.')}</th>
           <th class="py-2 px-1.5 text-right text-sky-300">${infoTipHTML('Stuff+', '100-scale pitch quality grade anchored to NCAA D1 average (100 = D1 avg, 115+ = Plus).')}</th>
           <th class="py-2 px-1.5 text-right text-emerald-300">vs. Righties</th>
@@ -5329,6 +5571,8 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             <td class="py-2 px-1.5 text-right text-slate-200">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}"</td>
             <td class="py-2 px-1.5 text-right text-slate-200">${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}"</td>
             <td class="py-2 px-1.5 text-right text-slate-200">${p.vaa.toFixed(1)}°</td>
+            <td class="py-2 px-1.5 text-right"><span class="px-1.5 py-0.5 rounded border text-[11px] font-semibold ${p.vaaTier.cls}">${p.vaaTier.label} ${p.vaaVsExpected >= 0 ? '+' : ''}${p.vaaVsExpected.toFixed(1)}°</span></td>
+            <td class="py-2 px-1.5 text-right"><span class="px-1.5 py-0.5 rounded border text-[11px] font-semibold ${p.vaaTier.cls}">${p.vaaTier.label} ${p.vaaVsExpected >= 0 ? '+' : ''}${p.vaaVsExpected.toFixed(1)}°</span></td>
             <td class="py-2 px-1.5 text-right text-slate-200">${computePitchCswPct(p).toFixed(1)}%</td>
             <td class="py-2 px-1.5 text-right font-bold text-sky-300">${p.shrunkStuff.toFixed(1)}</td>
             <td class="py-2 px-1.5 text-right font-semibold text-emerald-300">${p.stuffVsRHB.toFixed(1)}</td>
@@ -5344,6 +5588,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           <th class="py-2 px-1.5 text-right">${infoTipHTML('IVB', 'Induced Vertical Break (in): spin-induced vertical movement excluding gravity.')}</th>
           <th class="py-2 px-1.5 text-right">${infoTipHTML('HB', 'Horizontal Break (in): pitcher-view horizontal movement (+ arm-side, - glove-side).')}</th>
           <th class="py-2 px-1.5 text-right">${infoTipHTML('VAA', 'Vertical Approach Angle (deg) at home plate.')}</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML(fb.vaaHeightAdjusted ? 'Height-Adj VAA' : 'VAA vs. Slot', fb.vaaHeightAdjusted ? 'Actual VAA minus expected VAA at 0.90 x pitcher height (+ = Flat, - = Steep).' : 'Actual VAA minus expected VAA at observed release height. Set Pitcher Height for height-adjusted comparison.')}</th>
           <th class="py-2 px-1.5 text-right">HAA</th>
           <th class="py-2 px-1.5 text-right">RelH/S</th>
           <th class="py-2 px-1.5 text-right">Ext</th>
@@ -5488,6 +5733,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       applyTimeDepthVisibility();
 
       // Update 3D WebGL & 2D Canvases
+      update3DPitcherSilhouette(profile.throws, fb.relHeight, fb.relSide, fb.ext, profile.pitcherHeightIn);
       rebuild3DTrajectories(presentBaselineEval, simEval);
       drawMovementMatrix(presentBaselineEval, simEval);
       drawSpinClock(simEval);
@@ -6128,9 +6374,15 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
         const rows = Array.isArray(data) ? data : [];
         rows.forEach((row) => {
-          const pitchesArr = typeof row.pitches_json === 'string'
+          const parsedPayload = typeof row.pitches_json === 'string'
             ? JSON.parse(row.pitches_json)
             : (row.pitches_json || []);
+          const pitchesArr = Array.isArray(parsedPayload)
+            ? parsedPayload
+            : (parsedPayload && Array.isArray(parsedPayload.pitches) ? parsedPayload.pitches : []);
+          const savedMeta = (!Array.isArray(parsedPayload) && parsedPayload && parsedPayload.meta)
+            ? parsedPayload.meta
+            : {};
           if (!Array.isArray(pitchesArr) || !pitchesArr.length) return;
           const pid = 'saved_' + row.id;
           PITCHER_PROFILES[pid] = {
@@ -6142,6 +6394,8 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             date: row.session_date || '11/18/2026',
             createdAt: row.created_at || null,
             totalPitches: Number(row.total_pitches) || pitchesArr.reduce((acc, p) => acc + (p.count || 1), 0),
+            pitcherHeightIn: savedMeta.pitcherHeightIn ? Number(savedMeta.pitcherHeightIn) : null,
+            birthDate: savedMeta.birthDate || null,
             isHighSchool: true,
             isCustomSession: true,
             sourceType: row.source_type || 'csv',
@@ -6176,7 +6430,13 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           session_date: profileObj.date,
           source_type: sourceType,
           total_pitches: profileObj.totalPitches,
-          pitches_json: profileObj.pitches
+          pitches_json: {
+            pitches: profileObj.pitches,
+            meta: {
+              pitcherHeightIn: profileObj.pitcherHeightIn ? Number(profileObj.pitcherHeightIn) : null,
+              birthDate: profileObj.birthDate || null
+            }
+          }
         };
         const { data, error } = await client
           .from('bullpen_sessions')
@@ -6758,6 +7018,37 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         });
       }
 
+      const sessHeightEl = document.getElementById('sessionHeightSelect');
+      if (sessHeightEl) {
+        sessHeightEl.addEventListener('change', async (e) => {
+          const prof = PITCHER_PROFILES[appState.currentPitcherId];
+          if (!prof) return;
+          prof.pitcherHeightIn = e.target.value ? Number(e.target.value) : null;
+          appState.baselineCache.key = null;
+          renderAll();
+          if (prof.supabaseRowId && appState.currentUser) {
+            const client = initSupabaseClient();
+            if (client && typeof client.from === 'function') {
+              try {
+                await client
+                  .from('bullpen_sessions')
+                  .update({
+                    pitches_json: {
+                      pitches: prof.pitches,
+                      meta: {
+                        pitcherHeightIn: prof.pitcherHeightIn || null,
+                        birthDate: prof.birthDate || null
+                      }
+                    }
+                  })
+                  .eq('id', prof.supabaseRowId)
+                  .eq('user_id', appState.currentUser.id);
+              } catch (err) {}
+            }
+          }
+        });
+      }
+
       const stanceEl = document.getElementById('batterStanceSelect');
       if (stanceEl) {
         stanceEl.addEventListener('change', (e) => {
@@ -6979,10 +7270,22 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             try {
               const res = await ingestTrackManPDF(ev.target.result, file.name);
               const folderOverride = getSelectedUploadAthleteFolderName();
-              if (folderOverride && res && res.profileObj) {
-                res.profileObj.name = folderOverride;
-                res.pitcherName = folderOverride;
-                if (PITCHER_PROFILES[res.profileObj.id]) PITCHER_PROFILES[res.profileObj.id].name = folderOverride;
+              const upHeightEl = document.getElementById('uploadPitcherHeightSelect');
+              const upDobEl = document.getElementById('uploadBirthDateInput');
+              const upHeightVal = upHeightEl && upHeightEl.value ? Number(upHeightEl.value) : null;
+              const upDobVal = upDobEl && upDobEl.value ? upDobEl.value.trim() : null;
+              if (res && res.profileObj) {
+                if (folderOverride) {
+                  res.profileObj.name = folderOverride;
+                  res.pitcherName = folderOverride;
+                }
+                if (upHeightVal) res.profileObj.pitcherHeightIn = upHeightVal;
+                if (upDobVal) res.profileObj.birthDate = upDobVal;
+                if (PITCHER_PROFILES[res.profileObj.id]) {
+                  PITCHER_PROFILES[res.profileObj.id].name = res.profileObj.name;
+                  PITCHER_PROFILES[res.profileObj.id].pitcherHeightIn = res.profileObj.pitcherHeightIn || null;
+                  PITCHER_PROFILES[res.profileObj.id].birthDate = res.profileObj.birthDate || null;
+                }
                 rebuildPitcherSelectDropdown();
                 renderAll();
               }
@@ -7009,10 +7312,22 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
               const srcType = /\.json$/i.test(file.name) ? 'json' : 'csv';
               const res = parseTrackManCSVOrJSON(ev.target.result, file.name);
               const folderOverride = getSelectedUploadAthleteFolderName();
-              if (folderOverride && res && res.profileObj) {
-                res.profileObj.name = folderOverride;
-                res.pitcherName = folderOverride;
-                if (PITCHER_PROFILES[res.profileObj.id]) PITCHER_PROFILES[res.profileObj.id].name = folderOverride;
+              const upHeightEl = document.getElementById('uploadPitcherHeightSelect');
+              const upDobEl = document.getElementById('uploadBirthDateInput');
+              const upHeightVal = upHeightEl && upHeightEl.value ? Number(upHeightEl.value) : null;
+              const upDobVal = upDobEl && upDobEl.value ? upDobEl.value.trim() : null;
+              if (res && res.profileObj) {
+                if (folderOverride) {
+                  res.profileObj.name = folderOverride;
+                  res.pitcherName = folderOverride;
+                }
+                if (upHeightVal) res.profileObj.pitcherHeightIn = upHeightVal;
+                if (upDobVal) res.profileObj.birthDate = upDobVal;
+                if (PITCHER_PROFILES[res.profileObj.id]) {
+                  PITCHER_PROFILES[res.profileObj.id].name = res.profileObj.name;
+                  PITCHER_PROFILES[res.profileObj.id].pitcherHeightIn = res.profileObj.pitcherHeightIn || null;
+                  PITCHER_PROFILES[res.profileObj.id].birthDate = res.profileObj.birthDate || null;
+                }
                 rebuildPitcherSelectDropdown();
                 renderAll();
               }
