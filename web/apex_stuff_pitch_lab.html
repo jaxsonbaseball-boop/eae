@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.9 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.11 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -81,6 +81,7 @@
       #renameSessionModal,
       #passwordRecoveryModal,
       #toastBanner,
+      #eaeTooltipPopover,
       #webglCanvasWrapper {
         display: none !important;
       }
@@ -174,25 +175,26 @@
       line-height: 1.4;
     }
     .eae-info-tip {
-      position: relative;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 16px;
-      height: 16px;
-      min-height: 16px !important;
-      min-width: 16px !important;
-      margin-left: 3px;
+      width: 18px;
+      height: 18px;
+      min-height: 18px !important;
+      min-width: 18px !important;
+      margin-left: 4px;
       border-radius: 9999px;
       background-color: #1e2530;
       border: 1px solid #475569;
       color: #cbd5e1;
       font-family: 'Inter', sans-serif;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       line-height: 1;
       vertical-align: middle;
       cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
     .eae-info-tip:hover,
     .eae-info-tip:focus,
@@ -201,36 +203,6 @@
       border-color: #60a5fa;
       color: #ffffff;
       outline: none;
-    }
-    .eae-info-tip::after {
-      content: attr(data-tip);
-      position: absolute;
-      bottom: calc(100% + 8px);
-      right: 0;
-      width: 220px;
-      padding: 8px 10px;
-      border-radius: 6px;
-      background-color: #0d1015;
-      border: 1px solid #3b82f6;
-      color: #f1f5f9;
-      font-family: 'Inter', sans-serif;
-      font-size: 12px;
-      font-weight: 400;
-      line-height: 1.35;
-      text-align: left;
-      white-space: normal;
-      z-index: 60;
-      pointer-events: none;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.15s ease;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
-    }
-    .eae-info-tip:hover::after,
-    .eae-info-tip:focus::after,
-    .eae-info-tip.tip-open::after {
-      opacity: 1;
-      visibility: visible;
     }
   </style>
 </head>
@@ -241,12 +213,20 @@
     <span id="toastMessage">Scouting report copied to clipboard</span>
   </div>
 
+  <!-- Shared Unclipped Floating ? Tooltip Popover -->
+  <div id="eaeTooltipPopover" role="dialog" aria-hidden="true" class="hidden fixed z-[9999] rounded-lg bg-[#0d1015] border border-[#3b82f6] p-3 shadow-2xl text-left" style="max-width: min(280px, calc(100vw - 24px));">
+    <div class="flex items-start justify-between gap-2">
+      <span id="eaeTooltipTitle" class="text-xs font-bold text-[#60a5fa] leading-snug"></span>
+      <button id="eaeTooltipCloseBtn" type="button" aria-label="Close definition" class="shrink-0 px-1.5 py-0.5 rounded bg-[#1e2530] hover:bg-[#262f3d] text-slate-200 text-xs font-bold leading-none touch-manipulation" style="min-height: 22px; min-width: 22px;">×</button>
+    </div>
+    <p id="eaeTooltipBody" class="mt-1.5 text-[12.5px] text-slate-100 leading-relaxed"></p>
+  </div>
+
   <!-- TrackMan B1 CSV / JSON Ingestion Modal -->
   <div id="uploadModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
     <div class="glass-card rounded-lg max-w-xl w-full p-5 sm:p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div>
-          <span class="text-[11px] font-mono-num uppercase tracking-widest text-sky-400 font-semibold">TrackMan Bullpen Import</span>
           <h3 class="text-lg font-extrabold text-white">Upload TrackMan B1 CSV, JSON, or PDF Report</h3>
         </div>
         <button id="closeUploadModalBtn" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
@@ -309,7 +289,6 @@
     <div class="glass-card rounded-lg max-w-md w-full p-5 sm:p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div>
-          <span class="text-[11px] font-mono-num uppercase tracking-widest text-sky-400 font-semibold">Private Cloud Bullpen Locker</span>
           <h3 class="text-lg font-extrabold text-white">Sign In or Create Account</h3>
         </div>
         <button id="closeAuthModalBtn" type="button" class="touch-target px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
@@ -411,7 +390,6 @@
     <div class="glass-card rounded-lg max-w-md w-full p-5 sm:p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-[#262c36] pb-3">
         <div>
-          <span class="text-[11px] font-mono-num uppercase tracking-widest text-[#60a5fa] font-semibold">Account Recovery</span>
           <h3 class="text-lg font-extrabold text-white">Set New Password</h3>
         </div>
         <button id="closePasswordRecoveryModalBtn" type="button" class="touch-target px-2.5 py-1 rounded-md bg-[#1e2530] hover:bg-[#262f3d] text-slate-300 border border-[#333c4a] text-xs font-semibold">
@@ -443,7 +421,6 @@
     <div class="glass-card rounded-lg max-w-md w-full p-5 sm:p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div>
-          <span class="text-[11px] font-mono-num uppercase tracking-widest text-sky-400 font-semibold">EAE • Easy Arsenal Evaluation</span>
           <h3 class="text-lg font-extrabold text-white">Contact &amp; Consulting</h3>
         </div>
         <button id="closeContactModalBtn" type="button" class="touch-target px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
@@ -479,7 +456,6 @@
     <div class="glass-card rounded-lg max-w-md w-full p-5 sm:p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-[#262c36] pb-3">
         <div>
-          <span class="text-[11px] font-mono-num uppercase tracking-widest text-[#60a5fa] font-semibold">Saved Session Organization</span>
           <h3 class="text-base font-bold text-white">Move / Rename Athlete Folder</h3>
         </div>
         <button id="closeRenameModalBtn" type="button" class="touch-target px-2.5 py-1 rounded-md bg-[#1e2530] hover:bg-[#262f3d] text-slate-300 border border-[#333c4a] text-xs font-semibold">
@@ -526,7 +502,6 @@
                 Easy Arsenal Evaluation
               </span>
               <span id="engineStatusPill" class="px-2 py-0.5 text-[10px] sm:text-[11px] font-mono-num font-medium rounded bg-[#151921] text-slate-300 border border-[#262c36] flex items-center gap-1.5" title="Loads ./data/processed/ncaa_d1_stuff_model.json via fetch() when served over HTTP/HTTPS, or falls back to offline heuristic engine under file://">
-                <span id="engineStatusDot" class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
                 <span id="engineStatusText" class="truncate max-w-[140px] sm:max-w-none">Engine: Offline Heuristic Fallback</span>
               </span>
             </div>
@@ -546,7 +521,7 @@
         <div class="flex flex-col w-full md:w-auto">
           <label for="pitcherSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Bullpen Session</label>
           <select id="pitcherSelect" class="touch-target w-full md:w-auto bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-2.5 py-2 md:py-1.5 font-medium focus:outline-none focus:border-sky-400">
-            <option value="prospect_01">Prospect #01 — Projectable Low-3/4 RHP (83.0 mph FF / Fade CH / Gyro SL)</option>
+            <option value="prospect_01">Prospect #01 — Low-3/4 Fastball/CH RHP (83.0 mph FF / Fade CH / Gyro SL)</option>
             <option value="prospect_02">Prospect #02 — Developing HS RHP (77.2 mph FF / 11-5 CU / CH)</option>
             <option value="prospect_03">Prospect #03 — High-Spin Carry RHP (90.5 mph FF 20&quot; IVB / 12-6 CU / CH)</option>
             <option value="prospect_04">Prospect #04 — Cross-Body Sidearm LHP (84.5 mph SI / Sweeper / CH)</option>
@@ -569,9 +544,9 @@
           <div class="flex flex-col flex-1 min-w-[150px] md:flex-none">
             <label for="viewModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-300 mb-0.5">View Mode</label>
             <select id="viewModeSelect" class="touch-target bg-[#151921] border border-[#262c36] text-slate-100 text-[13px] rounded-md px-2.5 py-1.5 font-medium focus:outline-none focus:border-[#3b82f6]">
-              <option value="player">Player / Parent</option>
-              <option value="scout" selected>Coach / Scout</option>
-              <option value="rnd">Front Office / Quant</option>
+              <option value="player">Player / Parent / HS Coach</option>
+              <option value="scout" selected>College Coach / Pro Scout</option>
+              <option value="rnd">R&amp;D / Quant</option>
             </select>
           </div>
 
@@ -579,7 +554,7 @@
             <label for="gradeModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Grade Mode</label>
             <select id="gradeModeSelect" class="touch-target bg-[#151921] border border-[#262c36] text-slate-100 text-xs rounded-md px-2.5 py-1.5 font-medium focus:outline-none focus:border-[#3b82f6]">
               <option value="present">Present D1 Reality (Current Velo)</option>
-              <option value="projected">3-Year College Growth (+5 mph)</option>
+              <option value="projected">What-If +5 mph Simulation</option>
             </select>
           </div>
 
@@ -614,7 +589,6 @@
             </button>
 
             <button id="openAuthModalBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition flex items-center justify-center gap-1.5">
-              <span id="headerAuthDot" class="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></span>
               <span id="headerAuthBtnText" class="truncate max-w-[150px]">Sign In / Account</span>
               <span id="headerAuthRoleBadge" class="hidden px-1.5 py-0.5 rounded bg-[#1e2530] text-[#60a5fa] border border-[#333c4a] text-[10px] font-mono-num font-semibold whitespace-nowrap"></span>
             </button>
@@ -638,19 +612,19 @@
           All Sections
         </button>
         <button type="button" data-tier-tab="tier1" class="tier-tab-btn px-3 py-1.5 rounded-md text-xs font-medium bg-[#151921] text-slate-300 border border-[#262c36] hover:bg-[#1e2530] transition whitespace-nowrap">
-          01 / Scout Card
+          Scout Card
         </button>
         <button type="button" data-tier-tab="tier2" class="tier-tab-btn px-3 py-1.5 rounded-md text-xs font-medium bg-[#151921] text-slate-300 border border-[#262c36] hover:bg-[#1e2530] transition whitespace-nowrap">
-          02 / 3D Tunnel
+          3D Tunnel
         </button>
         <button type="button" data-tier-tab="tier3" class="tier-tab-btn px-3 py-1.5 rounded-md text-xs font-medium bg-[#151921] text-slate-300 border border-[#262c36] hover:bg-[#1e2530] transition whitespace-nowrap">
-          03 / Movement
+          Movement
         </button>
         <button type="button" data-tier-tab="tier4" class="tier-tab-btn px-3 py-1.5 rounded-md text-xs font-medium bg-[#151921] text-slate-300 border border-[#262c36] hover:bg-[#1e2530] transition whitespace-nowrap">
-          04 / Splits
+          Splits
         </button>
         <button type="button" data-tier-tab="pitchlab" class="tier-tab-btn px-3 py-1.5 rounded-md text-xs font-medium bg-[#151921] text-slate-300 border border-[#262c36] hover:bg-[#1e2530] transition whitespace-nowrap">
-          05 / Pitch Lab
+          Pitch Lab
         </button>
       </div>
       <span id="dossierModeIndicator" class="hidden text-[11px] font-mono-num text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-md whitespace-nowrap">
@@ -665,7 +639,7 @@
     <!-- Printable 8.5x11 Scout Dossier Header -->
     <div id="printDossierHeader" class="hidden items-center justify-between bg-slate-900/90 border border-slate-700 rounded-xl p-4">
       <div>
-        <div class="text-xs font-mono-num font-bold uppercase tracking-widest text-sky-400">EAE • OFFICIAL COLLEGE BASEBALL SCOUTING REPORT</div>
+        <div class="text-xs font-mono-num font-bold uppercase text-sky-400">EAE • OFFICIAL COLLEGE BASEBALL SCOUTING REPORT</div>
         <h2 id="dossierTitleName" class="text-xl font-extrabold text-white mt-0.5">Prospect #01 • RHP</h2>
         <p id="dossierSubMeta" class="text-xs font-mono-num text-slate-400">TrackMan B1 Verified Bullpen • Evaluated Against NCAA Division 1 Hitters</p>
       </div>
@@ -676,15 +650,72 @@
       </div>
     </div>
 
+    <!-- "How Much Time Do You Have?" Depth Filter Bar -->
+    <div id="timeDepthBar" class="glass-card rounded-lg px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 no-print">
+      <div class="flex items-center gap-2">
+        <span class="text-[13px] font-semibold text-slate-100">How much time do you have?</span>
+        <span id="timeDepthHint" class="text-xs font-mono-num text-[#94a3b8]">3-1-1 Quick Snapshot</span>
+      </div>
+      <div class="grid grid-cols-3 gap-1 p-1 rounded-md bg-[#10141b] border border-[#262c36] w-full sm:w-auto">
+        <button id="timeDepth30SecBtn" type="button" data-time-depth="30sec" class="time-depth-btn touch-target px-3 py-1.5 rounded text-xs font-semibold text-slate-300 hover:text-white transition whitespace-nowrap">
+          30 Sec
+        </button>
+        <button id="timeDepth2MinBtn" type="button" data-time-depth="2min" class="time-depth-btn touch-target px-3 py-1.5 rounded text-xs font-semibold bg-[#3b82f6] text-white transition whitespace-nowrap">
+          2 Min
+        </button>
+        <button id="timeDepthDeepBtn" type="button" data-time-depth="deep" class="time-depth-btn touch-target px-3 py-1.5 rounded text-xs font-semibold text-slate-300 hover:text-white transition whitespace-nowrap">
+          Full Deep Dive
+        </button>
+      </div>
+    </div>
+
+    <!-- 3-1-1 HERO CARD (30 SEC VIEW: 3 NUMBERS, 1 PICTURE, 1 THING TO WORK ON) -->
+    <section id="section-311" class="hidden glass-card rounded-lg p-4 sm:p-5 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#262c36]">
+        <div>
+          <h2 id="hero311PitcherName" class="text-xl sm:text-2xl font-extrabold text-white">Prospect #01 • RHP</h2>
+          <p id="hero311Meta" class="text-xs font-mono-num text-[#cbd5e1] mt-0.5">HS Showcase Bullpen • 15 Pitches</p>
+        </div>
+        <span class="px-2.5 py-1 rounded-md bg-[#10141b] border border-[#262c36] text-xs font-mono-num text-[#60a5fa] font-semibold">
+          3-1-1 Snapshot (100 = D1 Avg)
+        </span>
+      </div>
+
+      <!-- 3 Numbers -->
+      <div id="hero311NumbersGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+
+      <!-- 1 Picture (Hosts shared #movementCanvasContainer in 30 Sec mode) -->
+      <div class="rounded-lg bg-[#10141b] border border-[#262c36] p-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs mb-2 px-1">
+          <span class="text-[13px] font-semibold text-slate-100">Pitch Movement Chart (Ride vs. Run)</span>
+          <span class="font-mono-num text-xs text-[#cbd5e1]">Pitcher's View (+Right = Arm-Side Run)</span>
+        </div>
+        <div id="hero311MovementHost"></div>
+      </div>
+
+      <!-- 1 Thing to Work On -->
+      <div class="rounded-lg bg-[#10141b] border border-[#262c36] p-4 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">1 Thing to Work On Next</span>
+          <span class="text-xs font-mono-num text-[#94a3b8]">Highest-impact bullpen focus</span>
+        </div>
+        <div id="hero311QuickWinBox"></div>
+      </div>
+
+      <!-- CTA to 2-Min Breakdown -->
+      <div class="flex justify-end pt-1">
+        <button id="see2MinBreakdownBtn" type="button" class="touch-target px-4 py-2 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-[13px] font-semibold transition">
+          See 2-Min Breakdown →
+        </button>
+      </div>
+    </section>
+
     <!-- ======================================================================= -->
     <!-- SECTION 1: PLAYER SCOUT CARD (EXECUTIVE GLANCE)                         -->
     <!-- ======================================================================= -->
     <section id="section-tier1" class="tier-section glass-card rounded-lg p-4 sm:p-5">
       <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800">
         <div>
-          <span id="tier1Eyebrow" class="text-[11px] font-mono-num uppercase tracking-widest text-[#60a5fa] font-semibold">
-            01 / SCOUT CARD
-          </span>
           <h2 id="pitcherHeaderName" class="text-xl sm:text-2xl font-extrabold text-white mt-0.5">Prospect #01 • RHP</h2>
         </div>
         <div class="flex flex-wrap items-center gap-2 text-xs text-slate-400 font-mono-num">
@@ -725,11 +756,11 @@
             </div>
           </div>
 
-          <!-- Dual Present vs. 3-Year College Growth Projection Comparison Bar -->
+          <!-- Dual Present vs. What-If +5 mph Simulation Comparison Bar -->
           <div id="heroDualProjectionBadge" class="mt-3 pt-2.5 border-t border-slate-800/90 flex items-center justify-between text-xs font-mono-num text-slate-200">
             <span>Present: <strong class="text-sky-300">89.0 Arsenal+ (45)</strong></span>
             <span class="text-slate-600">|</span>
-            <span>3-Yr Projection: <strong class="text-emerald-300">107.7 Arsenal+ (55)</strong></span>
+            <span>What-If +5 mph: <strong class="text-emerald-300">107.7 Arsenal+ (55)</strong></span>
           </div>
         </div>
 
@@ -746,7 +777,7 @@
             <div class="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white/80" title="College D1 Average (100)"></div>
             <div id="gaugeBaseMarker" class="absolute -top-2 w-3.5 h-7 rounded bg-slate-300 border-2 border-slate-950 shadow transition-all duration-300" style="left: 25%;" title="Pitch Quality Base"></div>
             <div id="gaugeArsenalMarker" class="absolute -top-2.5 w-4 h-8 rounded bg-[#3b82f6] border-2 border-[#0d1015] transition-all duration-300" style="left: 32%;" title="Current Overall Arsenal+"></div>
-            <div id="gaugeProjectedMarker" class="absolute -top-2 w-3.5 h-7 rounded bg-emerald-400/80 border-2 border-slate-950 shadow transition-all duration-300" style="left: 65%;" title="3-Year Projected Arsenal+"></div>
+            <div id="gaugeProjectedMarker" class="absolute -top-2 w-3.5 h-7 rounded bg-emerald-400/80 border-2 border-slate-950 shadow transition-all duration-300" style="left: 65%;" title="What-If +5 mph Simulated Arsenal+"></div>
           </div>
 
           <div class="flex justify-between text-[11px] font-mono-num text-slate-400">
@@ -769,7 +800,6 @@
       <div class="mt-4 rounded-lg bg-[#10141b] border border-[#262c36] p-4">
         <div class="flex items-center justify-between gap-2 mb-1.5">
           <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
             <span id="scoutSpeakHeaderTitle" class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">Scouting Director's Summary</span>
           </div>
           <span id="scoutSpeakShrinkageTag" class="text-[11px] font-mono-num text-slate-400">Small-Sample Adjusted • Fastball Setup: 42%</span>
@@ -781,7 +811,6 @@
       <div id="quickWinsCard" class="mt-4 rounded-lg bg-[#10141b] border border-[#262c36] p-4">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
           <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
             <span id="quickWinsHeaderTitle" class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">Lowest-Hanging Fruit: Top 2 Quick Wins</span>
           </div>
           <span id="quickWinsSubtitle" class="text-[11px] font-mono-num text-slate-400">Ranked by realistic Arsenal+ gain &amp; coaching feasibility</span>
@@ -794,7 +823,6 @@
       <div id="athleteProgressionCard" class="hidden mt-4 rounded-lg bg-[#10141b] border border-[#262c36] p-4 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
             <span id="athleteProgressionTitle" class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">Athlete Progression (2 Sessions)</span>
           </div>
           <span id="athleteProgressionSpan" class="text-[11px] font-mono-num text-slate-400">Session 1 → Current</span>
@@ -823,9 +851,6 @@
     <section id="section-pitchlab" class="tier-section glass-card rounded-lg p-4 sm:p-5 no-print">
       <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
         <div>
-          <span id="pitchLabEyebrow" class="text-[11px] font-mono-num uppercase tracking-widest text-[#60a5fa] font-semibold">
-            05 / WHAT-IF PITCH LAB
-          </span>
           <h2 class="text-lg sm:text-xl font-extrabold text-white mt-0.5">Interactive Pitching Coach "What-If" Simulator</h2>
         </div>
         <!-- Quick Scenario Preset & Reset Buttons -->
@@ -978,9 +1003,6 @@
     <section id="section-tier2" class="tier-section glass-card rounded-lg p-4 sm:p-5">
       <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
         <div>
-          <span id="tier2Eyebrow" class="text-[11px] font-mono-num uppercase tracking-widest text-[#60a5fa] font-semibold">
-            02 / 3D PITCH TUNNEL
-          </span>
           <h2 id="tier2MainTitle" class="text-lg sm:text-xl font-extrabold text-white mt-0.5">
             Interactive 3D Pitch Flight &amp; Hitter Decision Point (23.8 ft Out)
           </h2>
@@ -1026,13 +1048,13 @@
             <div id="webglLegendItems" class="space-y-1.5 font-mono-num text-[11px]"></div>
             <div class="pt-1.5 border-t border-slate-800 text-[10px] font-mono-num text-slate-400 space-y-0.5">
               <div class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+                <span class="w-2.5 h-1 rounded-sm bg-emerald-400 inline-block"></span>
                 <span>&lt;145ms: Elite Deception</span>
-                <span class="w-2 h-2 rounded-full bg-amber-400 inline-block ml-1"></span>
+                <span class="w-2.5 h-1 rounded-sm bg-amber-400 inline-block ml-1"></span>
                 <span>145–175ms: Avg</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-rose-400 inline-block"></span>
+                <span class="w-2.5 h-1 rounded-sm bg-rose-400 inline-block"></span>
                 <span>&gt;175ms: Easy for Hitter to Read</span>
               </div>
             </div>
@@ -1063,9 +1085,6 @@
     <section id="section-tier3" class="tier-section glass-card rounded-lg p-4 sm:p-5">
       <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800">
         <div>
-          <span id="tier3Eyebrow" class="text-[11px] font-mono-num uppercase tracking-widest text-[#60a5fa] font-semibold">
-            03 / MOVEMENT &amp; SPIN CLOCK
-          </span>
           <h2 id="tier3MainTitle" class="text-lg sm:text-xl font-extrabold text-white mt-0.5">
             Pitch Break Chart (Ride vs. Run) &amp; 12-Hour Spin Tilt Clock
           </h2>
@@ -1082,8 +1101,10 @@
             <span id="movementChartTopTitle" class="font-semibold text-slate-200">Vertical Ride/Drop vs. Horizontal Run/Sweep (Inches)</span>
             <span class="font-mono-num text-[11px] text-slate-400">Pitcher's View (+Right = Arm-Side Run)</span>
           </div>
-          <div class="relative h-80 sm:h-96 w-full">
-            <canvas id="movementMatrixCanvas" class="w-full h-full rounded-lg bg-slate-950 border border-slate-800"></canvas>
+          <div id="tier3MovementHost">
+            <div id="movementCanvasContainer" class="relative h-80 sm:h-96 w-full">
+              <canvas id="movementMatrixCanvas" class="w-full h-full rounded-lg bg-slate-950 border border-slate-800"></canvas>
+            </div>
           </div>
         </div>
 
@@ -1091,7 +1112,7 @@
         <div class="lg:col-span-5 glass-card-subtle rounded-xl p-3 flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between text-xs mb-2 px-1">
-              <span class="font-semibold text-slate-200">12-Hour Spin Direction &amp; Arm Slot Angle</span>
+              <span id="spinClockTitleLabel" class="font-semibold text-slate-200">12-Hour Spin Direction &amp; Arm Slot Angle</span>
               <span id="armSlotClockLabel" class="font-mono-num text-[11px] text-sky-400">Slot: Low-3/4 (21.5°)</span>
             </div>
             <div class="relative h-64 w-full">
@@ -1113,9 +1134,6 @@
     <section id="section-tier4" class="tier-section glass-card rounded-lg p-4 sm:p-5">
       <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800">
         <div>
-          <span id="tier4Eyebrow" class="text-[11px] font-mono-num uppercase tracking-widest text-[#60a5fa] font-semibold">
-            04 / HITTER SPLITS &amp; GRADE RANGE
-          </span>
           <h2 id="tier4MainTitle" class="text-lg sm:text-xl font-extrabold text-white mt-0.5">
             Pitch Grade Range &amp; Righty / Lefty Hitter Matchups
           </h2>
@@ -1192,8 +1210,8 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.9 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
-    <span id="footerRightText" class="font-mono-num">Switch between Player / Parent, Coach / Scout, and Front Office / Quant in the top bar</span>
+    <span>EAE v5.11 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
   <!-- ========================================================================= -->
@@ -1541,7 +1559,7 @@
     const PITCHER_PROFILES = {
       prospect_01: {
         id: 'prospect_01',
-        name: 'Prospect #01 — Projectable Low-3/4',
+        name: 'Prospect #01 — Low-3/4 Fastball/CH',
         throws: 'R',
         team: 'HS Showcase Bullpen',
         date: '10/20/2026',
@@ -2076,7 +2094,8 @@
 
     // Application State (Default viewMode = 'scout' for plain-English Baseball/Scout View)
     const appState = {
-      viewMode: 'scout', // 'scout' (Baseball / Scout Simple) | 'rnd' (Pro Analytics R&D)
+      viewMode: 'scout', // 'player' | 'scout' | 'rnd'
+      timeDepth: '2min', // '30sec' | '2min' | 'deep'
       xgbModelArtifact: null,
       xgbEngineLoaded: false,
       lastInferenceMs: 0.0,
@@ -3638,9 +3657,13 @@
         ctx.lineTo(x, h - 28);
         ctx.stroke();
 
-        ctx.fillStyle = val === 100 ? '#38bdf8' : '#64748b';
-        ctx.font = '10px JetBrains Mono, monospace';
-        ctx.fillText(val === 100 ? '100 (Avg)' : `${val}`, x - 14, h - 10);
+        ctx.save();
+        ctx.fillStyle = val === 100 ? '#60a5fa' : '#94a3b8';
+        ctx.font = w < 420 ? '600 10px JetBrains Mono, monospace' : '600 10.5px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        const tickLabel = val === 100 ? (w < 420 ? '100' : '100 (Avg)') : `${val}`;
+        ctx.fillText(tickLabel, x, h - 10);
+        ctx.restore();
       });
 
       const pitches = simEval.gradedPitches;
@@ -4500,9 +4523,98 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       }
     }
 
+    function defaultTimeDepthForViewMode(mode) {
+      if (mode === 'player') return '30sec';
+      if (mode === 'rnd') return 'deep';
+      return '2min';
+    }
+
+    function applyTimeDepthVisibility() {
+      const depth = appState.timeDepth || '2min';
+      const sec311 = document.getElementById('section-311');
+      const sec1 = document.getElementById('section-tier1');
+      const sec2 = document.getElementById('section-tier2');
+      const sec3 = document.getElementById('section-tier3');
+      const sec4 = document.getElementById('section-tier4');
+      const secLab = document.getElementById('section-pitchlab');
+      const progCard = document.getElementById('athleteProgressionCard');
+      const hintEl = document.getElementById('timeDepthHint');
+
+      document.querySelectorAll('.time-depth-btn').forEach((btn) => {
+        const isActive = btn.getAttribute('data-time-depth') === depth;
+        btn.className = isActive
+          ? 'time-depth-btn touch-target px-3 py-1.5 rounded text-xs font-semibold bg-[#3b82f6] text-white transition whitespace-nowrap'
+          : 'time-depth-btn touch-target px-3 py-1.5 rounded text-xs font-semibold text-slate-300 hover:text-white transition whitespace-nowrap';
+      });
+
+      if (hintEl) {
+        hintEl.textContent = depth === '30sec'
+          ? '3-1-1 Quick Snapshot'
+          : (depth === '2min' ? 'Scout Card, Movement & Splits' : 'All Sections + 3D Tunnel & Pitch Lab');
+      }
+
+      const mvContainer = document.getElementById('movementCanvasContainer');
+      const host311 = document.getElementById('hero311MovementHost');
+      const hostTier3 = document.getElementById('tier3MovementHost');
+      if (mvContainer) {
+        if (depth === '30sec' && host311 && mvContainer.parentElement !== host311) {
+          host311.appendChild(mvContainer);
+        } else if (depth !== '30sec' && hostTier3 && mvContainer.parentElement !== hostTier3) {
+          hostTier3.appendChild(mvContainer);
+        }
+      }
+
+      if (depth === '30sec') {
+        if (sec311) sec311.classList.remove('hidden');
+        [sec1, sec2, sec3, sec4, secLab].forEach((s) => s && s.classList.add('hidden'));
+      } else if (depth === '2min') {
+        if (sec311) sec311.classList.add('hidden');
+        const tab = appState.activeTierTab || 'all';
+        const allowMap = { tier1: true, tier2: false, tier3: true, tier4: true, pitchlab: false };
+        const map = { tier1: sec1, tier2: sec2, tier3: sec3, tier4: sec4, pitchlab: secLab };
+        Object.entries(map).forEach(([k, s]) => {
+          if (!s) return;
+          const show = allowMap[k] && (tab === 'all' || tab === k);
+          s.classList.toggle('hidden', !show);
+        });
+        if (progCard) progCard.classList.add('hidden');
+      } else {
+        if (sec311) sec311.classList.add('hidden');
+        const tab = appState.activeTierTab || 'all';
+        const map = { tier1: sec1, tier2: sec2, tier3: sec3, tier4: sec4, pitchlab: secLab };
+        Object.entries(map).forEach(([k, s]) => {
+          if (!s) return;
+          s.classList.toggle('hidden', !(tab === 'all' || tab === k));
+        });
+      }
+
+      if (typeof scheduleCanvasAnd3DRedraw === 'function') scheduleCanvasAnd3DRedraw();
+      if (typeof syncWebGLAnimationState === 'function') syncWebGLAnimationState();
+    }
+
+    function setTimeDepth(depth, opts = {}) {
+      const valid = ['30sec', '2min', 'deep'].includes(depth) ? depth : '2min';
+      appState.timeDepth = valid;
+      if (valid === '2min' && (appState.activeTierTab === 'tier2' || appState.activeTierTab === 'pitchlab')) {
+        appState.activeTierTab = 'all';
+      }
+      if (!opts.skipRender) {
+        renderAll();
+      } else {
+        applyTimeDepthVisibility();
+      }
+      if (!opts.silent) {
+        const lbl = valid === '30sec' ? '30 Sec (3-1-1 Snapshot)' : (valid === '2min' ? '2-Min Breakdown' : 'Full Deep Dive');
+        showToast(`Depth: ${lbl}`);
+      }
+    }
+
     function setViewMode(mode, opts = {}) {
       const normalized = EAE_VALID_VIEW_MODES.includes(mode) ? mode : 'scout';
       appState.viewMode = normalized;
+      if (!opts.keepTimeDepth) {
+        appState.timeDepth = defaultTimeDepthForViewMode(normalized);
+      }
       const sel = document.getElementById('viewModeSelect');
       if (sel && sel.value !== normalized) sel.value = normalized;
       if (opts.persist) {
@@ -4513,8 +4625,8 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       if (!opts.skipRender) renderAll();
       if (!opts.silent) {
         const label = normalized === 'player'
-          ? 'Player / Parent View (Plain English)'
-          : (normalized === 'rnd' ? 'Front Office / Quant View (Full Telemetry)' : 'Coach / Scout View');
+          ? 'Player / Parent / HS Coach View'
+          : (normalized === 'rnd' ? 'R&D / Quant View' : 'College Coach / Pro Scout View');
         showToast(`Switched to ${label}`);
       }
     }
@@ -4522,7 +4634,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
     function maybeApplyRoleDefaultViewMode(roleStr) {
       if (getSavedManualViewMode()) return;
       const normRole = String(roleStr || '').trim().toLowerCase();
-      if ((normRole === 'player' || normRole === 'parent') && appState.viewMode !== 'player') {
+      if ((normRole === 'player' || normRole === 'parent' || normRole === 'hs coach') && appState.viewMode !== 'player') {
         setViewMode('player', { persist: false, silent: true });
       }
     }
@@ -4561,9 +4673,75 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       return `Shows ${Math.abs(p.hb).toFixed(1)}" of horizontal break at ${p.velo.toFixed(1)} mph; throwing it with firm arm speed will make the late break play up even more.`;
     }
 
-    function infoTipHTML(term, definition) {
+    function infoTipHTML(term, definition, includeTerm = true) {
+      const safeTerm = String(term).replace(/"/g, '&quot;');
       const safeDef = String(definition).replace(/"/g, '&quot;');
-      return `${term}<button type="button" class="eae-info-tip" aria-label="Definition of ${term}" data-tip="${safeDef}">?</button>`;
+      const btn = `<button type="button" class="eae-info-tip" aria-label="Explain ${safeTerm}" data-term="${safeTerm}" data-tip="${safeDef}">?</button>`;
+      return includeTerm ? `${term}${btn}` : btn;
+    }
+
+    function setLabelHTML(id, htmlVal) {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = htmlVal;
+    }
+
+    let activeTooltipBtn = null;
+
+    function closeTooltipPopover() {
+      const pop = document.getElementById('eaeTooltipPopover');
+      if (pop) {
+        pop.classList.add('hidden');
+        pop.setAttribute('aria-hidden', 'true');
+      }
+      if (activeTooltipBtn) {
+        activeTooltipBtn.classList.remove('tip-open');
+        activeTooltipBtn = null;
+      }
+    }
+
+    function openTooltipPopover(btn) {
+      const pop = document.getElementById('eaeTooltipPopover');
+      const titleEl = document.getElementById('eaeTooltipTitle');
+      const bodyEl = document.getElementById('eaeTooltipBody');
+      if (!pop || !btn) return;
+
+      if (activeTooltipBtn === btn && !pop.classList.contains('hidden')) {
+        closeTooltipPopover();
+        return;
+      }
+      closeTooltipPopover();
+
+      const term = btn.getAttribute('data-term') || 'Definition';
+      const tip = btn.getAttribute('data-tip') || '';
+      if (titleEl) titleEl.textContent = term;
+      if (bodyEl) bodyEl.textContent = tip;
+
+      activeTooltipBtn = btn;
+      btn.classList.add('tip-open');
+
+      pop.style.visibility = 'hidden';
+      pop.classList.remove('hidden');
+      pop.setAttribute('aria-hidden', 'false');
+
+      const btnRect = btn.getBoundingClientRect();
+      const popRect = pop.getBoundingClientRect();
+      const vw = window.innerWidth || document.documentElement.clientWidth || 360;
+      const vh = window.innerHeight || document.documentElement.clientHeight || 640;
+
+      // Prefer above the button; flip below if near the top of the viewport
+      let top = btnRect.top - popRect.height - 10;
+      if (top < 12) {
+        top = Math.min(vh - popRect.height - 12, btnRect.bottom + 10);
+      }
+      top = Math.max(12, top);
+
+      // Clamp left between 12px and viewportWidth - popoverWidth - 12px
+      const idealLeft = btnRect.left + btnRect.width / 2 - popRect.width / 2;
+      const left = Math.max(12, Math.min(vw - popRect.width - 12, idealLeft));
+
+      pop.style.top = `${Math.round(top)}px`;
+      pop.style.left = `${Math.round(left)}px`;
+      pop.style.visibility = 'visible';
     }
 
     function computePitchCswPct(p) {
@@ -4580,8 +4758,8 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const isScout = mode === 'scout' || isPlayer;
 
       setLabelText('headerBadgeVersion', isPlayer
-        ? 'Player / Parent View'
-        : (mode === 'scout' ? 'Coach / Scout View' : 'v5.9 Front Office • Quant Telemetry (10×10 Grid)'));
+        ? 'Player / Parent / HS Coach'
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.11 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -4590,13 +4768,38 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         : 'Ranked by realistic Arsenal+ gain & coaching feasibility');
 
       // Section 1 headers & labels
-      setLabelText('tier1Eyebrow', '01 / SCOUT CARD');
-      setLabelText('heroMetricTitleLabel', isScout
-        ? 'Overall Pitching Arsenal+'
+      const tipArsenal = infoTipHTML(
+        'Overall Pitching Arsenal+',
+        '100 is the average NCAA Division 1 pitcher. High school arms often score 70–88 today and jump higher as they add physical strength and velocity.',
+        false
+      );
+      const tipSetup = infoTipHTML(
+        'Fastball Setup Factor',
+        'Shows how much your fastball velocity forces hitters to gear up early, making your offspeed and breaking pitches harder to lay off.',
+        false
+      );
+      const tipDecision = infoTipHTML(
+        '23.8 ft Decision Point & Reaction Time',
+        'Hitters must commit to swinging about 23.8 feet from home plate. Giving batters under 145ms to react is elite college deception.',
+        false
+      );
+      const tipSpinClock = infoTipHTML(
+        '12-Hour Spin Direction',
+        'Picture the baseball as a clock face from the pitcher view: 12:00 is pure backspin ride, 1:00–2:30 adds arm-side run, and 7:00–9:00 creates glove-side break.',
+        false
+      );
+      const tipSeam = infoTipHTML(
+        'Extra Late Seam Movement',
+        'Extra late break caused by air catching the raised seams on the baseball, adding drop or fade beyond normal spin alone.',
+        false
+      );
+
+      setLabelHTML('heroMetricTitleLabel', isScout
+        ? `Overall Pitching Arsenal+${tipArsenal}`
         : 'Composite Arsenal+ (Anchor-Gated)');
       setLabelText('heroBaseLabel', isScout ? 'Pitch Quality Base:' : 'Base (50% FB):');
       setLabelText('heroRawSynLabel', isScout ? 'Raw Deception Bonus:' : 'Raw Synergy (Δ):');
-      setLabelText('heroGammaLabel', isScout ? 'Fastball Setup Factor:' : 'FB Anchor γ:');
+      setLabelHTML('heroGammaLabel', isScout ? `Fastball Setup Factor:${tipSetup}` : 'FB Anchor γ:');
       setLabelText('heroNetSynLabel', isScout ? 'Net Arsenal Bonus:' : 'Net Synergy:');
       setLabelText('gaugeTitleLabel', isScout
         ? 'College Division 1 Scale (100 = Average D1 Pitcher)'
@@ -4606,19 +4809,17 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         : 'Gemini "ScoutSpeak" Executive Synthesis');
 
       // Section 2 headers
-      setLabelText('tier2Eyebrow', '02 / 3D PITCH TUNNEL');
-      setLabelText('tier2MainTitle', isScout
-        ? 'Interactive 3D Pitch Flight & Hitter Decision Point (23.8 ft Out)'
+      setLabelHTML('tier2MainTitle', isScout
+        ? `Interactive 3D Pitch Flight &amp; Hitter Decision Point (23.8 ft Out)${tipDecision}`
         : 'Interactive 3D WebGL Flight, 9-Quadrant Zone & 23.8-Ft Decision Horizon');
-      setLabelText('webglLegendHeader', isScout
-        ? 'Pitch Speed & Hitter Reaction Time'
+      setLabelHTML('webglLegendHeader', isScout
+        ? `Pitch Speed &amp; Hitter Reaction Time${tipDecision}`
         : '45-Step Flight & Reaction Margin');
       setLabelText('platoonBoxTitle', isScout
         ? 'How Fastball Velocity Sets Up Offspeed'
         : 'Platoon Neutralization & Anchor Gating (γ)');
 
       // Section 3 headers
-      setLabelText('tier3Eyebrow', '03 / MOVEMENT & SPIN CLOCK');
       setLabelText('tier3MainTitle', isScout
         ? 'Pitch Break Chart (Ride vs. Run) & 12-Hour Spin Tilt Clock'
         : '2D Movement-Separation Matrix (IVB vs. HB) & 12-Hour Spin-Tilt Clock');
@@ -4628,12 +4829,14 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       setLabelText('movementChartTopTitle', isScout
         ? 'Vertical Ride/Drop vs. Horizontal Run/Sweep (Inches)'
         : 'Induced Vertical Break (IVB) vs. Horizontal Break (HB) — Sea-Level Normalized');
-      setLabelText('sswBoxTitle', isScout
-        ? 'Extra Late Seam Movement (Beyond Spin Alone)'
+      setLabelHTML('spinClockTitleLabel', isScout
+        ? `12-Hour Spin Direction &amp; Arm Slot Angle${tipSpinClock}`
+        : '12-Hour Spin Direction &amp; Arm Slot Angle');
+      setLabelHTML('sswBoxTitle', isScout
+        ? `Extra Late Seam Movement (Beyond Spin Alone)${tipSeam}`
         : 'Seam-Shifted Wake (SSW) Non-Magnus Decomposition');
 
       // Section 4 headers (Note: #cascadeTableHeadRow is dynamically built inside renderAll())
-      setLabelText('tier4Eyebrow', '04 / HITTER SPLITS & GRADE RANGE');
       setLabelText('tier4MainTitle', isScout
         ? 'Pitch Grade Range & Righty / Lefty Hitter Matchups'
         : 'Empirical Bayes Shrinkage Forest Plot, Platoon Splits & 4-Head Cascade');
@@ -4706,7 +4909,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const modeBadge = document.getElementById('dualModeBannerBadge');
       if (modeBadge) {
         modeBadge.textContent = appState.gradeMode === 'projected'
-          ? 'Showing: 3-Year College Growth Projection (+5 mph FB / +3.5 mph Offspeed)'
+          ? 'Showing: What-If +5 mph Simulation (+5 mph FB / +3.5 mph Offspeed)'
           : 'Showing: Present College Grade (Current Bullpen Velocity)';
       }
 
@@ -4735,7 +4938,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       document.getElementById('heroDualProjectionBadge').innerHTML = `
         <span>Present: <strong class="text-sky-300">${presentBaselineEval.arsenalPlus.toFixed(1)} Arsenal+ (${presentBaselineEval.arsenal2080.short} Grade)</strong></span>
         <span class="text-slate-600">|</span>
-        <span>3-Yr Projection: <strong class="text-emerald-300">${projectedBaselineEval.arsenalPlus.toFixed(1)} Arsenal+ (${projectedBaselineEval.arsenal2080.short} Grade)</strong></span>
+        <span>What-If +5 mph: <strong class="text-emerald-300">${projectedBaselineEval.arsenalPlus.toFixed(1)} Arsenal+ (${projectedBaselineEval.arsenal2080.short} Grade)</strong></span>
       `;
 
       // Percentile Gauge
@@ -4743,7 +4946,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const pctProj = stuffToPercentile(projectedBaselineEval.arsenalPlus);
       const pctActive = stuffToPercentile(simEval.arsenalPlus);
       document.getElementById('gaugePercentileText').textContent =
-        `Current: ${pctActive}th %ile D1 (Present: ${pctPresent}th %ile | 3-Yr Projection: ${pctProj}th %ile)`;
+        `Current: ${pctActive}th %ile D1 (Present: ${pctPresent}th %ile | What-If +5 mph: ${pctProj}th %ile)`;
 
       const baseLeft = Math.min(96, Math.max(4, ((simEval.weightedBaseStuff - 65) / 65) * 100));
       const arsLeft = Math.min(96, Math.max(4, ((simEval.arsenalPlus - 65) / 65) * 100));
@@ -4780,7 +4983,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
               <div class="text-base font-extrabold text-white">${p.velo.toFixed(1)} <span class="text-[11px] font-normal text-[#cbd5e1]">mph</span></div>
             </div>
             <div>
-              <div class="text-[11px] text-[#94a3b8]">Stuff+</div>
+              <div class="text-[11px] text-[#94a3b8]">${infoTipHTML('Stuff+', '100-scale pitch grade where 100 is the average College D1 pitch. 115+ is a Plus pitch, 105–114 Above Avg, 95–104 D1 Avg, and under 95 is Developing.')}</div>
               <div class="text-base font-extrabold text-[#60a5fa]">${p.shrunkStuff.toFixed(0)}</div>
             </div>
             <div>
@@ -4790,12 +4993,12 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           </div>
 
           <div class="grid grid-cols-2 gap-2 text-[13px] font-mono-num text-[#cbd5e1]">
-            <div class="rounded bg-[#10141b] border border-[#1f252e] px-2.5 py-1.5 flex justify-between">
-              <span class="text-[#94a3b8]">Vertical Ride (in)</span>
+            <div class="rounded bg-[#10141b] border border-[#1f252e] px-2.5 py-1.5 flex items-center justify-between gap-1">
+              <span class="text-[#94a3b8]">${infoTipHTML('Vertical Ride (in)', 'Positive (+) means upward backspin carry that stays above the bat. Negative (-) means downward drop toward the dirt.')}</span>
               <strong class="text-white">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}"</strong>
             </div>
-            <div class="rounded bg-[#10141b] border border-[#1f252e] px-2.5 py-1.5 flex justify-between">
-              <span class="text-[#94a3b8]">Horizontal Break (in)</span>
+            <div class="rounded bg-[#10141b] border border-[#1f252e] px-2.5 py-1.5 flex items-center justify-between gap-1">
+              <span class="text-[#94a3b8]">${infoTipHTML('Horizontal Break (in)', 'Positive (+) means arm-side run toward your throwing side. Negative (-) means glove-side sweep breaking across the plate.')}</span>
               <strong class="text-white">${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}"</strong>
             </div>
           </div>
@@ -4837,11 +5040,11 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             ${rightConfidenceHTML}
           </div>
 
-          <!-- Dual Present vs. 3-Year Projected Badge -->
+          <!-- Dual Present vs. What-If +5 mph Badge -->
           <div class="px-2.5 py-1 rounded-lg bg-slate-950/90 border border-slate-800 text-[11px] font-mono-num text-slate-300 flex items-center justify-between">
             <span>Present: <strong class="text-sky-300">${presP.shrunkStuff.toFixed(0)} Stuff+ (${presP.scout2080.short} Grade)</strong></span>
             <span>|</span>
-            <span>Projected: <strong class="text-emerald-300">${projP.shrunkStuff.toFixed(0)} Stuff+ (${projP.scout2080.short} Grade)</strong></span>
+            <span>What-If +5 mph: <strong class="text-emerald-300">${projP.shrunkStuff.toFixed(0)} Stuff+ (${projP.scout2080.short} Grade)</strong></span>
           </div>
 
           <!-- Platoon Splits (vs. Righties / vs. Lefties) -->
@@ -4905,12 +5108,12 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           : `right-handed hitters (${bestPitch.stuffVsRHB.toFixed(0)} College Stuff+ vs. Righties)`;
         const s2 = `His standout weapon is his ${bestPitch.velo.toFixed(1)} mph ${bestPitch.name} (${bestPitch.shrunkStuff.toFixed(0)} College Stuff+, ${bestPitch.scout2080.short} Grade), which hides within ${tunnelDistStr} of his fastball at the hitter's decision point before breaking sharply to neutralize ${bestSplitTarget}.`;
 
-        // Sentence 3 (3-Year College Projection)
-        const s3 = `Once he adds college strength and +5.0 mph of fastball velocity (${projFb.velo.toFixed(1)} mph), his Fastball Setup Factor jumps from ${presentBaselineEval.setupPct}% to ${projectedBaselineEval.setupPct}% and his overall repertoire climbs from ${presentBaselineEval.arsenalPlus.toFixed(1)} Present Arsenal+ (${presentBaselineEval.arsenal2080.short} Grade) to ${projectedBaselineEval.arsenalPlus.toFixed(1)} Projected Arsenal+ (${projectedBaselineEval.arsenal2080.short} Grade).`;
+        // Sentence 3 (Neutral What-If +5 mph Simulation)
+        const s3 = `If fastball velocity reaches ${projFb.velo.toFixed(1)} mph (+5.0 mph simulation), the Fastball Setup Factor rises from ${presentBaselineEval.setupPct}% to ${projectedBaselineEval.setupPct}% and overall repertoire grades move from ${presentBaselineEval.arsenalPlus.toFixed(1)} Present Arsenal+ (${presentBaselineEval.arsenal2080.short} Grade) to ${projectedBaselineEval.arsenalPlus.toFixed(1)} Simulated Arsenal+ (${projectedBaselineEval.arsenal2080.short} Grade).`;
 
         execText = `${s1} ${s2} ${s3}`;
       } else {
-        execText = `${profile.name}'s ${presFb.velo.toFixed(1)} mph four-seamer grades at ${presFb.shrunkStuff.toFixed(1)} Present Stuff+ (${presFb.scout2080.short} Grade) against the NCAA D1 91.5 mph baseline (reflecting the ${presFb.penaltyCliff.toFixed(1)} pt non-linear sub-88 mph velocity cliff and a ${presFb.reactionMarginMs.toFixed(0)} ms batter reaction margin), while projecting to ${projFb.shrunkStuff.toFixed(1)} Stuff+ (${projFb.scout2080.short} Grade) at ${projFb.velo.toFixed(1)} mph under 3-year collegiate maturation. Headlined by a ${bestPitch.velo.toFixed(1)} mph ${bestPitch.name} (${bestPitch.shrunkStuff.toFixed(1)} Stuff+, ${bestPitch.stuffVsLHB.toFixed(1)} vs. LHB) and gated by his fastball anchor viability factor (γ = ${simEval.gammaAnchor.toFixed(2)}× damping ${simEval.rawSynergyTotal >= 0 ? '+' : ''}${simEval.rawSynergyTotal.toFixed(1)} raw synergy to ${simEval.netSynergy >= 0 ? '+' : ''}${simEval.netSynergy.toFixed(1)}), the repertoire moves from ${presentBaselineEval.arsenalPlus.toFixed(1)} Present Arsenal+ to ${projectedBaselineEval.arsenalPlus.toFixed(1)} Projected Arsenal+.`;
+        execText = `${profile.name}'s ${presFb.velo.toFixed(1)} mph four-seamer grades at ${presFb.shrunkStuff.toFixed(1)} Present Stuff+ (${presFb.scout2080.short} Grade) against the NCAA D1 91.5 mph baseline (reflecting the ${presFb.penaltyCliff.toFixed(1)} pt non-linear sub-88 mph velocity cliff and a ${presFb.reactionMarginMs.toFixed(0)} ms batter reaction margin). If fastball velocity reaches ${projFb.velo.toFixed(1)} mph in a +5.0 mph simulation, ${presFb.code} Stuff+ moves to ${projFb.shrunkStuff.toFixed(1)} (${projFb.scout2080.short} Grade). Headlined by a ${bestPitch.velo.toFixed(1)} mph ${bestPitch.name} (${bestPitch.shrunkStuff.toFixed(1)} Stuff+, ${bestPitch.stuffVsLHB.toFixed(1)} vs. LHB) and gated by fastball anchor viability (γ = ${simEval.gammaAnchor.toFixed(2)}× damping ${simEval.rawSynergyTotal >= 0 ? '+' : ''}${simEval.rawSynergyTotal.toFixed(1)} raw synergy to ${simEval.netSynergy >= 0 ? '+' : ''}${simEval.netSynergy.toFixed(1)}), simulated Arsenal+ moves from ${presentBaselineEval.arsenalPlus.toFixed(1)} to ${projectedBaselineEval.arsenalPlus.toFixed(1)}.`;
       }
       document.getElementById('scoutSpeakExecutiveText').textContent = execText;
 
@@ -4951,6 +5154,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             appState.pitchLabState = JSON.parse(JSON.stringify(selected.labMap));
             appState.labTargetIdx = selected.targetIdx;
             appState.gradeMode = 'present';
+            appState.timeDepth = 'deep';
             const gmEl = document.getElementById('gradeModeSelect');
             if (gmEl) gmEl.value = 'present';
             syncSlidersToUI();
@@ -5171,7 +5375,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const devItems = isScout
         ? [
             fb.velo < 88.0
-              ? `Build Fastball Velocity to Unlock Offspeed: At ${fb.velo.toFixed(1)} mph, college hitters have ${fb.reactionMarginMs.toFixed(0)} ms to sit on his fastball. Gaining +3 to +5 mph through lower-body strength and long-toss will jump his Fastball Setup Factor from ${presentBaselineEval.setupPct}% to ${projectedBaselineEval.setupPct}% and make his offspeed pitches twice as effective.`
+              ? `Build Fastball Velocity to Unlock Offspeed: At ${fb.velo.toFixed(1)} mph, college hitters have ${fb.reactionMarginMs.toFixed(0)} ms to sit on his fastball. In a +5 mph velocity simulation, reaching higher velocity lifts the Fastball Setup Factor from ${presentBaselineEval.setupPct}% to ${projectedBaselineEval.setupPct}% and make his offspeed pitches twice as effective.`
               : `Attack the Top of the Zone with the Fastball: With ${fb.velo.toFixed(1)} mph velocity and +${fb.ivb.toFixed(1)}" of vertical ride, challenge hitters up in the zone to set up breaking balls down.`,
             `Use the ${bestPitch.name} as the Put-Away Pitch: His ${bestPitch.name} already grades out at a college-ready ${bestPitch.shrunkStuff.toFixed(0)} College Stuff+ (${bestPitch.stuffVsLHB.toFixed(0)} vs. Lefties) and hides tightly behind his fastball release window.`,
             `Keep Release Points Tight Across All Pitches: Maintain his consistent ${fb.ext.toFixed(1)}-ft stride extension and arm speed on breaking balls so hitters cannot read spin out of the hand.`
@@ -5182,6 +5386,106 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             `Batter Recognition Window Compression: Compress post-commitment reaction margin (${fb.reactionMarginMs.toFixed(0)}ms on ${fb.code}) below the 145ms elite collegiate threshold.`
           ];
       document.getElementById('devPrioritiesList').innerHTML = devItems.map((item) => `<li>${item}</li>`).join('');
+
+      // Populate 3-1-1 Hero Card (30 Sec Snapshot)
+      const h311Name = document.getElementById('hero311PitcherName');
+      const h311Meta = document.getElementById('hero311Meta');
+      const h311Nums = document.getElementById('hero311NumbersGrid');
+      const h311Qw = document.getElementById('hero311QuickWinBox');
+      if (h311Name) h311Name.textContent = fullHeaderTitle;
+      if (h311Meta) h311Meta.textContent = fullHeaderMeta;
+      if (h311Nums) {
+        const arsTier = getStuffTierBadge(simEval.arsenalPlus);
+        const bestTier = getStuffTierBadge(bestPitch.shrunkStuff);
+        const tipArs311 = infoTipHTML(
+          'Overall Arsenal+',
+          '100 is the average NCAA Division 1 pitcher. High school arms often score 70–88 today and rise with added velocity or movement.',
+          false
+        );
+        const tipBest311 = infoTipHTML(
+          'Best Pitch Stuff+',
+          '100-scale grade for your highest-graded individual pitch compared to the average College D1 pitch.',
+          false
+        );
+        const tipFb311 = infoTipHTML(
+          'Fastball Avg Velo',
+          'Average release velocity of your primary fastball in miles per hour (mph).',
+          false
+        );
+        h311Nums.innerHTML = `
+          <div class="rounded-lg bg-[#10141b] border border-[#262c36] p-3.5 flex flex-col justify-between">
+            <div class="text-xs font-semibold uppercase tracking-wider text-[#cbd5e1]">Overall Arsenal+${tipArs311}</div>
+            <div class="flex items-baseline justify-between gap-2 mt-1.5">
+              <span class="text-3xl font-extrabold font-mono-num text-white">${simEval.arsenalPlus.toFixed(1)}</span>
+              <span class="px-2 py-0.5 rounded border text-xs font-mono-num font-bold ${arsTier.cls}">${arsTier.label}</span>
+            </div>
+            <div class="text-xs font-mono-num text-[#94a3b8] mt-1">100 = College D1 Avg</div>
+          </div>
+          <div class="rounded-lg bg-[#10141b] border border-[#262c36] p-3.5 flex flex-col justify-between">
+            <div class="text-xs font-semibold uppercase tracking-wider text-[#cbd5e1]">Best Pitch Stuff+${tipBest311}</div>
+            <div class="flex items-baseline justify-between gap-2 mt-1.5">
+              <span class="text-3xl font-extrabold font-mono-num text-[#60a5fa]">${bestPitch.shrunkStuff.toFixed(0)}</span>
+              <span class="px-2 py-0.5 rounded border text-xs font-mono-num font-bold ${bestTier.cls}">${bestPitch.code} • ${bestTier.label}</span>
+            </div>
+            <div class="text-xs font-mono-num text-[#94a3b8] mt-1">${bestPitch.name} (100 = D1 Avg)</div>
+          </div>
+          <div class="rounded-lg bg-[#10141b] border border-[#262c36] p-3.5 flex flex-col justify-between">
+            <div class="text-xs font-semibold uppercase tracking-wider text-[#cbd5e1]">Fastball Avg Velo${tipFb311}</div>
+            <div class="flex items-baseline justify-between gap-2 mt-1.5">
+              <span class="text-3xl font-extrabold font-mono-num text-white">${fb.velo.toFixed(1)} <span class="text-sm font-normal text-[#cbd5e1]">mph</span></span>
+              <span class="px-2 py-0.5 rounded bg-[#151921] border border-[#262c36] text-xs font-mono-num text-[#cbd5e1]">Max ${fb.maxVelo.toFixed(1)}</span>
+            </div>
+            <div class="text-xs font-mono-num text-[#94a3b8] mt-1">${fb.name} (${fb.ivb >= 0 ? '+' : ''}${fb.ivb.toFixed(1)}" Ride)</div>
+          </div>
+        `;
+      }
+      if (h311Qw) {
+        const top1 = quickWinsList[0];
+        if (top1) {
+          const cue1 = isPlayer ? (top1.playerCue || top1.scoutCue) : (mode === 'scout' ? top1.scoutCue : top1.rndCue);
+          const gainPrefix = top1.arsenalGain >= 0 ? '+' : '';
+          h311Qw.innerHTML = `
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-sm font-bold text-white">${top1.title}</span>
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono-num text-xs font-bold">${gainPrefix}${top1.arsenalGain.toFixed(1)} Arsenal+</span>
+                </div>
+                <p class="text-[13px] text-[#cbd5e1] leading-relaxed">${cue1}</p>
+              </div>
+              <button id="hero311TestLabBtn" type="button" class="touch-target shrink-0 px-3.5 py-2 rounded-md bg-[#1e2530] hover:bg-[#262f3d] text-white border border-[#3b82f6] text-xs font-semibold transition">
+                Test in Pitch Lab →
+              </button>
+            </div>
+          `;
+          const btn311 = document.getElementById('hero311TestLabBtn');
+          if (btn311) {
+            btn311.addEventListener('click', () => {
+              appState.pitchLabState = JSON.parse(JSON.stringify(top1.labMap));
+              appState.labTargetIdx = top1.targetIdx;
+              appState.gradeMode = 'present';
+              const gmEl = document.getElementById('gradeModeSelect');
+              if (gmEl) gmEl.value = 'present';
+              appState.timeDepth = 'deep';
+              syncSlidersToUI();
+              renderAll();
+              if (window.innerWidth < 768 || appState.activeTierTab !== 'all') {
+                if (typeof window._eaeSetActiveSectionTab === 'function') {
+                  window._eaeSetActiveSectionTab('pitchlab');
+                }
+              } else {
+                const labSec = document.getElementById('section-pitchlab');
+                if (labSec && typeof labSec.scrollIntoView === 'function') {
+                  labSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }
+              showToast(`Loaded "${top1.title}" into What-If Pitch Lab`);
+            });
+          }
+        }
+      }
+
+      applyTimeDepthVisibility();
 
       // Update 3D WebGL & 2D Canvases
       rebuild3DTrajectories(presentBaselineEval, simEval);
@@ -5233,7 +5537,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       'prospect_11', 'prospect_12', 'prospect_13', 'prospect_14', 'd1_ace'
     ];
     const BENCHMARK_OPTION_LABELS = {
-      prospect_01: 'Prospect #01 — Projectable Low-3/4 RHP (83.0 mph FF / Fade CH / Gyro SL)',
+      prospect_01: 'Prospect #01 — Low-3/4 Fastball/CH RHP (83.0 mph FF / Fade CH / Gyro SL)',
       prospect_02: 'Prospect #02 — Developing HS RHP (77.2 mph FF / 11-5 CU / CH)',
       prospect_03: 'Prospect #03 — High-Spin Carry RHP (90.5 mph FF 20" IVB / 12-6 CU / CH)',
       prospect_04: 'Prospect #04 — Cross-Body Sidearm LHP (84.5 mph SI / Sweeper / CH)',
@@ -5715,7 +6019,6 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const user = appState.currentUser;
       const btnText = document.getElementById('headerAuthBtnText');
       const headerRoleBadge = document.getElementById('headerAuthRoleBadge');
-      const dot = document.getElementById('headerAuthDot');
       const quickOutBtn = document.getElementById('quickSignOutBtn');
       const formContainer = document.getElementById('authFormContainer');
       const signedInContainer = document.getElementById('authSignedInContainer');
@@ -5737,7 +6040,6 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             headerRoleBadge.classList.add('hidden');
           }
         }
-        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0';
         if (quickOutBtn) quickOutBtn.classList.remove('hidden');
         if (formContainer) formContainer.classList.add('hidden');
         if (signedInContainer) signedInContainer.classList.remove('hidden');
@@ -5765,7 +6067,6 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           accountRoleBadge.textContent = '';
           accountRoleBadge.classList.add('hidden');
         }
-        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0';
         if (quickOutBtn) quickOutBtn.classList.add('hidden');
         if (formContainer) formContainer.classList.remove('hidden');
         if (signedInContainer) signedInContainer.classList.add('hidden');
@@ -6303,7 +6604,6 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
     async function loadExternalXGBoostModel() {
       const pill = document.getElementById('engineStatusPill');
-      const dot = document.getElementById('engineStatusDot');
       const text = document.getElementById('engineStatusText');
       const candidateUrls = [
         './data/processed/ncaa_d1_stuff_model.json',
@@ -6318,9 +6618,8 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             if (modelJson && modelJson.xgboost_trees && modelJson.college_baselines) {
               appState.xgbModelArtifact = modelJson;
               appState.xgbEngineLoaded = true;
-              if (pill && dot && text) {
+              if (pill && text) {
                 pill.className = 'px-2 py-0.5 text-[10px] sm:text-[11px] font-mono-num font-medium rounded bg-[#151921] text-slate-200 border border-[#262c36] flex items-center gap-1.5';
-                dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0';
                 text.textContent = 'Engine: NCAA D1 XGBoost (10x10 Grid)';
               }
               renderAll();
@@ -6334,9 +6633,8 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       appState.xgbModelArtifact = null;
       appState.xgbEngineLoaded = false;
-      if (pill && dot && text) {
+      if (pill && text) {
         pill.className = 'px-2.5 py-0.5 text-[11px] font-mono-num font-semibold rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1.5';
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400';
         text.textContent = 'Engine: Offline Heuristic Fallback';
       }
       return false;
@@ -6370,6 +6668,24 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       if (savedManualMode) {
         appState.viewMode = savedManualMode;
       }
+      appState.timeDepth = defaultTimeDepthForViewMode(appState.viewMode);
+
+      document.querySelectorAll('.time-depth-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          setTimeDepth(btn.getAttribute('data-time-depth'));
+        });
+      });
+      const see2MinBtn = document.getElementById('see2MinBreakdownBtn');
+      if (see2MinBtn) {
+        see2MinBtn.addEventListener('click', () => {
+          setTimeDepth('2min');
+          const sec1 = document.getElementById('section-tier1');
+          if (sec1 && typeof sec1.scrollIntoView === 'function') {
+            sec1.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      }
+
       const viewModeEl = document.getElementById('viewModeSelect');
       if (viewModeEl) {
         viewModeEl.value = appState.viewMode;
@@ -6378,16 +6694,30 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         });
       }
 
-      // Tap support for ? definition tooltips on touch devices
+      // Floating unclipped ? tooltip popover wiring (tap/click, outside dismiss, scroll, Escape)
+      const tipCloseBtn = document.getElementById('eaeTooltipCloseBtn');
+      if (tipCloseBtn) {
+        tipCloseBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeTooltipPopover();
+        });
+      }
       document.addEventListener('click', (e) => {
         const tipBtn = e.target && e.target.closest ? e.target.closest('.eae-info-tip') : null;
-        document.querySelectorAll('.eae-info-tip.tip-open').forEach((el) => {
-          if (el !== tipBtn) el.classList.remove('tip-open');
-        });
         if (tipBtn) {
           e.stopPropagation();
-          tipBtn.classList.toggle('tip-open');
+          openTooltipPopover(tipBtn);
+          return;
         }
+        const insidePop = e.target && e.target.closest ? e.target.closest('#eaeTooltipPopover') : null;
+        if (!insidePop) {
+          closeTooltipPopover();
+        }
+      });
+      window.addEventListener('scroll', closeTooltipPopover, { passive: true, capture: true });
+      window.addEventListener('resize', closeTooltipPopover);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeTooltipPopover();
       });
 
       const pitcherEl = document.getElementById('pitcherSelect');
@@ -6414,7 +6744,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           renderAll();
           showToast(
             appState.gradeMode === 'projected'
-              ? '3-Year College Growth Projection Active (+5.0 mph FB / +3.5 mph Offspeed)'
+              ? 'What-If +5 mph Simulation Active (+5.0 mph FB / +3.5 mph Offspeed)'
               : 'Showing Present College Grade'
           );
         });
@@ -6479,7 +6809,14 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       document.querySelectorAll('.tier-tab-btn, .mobile-nav-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
-          setActiveSectionTab(btn.getAttribute('data-tier-tab'));
+          const targetTab = btn.getAttribute('data-tier-tab');
+          if (targetTab === 'tier2' || targetTab === 'pitchlab') {
+            appState.timeDepth = 'deep';
+          } else if (appState.timeDepth === '30sec') {
+            appState.timeDepth = '2min';
+          }
+          setActiveSectionTab(targetTab);
+          applyTimeDepthVisibility();
         });
       });
 
