@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.12 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.14 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -75,6 +75,8 @@
       header,
       footer,
       #section-pitchlab,
+      #section-311,
+      #timeDepthBar,
       #uploadModal,
       #authModal,
       #contactModal,
@@ -90,6 +92,12 @@
         border-bottom: 2px solid #0f172a;
         padding-bottom: 8px;
         margin-bottom: 10px;
+      }
+      #cascadeTableWrapper {
+        display: block !important;
+      }
+      #playerPitchCardsContainer {
+        display: none !important;
       }
       .tier-section {
         display: block !important;
@@ -203,6 +211,135 @@
       border-color: #60a5fa;
       color: #ffffff;
       outline: none;
+    }
+
+    /* v5.13 Daylight / Light Mode (Outdoor Bullpen High-Contrast Theme) */
+    body.daylight-mode {
+      color-scheme: light;
+      background-color: #f1f5f9 !important;
+      color: #0f172a !important;
+    }
+    body.daylight-mode header,
+    body.daylight-mode #mobileBottomNav {
+      background-color: #ffffff !important;
+      border-color: #cbd5e1 !important;
+    }
+    body.daylight-mode footer {
+      border-color: #cbd5e1 !important;
+      color: #475569 !important;
+    }
+    body.daylight-mode .glass-card {
+      background-color: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    body.daylight-mode .glass-card-subtle,
+    body.daylight-mode [class*="bg-[#10141b]"],
+    body.daylight-mode [class*="bg-[#151921]"],
+    body.daylight-mode [class*="bg-slate-900"],
+    body.daylight-mode [class*="bg-slate-950"] {
+      background-color: #f8fafc !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    body.daylight-mode [class*="bg-[#1e2530]"],
+    body.daylight-mode [class*="bg-slate-800"] {
+      background-color: #e2e8f0 !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    body.daylight-mode [class*="border-[#262c36]"],
+    body.daylight-mode [class*="border-[#1f252e]"],
+    body.daylight-mode [class*="border-slate-800"],
+    body.daylight-mode [class*="border-slate-700"] {
+      border-color: #cbd5e1 !important;
+    }
+    body.daylight-mode .text-white {
+      color: #0f172a !important;
+    }
+    body.daylight-mode .text-slate-100,
+    body.daylight-mode .text-slate-200,
+    body.daylight-mode .text-slate-300,
+    body.daylight-mode [class*="text-[#cbd5e1]"] {
+      color: #1e293b !important;
+    }
+    body.daylight-mode .text-slate-400,
+    body.daylight-mode .text-slate-500,
+    body.daylight-mode [class*="text-[#94a3b8]"] {
+      color: #334155 !important;
+    }
+    body.daylight-mode [class*="text-[#60a5fa]"],
+    body.daylight-mode .text-sky-300,
+    body.daylight-mode .text-sky-400 {
+      color: #2563eb !important;
+    }
+    body.daylight-mode .text-emerald-300,
+    body.daylight-mode .text-emerald-400 {
+      color: #047857 !important;
+    }
+    body.daylight-mode .text-amber-300,
+    body.daylight-mode .text-amber-200 {
+      color: #b45309 !important;
+    }
+    body.daylight-mode .text-rose-300,
+    body.daylight-mode .text-rose-400 {
+      color: #be123c !important;
+    }
+    body.daylight-mode [class*="bg-[#3b82f6]"],
+    body.daylight-mode .bg-sky-500 {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+    }
+    body.daylight-mode [class*="bg-[#3b82f6]"] *,
+    body.daylight-mode .bg-sky-500 * {
+      color: #ffffff !important;
+    }
+    body.daylight-mode select,
+    body.daylight-mode input[type="text"],
+    body.daylight-mode input[type="email"],
+    body.daylight-mode input[type="password"],
+    body.daylight-mode input[type="date"] {
+      background-color: #ffffff !important;
+      border-color: #94a3b8 !important;
+      color: #0f172a !important;
+    }
+    body.daylight-mode #toastBanner {
+      background-color: #0f172a !important;
+      color: #ffffff !important;
+      border-color: #2563eb !important;
+    }
+    body.daylight-mode #toastBanner * {
+      color: #ffffff !important;
+    }
+    body.daylight-mode #eaeTooltipPopover {
+      background-color: #ffffff !important;
+      border-color: #2563eb !important;
+      color: #0f172a !important;
+    }
+    body.daylight-mode #eaeTooltipTitle {
+      color: #1d4ed8 !important;
+    }
+    body.daylight-mode #eaeTooltipBody {
+      color: #0f172a !important;
+    }
+    body.daylight-mode .eae-info-tip {
+      background-color: #e2e8f0;
+      border-color: #64748b;
+      color: #0f172a;
+    }
+    body.daylight-mode .eae-info-tip:hover,
+    body.daylight-mode .eae-info-tip:focus,
+    body.daylight-mode .eae-info-tip.tip-open {
+      background-color: #2563eb;
+      border-color: #1d4ed8;
+      color: #ffffff;
+    }
+    body.daylight-mode #movementMatrixCanvas,
+    body.daylight-mode #spinClockCanvas,
+    body.daylight-mode #bayesForestCanvas,
+    body.daylight-mode #athleteProgressionCanvas {
+      background-color: #ffffff !important;
+      border-color: #cbd5e1 !important;
     }
   </style>
 </head>
@@ -647,6 +784,13 @@
               Sign Out
             </button>
 
+            <button id="themeToggleBtn" type="button" aria-pressed="false" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+              <span id="themeToggleIcon" class="inline-flex items-center" aria-hidden="true">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+              </span>
+              <span id="themeToggleText">Daylight Mode</span>
+            </button>
+
             <button id="openContactModalBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
               Contact
             </button>
@@ -734,6 +878,15 @@
       <!-- 3 Numbers -->
       <div id="hero311NumbersGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
 
+      <!-- 1 Thing to Work On (Promoted above the fold right below the 3 Numbers) -->
+      <div class="rounded-lg bg-[#10141b] border border-[#262c36] border-l-4 border-l-[#3b82f6] p-4 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">1 Thing to Work On Next</span>
+          <span class="text-xs font-mono-num text-[#94a3b8]">Highest-impact bullpen focus</span>
+        </div>
+        <div id="hero311QuickWinBox"></div>
+      </div>
+
       <!-- 1 Picture (Hosts shared #movementCanvasContainer in 30 Sec mode) -->
       <div class="rounded-lg bg-[#10141b] border border-[#262c36] p-3">
         <div class="flex flex-wrap items-center justify-between gap-2 text-xs mb-2 px-1">
@@ -741,15 +894,6 @@
           <span class="font-mono-num text-xs text-[#cbd5e1]">Pitcher's View (+Right = Arm-Side Run)</span>
         </div>
         <div id="hero311MovementHost"></div>
-      </div>
-
-      <!-- 1 Thing to Work On -->
-      <div class="rounded-lg bg-[#10141b] border border-[#262c36] p-4 space-y-2.5">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">1 Thing to Work On Next</span>
-          <span class="text-xs font-mono-num text-[#94a3b8]">Highest-impact bullpen focus</span>
-        </div>
-        <div id="hero311QuickWinBox"></div>
       </div>
 
       <!-- CTA to 2-Min Breakdown -->
@@ -1260,7 +1404,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.12 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.14 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -3629,10 +3773,15 @@
       const cy = h / 2;
       const scale = Math.min(w, h) / 52;
       const isPlain = appState.viewMode === 'player' || appState.viewMode === 'scout';
+      const light = isDaylightMode();
 
       ctx.clearRect(0, 0, w, h);
+      if (light) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+      }
 
-      ctx.strokeStyle = '#1f2937';
+      ctx.strokeStyle = light ? '#e2e8f0' : '#1f2937';
       ctx.lineWidth = 1;
       for (let inch = -24; inch <= 24; inch += 6) {
         const x = cx + inch * scale;
@@ -3663,7 +3812,7 @@
       ctx.stroke();
       ctx.restore();
 
-      ctx.fillStyle = '#cbd5e1';
+      ctx.fillStyle = light ? '#1e293b' : '#cbd5e1';
       ctx.font = '600 11px JetBrains Mono, monospace';
       ctx.fillText(isPlain ? '+24" Vertical Ride' : '+24" IVB (Ride)', cx + 6, 18);
       ctx.fillText(isPlain ? '-24" Vertical Drop' : '-24" IVB (Drop)', cx + 6, h - 10);
@@ -3702,7 +3851,7 @@
         const secX = cx + sec.hb * scale;
         const secY = cy - sec.ivb * scale;
         ctx.save();
-        ctx.strokeStyle = 'rgba(226, 232, 240, 0.45)';
+        ctx.strokeStyle = light ? 'rgba(51, 65, 85, 0.55)' : 'rgba(226, 232, 240, 0.45)';
         ctx.setLineDash([5, 4]);
         ctx.lineWidth = 1.5;
         ctx.beginPath();
@@ -3714,8 +3863,8 @@
         const midY = (fbY + secY) / 2;
         const dShape = Math.hypot(fb.ivb - sec.ivb, fb.hb - sec.hb).toFixed(1);
         const dVelo = (fb.velo - sec.velo).toFixed(1);
-        ctx.fillStyle = '#e2e8f0';
-        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.fillStyle = light ? '#0f172a' : '#e2e8f0';
+        ctx.font = '600 10px JetBrains Mono, monospace';
         ctx.fillText(`${dVelo}mph / ${dShape}" sep`, midX + 6, midY);
         ctx.restore();
       }
@@ -3766,14 +3915,14 @@
         if (ly + boxH > h - 6) ly = h - boxH - 6;
 
         ctx.save();
-        ctx.fillStyle = 'rgba(13, 16, 21, 0.92)';
+        ctx.fillStyle = light ? 'rgba(255, 255, 255, 0.96)' : 'rgba(13, 16, 21, 0.92)';
         ctx.strokeStyle = p.color;
-        ctx.lineWidth = 1.25;
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.rect(lx, ly, boxW, boxH);
         ctx.fill();
         ctx.stroke();
-        ctx.fillStyle = '#f8fafc';
+        ctx.fillStyle = light ? '#0f172a' : '#f8fafc';
         ctx.textBaseline = 'middle';
         ctx.fillText(lblText, lx + padX, ly + boxH / 2 + 0.5);
         ctx.restore();
@@ -3798,15 +3947,20 @@
       const cy = h / 2;
       const r = Math.min(w, h) * 0.39;
 
+      const light = isDaylightMode();
       ctx.clearRect(0, 0, w, h);
+      if (light) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+      }
 
-      ctx.strokeStyle = '#334155';
+      ctx.strokeStyle = light ? '#94a3b8' : '#334155';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.fillStyle = '#94a3b8';
+      ctx.fillStyle = light ? '#334155' : '#94a3b8';
       ctx.font = '10px JetBrains Mono, monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -3863,7 +4017,12 @@
       const w = widthPx;
       const h = heightPx;
       const isScout = appState.viewMode === 'scout' || appState.viewMode === 'player';
+      const light = isDaylightMode();
       ctx.clearRect(0, 0, w, h);
+      if (light) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+      }
 
       const minS = 50;
       const maxS = 135;
@@ -3874,7 +4033,7 @@
 
       [60, 75, 90, 100, 115, 130].forEach((val) => {
         const x = xOf(val);
-        ctx.strokeStyle = val === 100 ? '#38bdf8' : '#1e293b';
+        ctx.strokeStyle = val === 100 ? (light ? '#2563eb' : '#38bdf8') : (light ? '#e2e8f0' : '#1e293b');
         ctx.lineWidth = val === 100 ? 1.8 : 1;
         ctx.beginPath();
         ctx.moveTo(x, 18);
@@ -3882,7 +4041,7 @@
         ctx.stroke();
 
         ctx.save();
-        ctx.fillStyle = val === 100 ? '#60a5fa' : '#94a3b8';
+        ctx.fillStyle = val === 100 ? (light ? '#2563eb' : '#60a5fa') : (light ? '#334155' : '#94a3b8');
         ctx.font = w < 420 ? '600 10px JetBrains Mono, monospace' : '600 10.5px JetBrains Mono, monospace';
         ctx.textAlign = 'center';
         const tickLabel = val === 100 ? (w < 420 ? '100' : '100 (Avg)') : `${val}`;
@@ -3896,10 +4055,10 @@
       pitches.forEach((p, idx) => {
         const y = 30 + idx * rowH + rowH * 0.45;
 
-        ctx.fillStyle = '#e2e8f0';
+        ctx.fillStyle = light ? '#0f172a' : '#e2e8f0';
         ctx.font = 'bold 11px Inter, sans-serif';
         ctx.fillText(`${p.code} (${p.count}p)`, 10, y - 4);
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = light ? '#475569' : '#94a3b8';
         ctx.font = '10px JetBrains Mono, monospace';
         ctx.fillText(isScout ? `Conf: ${p.confidenceBadge.level}` : `w=${p.w.toFixed(2)}`, 10, y + 10);
 
@@ -3943,7 +4102,7 @@
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = light ? '#0f172a' : '#ffffff';
         ctx.font = 'bold 11px JetBrains Mono, monospace';
         ctx.fillText(`${p.shrunkStuff.toFixed(1)}`, pxShrunk - 12, y - 11);
       });
@@ -4737,6 +4896,53 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
     const EAE_VIEW_MODE_STORAGE_KEY = 'eae_view_mode_v59';
     const EAE_VALID_VIEW_MODES = ['player', 'scout', 'rnd'];
+    const EAE_THEME_STORAGE_KEY = 'eae_theme_v513';
+    const SUN_SVG_ICON = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
+    const MOON_SVG_ICON = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+
+    function isDaylightMode() {
+      return typeof document !== 'undefined' && document.body && document.body.classList.contains('daylight-mode');
+    }
+
+    function getSavedThemeMode() {
+      try {
+        const t = window.localStorage && window.localStorage.getItem(EAE_THEME_STORAGE_KEY);
+        return (t === 'light' || t === 'dark') ? t : 'dark';
+      } catch (err) {
+        return 'dark';
+      }
+    }
+
+    function applyThemeMode(mode, opts = {}) {
+      const isLight = mode === 'light';
+      if (document.body) {
+        document.body.classList.toggle('daylight-mode', isLight);
+      }
+      if (document.documentElement) {
+        document.documentElement.classList.toggle('dark', !isLight);
+      }
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      if (metaTheme) metaTheme.setAttribute('content', isLight ? '#f1f5f9' : '#0d1015');
+
+      const btn = document.getElementById('themeToggleBtn');
+      const iconEl = document.getElementById('themeToggleIcon');
+      const txtEl = document.getElementById('themeToggleText');
+      if (btn) btn.setAttribute('aria-pressed', String(isLight));
+      if (iconEl) iconEl.innerHTML = isLight ? MOON_SVG_ICON : SUN_SVG_ICON;
+      if (txtEl) txtEl.textContent = isLight ? 'Dark Mode' : 'Daylight Mode';
+
+      if (opts.persist) {
+        try {
+          if (window.localStorage) window.localStorage.setItem(EAE_THEME_STORAGE_KEY, isLight ? 'light' : 'dark');
+        } catch (err) {}
+      }
+      if (!opts.skipRedraw && typeof scheduleCanvasAnd3DRedraw === 'function') {
+        scheduleCanvasAnd3DRedraw();
+      }
+      if (!opts.silent) {
+        showToast(isLight ? 'Daylight Mode enabled (Outdoor Contrast)' : 'Dark Mode enabled');
+      }
+    }
 
     function getSavedManualViewMode() {
       try {
@@ -4983,7 +5189,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.12 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.14 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -5139,7 +5345,10 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       document.getElementById('pitcherHeaderName').textContent = fullHeaderTitle;
       document.getElementById('pitcherHeaderMeta').textContent = fullHeaderMeta;
       document.getElementById('dossierTitleName').textContent = fullHeaderTitle;
-      document.getElementById('dossierSubMeta').textContent = fullHeaderMeta;
+      const dossierVaaNote = (heightStr && fb && typeof fb.vaaVsExpected === 'number')
+        ? ` • ${fb.code} Height-Adj VAA: ${fb.vaaTier.label} (${fb.vaaVsExpected >= 0 ? '+' : ''}${fb.vaaVsExpected.toFixed(1)}°)`
+        : '';
+      document.getElementById('dossierSubMeta').textContent = fullHeaderMeta + dossierVaaNote;
 
       const modeBadge = document.getElementById('dualModeBannerBadge');
       if (modeBadge) {
@@ -5356,6 +5565,23 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       }
       document.getElementById('scoutSpeakExecutiveText').textContent = execText;
 
+      // Promote Quick Wins card above Pitch Grade Cards in Player / Parent / HS Coach mode so #1 cue is above the fold
+      const qwCardEl = document.getElementById('quickWinsCard');
+      const pillsEl = document.getElementById('tier1PitchPillsContainer');
+      const progEl = document.getElementById('athleteProgressionCard');
+      if (qwCardEl && pillsEl && qwCardEl.parentElement === pillsEl.parentElement) {
+        const parentSec = qwCardEl.parentElement;
+        if (isPlayer) {
+          if (qwCardEl.nextElementSibling !== pillsEl) {
+            parentSec.insertBefore(qwCardEl, pillsEl);
+          }
+        } else if (progEl && progEl.parentElement === parentSec) {
+          if (qwCardEl.nextElementSibling !== progEl) {
+            parentSec.insertBefore(qwCardEl, progEl);
+          }
+        }
+      }
+
       // Render Lowest-Hanging Fruit: Top 2 Quick Wins
       const qwContainer = document.getElementById('quickWinsContainer');
       if (qwContainer) {
@@ -5549,6 +5775,31 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           playerCardsEl.innerHTML = simEval.gradedPitches.map((p) => buildPlayerPitchCardHTML(p)).join('');
         }
         setLabelText('cascadeTableTopTitle', 'Pitch-by-Pitch Grade Cards (Plain English)');
+        // Keep print splits table synced with Height-Adjusted VAA for @media print Scout Sheet
+        headRow.innerHTML = `
+          <th class="py-2 pr-1.5">Pitch</th>
+          <th class="py-2 px-1.5 text-right">Velo</th>
+          <th class="py-2 px-1.5 text-right">IVB</th>
+          <th class="py-2 px-1.5 text-right">HB</th>
+          <th class="py-2 px-1.5 text-right">VAA</th>
+          <th class="py-2 px-1.5 text-right">${fb.vaaHeightAdjusted ? 'Height-Adj VAA' : 'VAA vs. Slot'}</th>
+          <th class="py-2 px-1.5 text-right">Stuff+</th>
+          <th class="py-2 px-1.5 text-right">vs. Righties</th>
+          <th class="py-2 pl-1.5 text-right">vs. Lefties</th>
+        `;
+        document.getElementById('cascadeTableBody').innerHTML = simEval.gradedPitches.map((p) => `
+          <tr>
+            <td class="py-2 pr-1.5 font-bold" style="color:${p.color}">${p.code}</td>
+            <td class="py-2 px-1.5 text-right">${p.velo.toFixed(1)}</td>
+            <td class="py-2 px-1.5 text-right">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}"</td>
+            <td class="py-2 px-1.5 text-right">${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}"</td>
+            <td class="py-2 px-1.5 text-right">${p.vaa.toFixed(1)}°</td>
+            <td class="py-2 px-1.5 text-right">${p.vaaTier.label} ${p.vaaVsExpected >= 0 ? '+' : ''}${p.vaaVsExpected.toFixed(1)}°</td>
+            <td class="py-2 px-1.5 text-right font-bold">${p.shrunkStuff.toFixed(1)}</td>
+            <td class="py-2 px-1.5 text-right">${p.stuffVsRHB.toFixed(1)}</td>
+            <td class="py-2 pl-1.5 text-right">${p.stuffVsLHB.toFixed(1)}</td>
+          </tr>
+        `).join('');
       } else if (mode === 'scout') {
         if (playerCardsEl) playerCardsEl.classList.add('hidden');
         if (tableWrapper) tableWrapper.classList.remove('hidden');
@@ -5854,8 +6105,13 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       const ctx = canvas.getContext('2d');
+      const light = isDaylightMode();
       ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, w, h);
+      if (light) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+      }
 
       const vals = series.map((s) => s.arsenalPlus);
       const minV = Math.min(...vals, 95) - 4;
@@ -5904,19 +6160,19 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         const x = xOf(i);
         const y = yOf(pt.arsenalPlus);
         const isActive = pt.id === activeProfileId;
-        ctx.fillStyle = isActive ? '#60a5fa' : '#151921';
-        ctx.strokeStyle = '#3b82f6';
+        ctx.fillStyle = isActive ? (light ? '#2563eb' : '#60a5fa') : (light ? '#ffffff' : '#151921');
+        ctx.strokeStyle = light ? '#2563eb' : '#3b82f6';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(x, y, isActive ? 4.5 : 3.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = isActive ? '#ffffff' : '#94a3b8';
+        ctx.fillStyle = isActive ? (light ? '#0f172a' : '#ffffff') : (light ? '#334155' : '#94a3b8');
         ctx.font = (isActive ? 'bold ' : '') + '9px JetBrains Mono, monospace';
         ctx.textAlign = 'center';
         ctx.fillText(pt.arsenalPlus.toFixed(1), x, y - 7);
-        ctx.fillStyle = '#64748b';
+        ctx.fillStyle = light ? '#475569' : '#64748b';
         ctx.fillText(`S${i + 1}`, x, h - 4);
       });
     }
@@ -6924,6 +7180,14 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
     window.addEventListener('DOMContentLoaded', () => {
       // 1. Attach ALL UI event listeners FIRST before Three.js or model fetching
+      applyThemeMode(getSavedThemeMode(), { persist: false, silent: true, skipRedraw: true });
+      const themeBtn = document.getElementById('themeToggleBtn');
+      if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+          applyThemeMode(isDaylightMode() ? 'dark' : 'light', { persist: true, silent: false });
+        });
+      }
+
       const savedManualMode = getSavedManualViewMode();
       if (savedManualMode) {
         appState.viewMode = savedManualMode;
