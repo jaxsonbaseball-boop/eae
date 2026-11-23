@@ -10,12 +10,11 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.16 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.20 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -66,7 +65,7 @@
     /* ===================================================================== */
     @page {
       size: letter portrait;
-      margin: 0.4in;
+      margin: 0.45in;
     }
     @media print {
       :root {
@@ -77,7 +76,7 @@
       body.daylight-mode {
         background: #ffffff !important;
         color: #0f172a !important;
-        font-size: 9.5pt !important;
+        font-size: 9pt !important;
         line-height: 1.3 !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -85,17 +84,27 @@
         print-color-adjust: exact;
       }
       main {
-        width: 7.7in !important;
-        max-width: 7.7in !important;
+        display: flex !important;
+        flex-direction: column !important;
+        width: 7.6in !important;
+        max-width: 7.6in !important;
         margin: 0 auto !important;
         padding: 0 !important;
+        gap: 6px !important;
       }
       main > * + * {
-        margin-top: 6px !important;
+        margin-top: 0 !important;
       }
       .no-print,
       header,
       footer,
+      button,
+      select,
+      input,
+      .eae-info-tip,
+      #mobileBottomNav,
+      #progressiveDisclosureBar,
+      #dossierModeIndicator,
       #section-pitchlab,
       #section-311,
       #uploadModal,
@@ -109,14 +118,48 @@
         display: none !important;
       }
       #printDossierHeader {
+        order: 1;
         display: flex !important;
         background: #ffffff !important;
-        border: 1px solid #94a3b8 !important;
+        border: 1px solid #cbd5e1 !important;
         border-bottom: 2px solid #0f172a !important;
         padding: 8px 10px !important;
-        margin-bottom: 6px !important;
         break-inside: avoid;
         page-break-inside: avoid;
+      }
+      #section-tier1 {
+        order: 2;
+      }
+      #section-tier3 {
+        order: 3;
+        page-break-before: always !important;
+        break-before: page !important;
+      }
+      #section-tier2 {
+        order: 4;
+      }
+      #section-tier4 {
+        order: 5;
+      }
+      #tunnelCardsColumn {
+        grid-column: span 12 / span 12 !important;
+      }
+      #tunnelPairCardsContainer {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+      }
+      #tier3ChartsGrid {
+        display: grid !important;
+        grid-template-columns: 1.2fr 1fr !important;
+        gap: 10px !important;
+        align-items: stretch !important;
+      }
+      #tier4ContentGrid {
+        display: block !important;
+      }
+      #tier4ForestCol {
+        display: none !important;
       }
       #cascadeTableWrapper {
         display: block !important;
@@ -128,11 +171,10 @@
       .tier-section {
         display: block !important;
         background: #ffffff !important;
-        border: 1px solid #94a3b8 !important;
+        border: 1px solid #cbd5e1 !important;
         box-shadow: none !important;
         color: #0f172a !important;
         padding: 8px 10px !important;
-        margin-bottom: 6px !important;
         break-inside: avoid;
         page-break-inside: avoid;
       }
@@ -150,15 +192,26 @@
       h1, h2, h3, h4, span, p, div, td, th, li, strong {
         color: #0f172a !important;
       }
+      table {
+        font-variant-numeric: tabular-nums !important;
+        border-collapse: collapse !important;
+      }
       #cascadeTableBody td,
       #cascadeTableHeadRow th {
-        font-size: 8.5pt !important;
-        padding: 3px 5px !important;
+        font-size: 8pt !important;
+        padding: 3px 4px !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+      }
+      #movementCanvasContainer {
+        height: 205px !important;
+      }
+      #spinClockCanvasWrap {
+        height: 185px !important;
       }
       canvas {
-        border: 1px solid #94a3b8 !important;
+        border: 1px solid #cbd5e1 !important;
         background: #0f172a !important;
-        max-height: 195px !important;
+        max-height: 205px !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
@@ -178,6 +231,20 @@
     html, body {
       max-width: 100vw;
       overflow-x: hidden;
+      overflow-x: clip;
+    }
+    @media (max-width: 767px) {
+      #mobileBottomNav {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 50 !important;
+        padding-bottom: calc(0.35rem + env(safe-area-inset-bottom)) !important;
+      }
+      main {
+        padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)) !important;
+      }
     }
     .touch-target {
       min-height: 44px;
@@ -251,10 +318,10 @@
       outline: none;
     }
 
-    /* v5.13 Daylight / Light Mode (Outdoor Bullpen High-Contrast Theme) */
+    /* v5.19 Daylight / Light Mode ("Printed Scout Sheet" High-Contrast Palette) */
     body.daylight-mode {
       color-scheme: light;
-      background-color: #f1f5f9 !important;
+      background-color: #f4f6f8 !important;
       color: #0f172a !important;
     }
     body.daylight-mode header,
@@ -264,7 +331,7 @@
     }
     body.daylight-mode footer {
       border-color: #cbd5e1 !important;
-      color: #475569 !important;
+      color: #64748b !important;
     }
     body.daylight-mode .glass-card {
       background-color: #ffffff !important;
@@ -276,7 +343,7 @@
     body.daylight-mode [class*="bg-[#151921]"],
     body.daylight-mode [class*="bg-slate-900"],
     body.daylight-mode [class*="bg-slate-950"] {
-      background-color: #f8fafc !important;
+      background-color: #ffffff !important;
       border-color: #cbd5e1 !important;
       color: #0f172a !important;
     }
@@ -289,7 +356,9 @@
     body.daylight-mode [class*="border-[#262c36]"],
     body.daylight-mode [class*="border-[#1f252e]"],
     body.daylight-mode [class*="border-slate-800"],
-    body.daylight-mode [class*="border-slate-700"] {
+    body.daylight-mode [class*="border-slate-700"],
+    body.daylight-mode [class*="divide-[#262c36]"],
+    body.daylight-mode [class*="divide-slate-800"] {
       border-color: #cbd5e1 !important;
     }
     body.daylight-mode .text-white {
@@ -299,12 +368,12 @@
     body.daylight-mode .text-slate-200,
     body.daylight-mode .text-slate-300,
     body.daylight-mode [class*="text-[#cbd5e1]"] {
-      color: #1e293b !important;
+      color: #475569 !important;
     }
     body.daylight-mode .text-slate-400,
     body.daylight-mode .text-slate-500,
     body.daylight-mode [class*="text-[#94a3b8]"] {
-      color: #334155 !important;
+      color: #64748b !important;
     }
     body.daylight-mode [class*="text-[#60a5fa]"],
     body.daylight-mode .text-sky-300,
@@ -384,12 +453,12 @@
 <body class="min-h-screen flex flex-col selection:bg-[#3b82f6] selection:text-white">
 
   <!-- Toast Notification -->
-  <div id="toastBanner" class="fixed bottom-5 right-5 z-50 hidden items-center gap-2.5 px-4 py-2.5 rounded-lg bg-[#1e2530] border border-[#3b82f6] text-white font-semibold text-xs shadow-md transition-all duration-200">
+  <div id="toastBanner" class="fixed bottom-5 right-5 z-50 hidden items-center gap-2.5 px-4 py-2.5 rounded-md bg-[#1e2530] border border-[#3b82f6] text-white font-semibold text-xs shadow-md transition-all duration-200">
     <span id="toastMessage">Scouting report copied to clipboard</span>
   </div>
 
   <!-- Shared Unclipped Floating ? Tooltip Popover -->
-  <div id="eaeTooltipPopover" role="dialog" aria-hidden="true" class="hidden fixed z-[9999] rounded-lg bg-[#0d1015] border border-[#3b82f6] p-3 shadow-2xl text-left" style="max-width: min(280px, calc(100vw - 24px));">
+  <div id="eaeTooltipPopover" role="dialog" aria-hidden="true" class="hidden fixed z-[9999] rounded-md bg-[#0d1015] border border-[#3b82f6] p-3 shadow-2xl text-left" style="max-width: min(280px, calc(100vw - 24px));">
     <div class="flex items-start justify-between gap-2">
       <span id="eaeTooltipTitle" class="text-xs font-bold text-[#60a5fa] leading-snug"></span>
       <button id="eaeTooltipCloseBtn" type="button" aria-label="Close definition" class="shrink-0 px-1.5 py-0.5 rounded bg-[#1e2530] hover:bg-[#262f3d] text-slate-200 text-xs font-bold leading-none touch-manipulation" style="min-height: 22px; min-width: 22px;">×</button>
@@ -399,18 +468,18 @@
 
   <!-- TrackMan B1 CSV / JSON Ingestion Modal -->
   <div id="uploadModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
-    <div class="glass-card rounded-lg max-w-xl w-full p-5 sm:p-6 space-y-4">
+    <div class="glass-card rounded-md max-w-xl w-full p-5 sm:p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div>
           <h3 class="text-lg font-extrabold text-white">Upload TrackMan B1 CSV, JSON, or PDF Report</h3>
         </div>
-        <button id="closeUploadModalBtn" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+        <button id="closeUploadModalBtn" type="button" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
           Close
         </button>
       </div>
 
       <!-- Guest Account Gate Banner (shown when signed out) -->
-      <div id="uploadGuestGateBox" class="rounded-lg bg-[#10141b] border border-[#333c4a] p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+      <div id="uploadGuestGateBox" class="rounded-md bg-[#10141b] border border-[#333c4a] p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div class="text-xs text-slate-300 leading-snug">
           <strong class="text-white">Account Required for Custom Uploads:</strong> Sign in or create a free account to upload TrackMan PDF, CSV, or JSON files. Guests can test the sample CSV below or browse all 15 built-in demo profiles.
         </div>
@@ -420,7 +489,7 @@
       </div>
 
       <!-- Assign to Athlete Folder -->
-      <div id="uploadAthleteFolderBox" class="rounded-lg bg-[#10141b] border border-[#262c36] p-3 space-y-2">
+      <div id="uploadAthleteFolderBox" class="rounded-md bg-[#10141b] border border-[#262c36] p-3 space-y-2">
         <div class="flex items-center justify-between gap-2">
           <label for="uploadAthleteFolderSelect" class="text-[11px] font-semibold uppercase tracking-wider text-slate-300">Assign to Athlete Folder</label>
           <span class="text-[10px] font-mono-num text-slate-400">Groups sessions for progression</span>
@@ -433,7 +502,7 @@
       </div>
 
       <!-- Optional Athlete Context (Height & Birth Date) -->
-      <div id="uploadAthleteContextBox" class="rounded-lg bg-[#10141b] border border-[#262c36] p-3 space-y-2">
+      <div id="uploadAthleteContextBox" class="rounded-md bg-[#10141b] border border-[#262c36] p-3 space-y-2">
         <div class="text-[11px] font-semibold text-slate-200">Optional Athlete Context (Improves VAA &amp; Age Context)</div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
@@ -467,7 +536,7 @@
       </div>
 
       <!-- Drag and Drop Zone -->
-      <div id="trackmanDropzone" class="border border-dashed border-[#333c4a] hover:border-[#3b82f6] rounded-lg p-5 text-center bg-[#10141b] transition cursor-pointer">
+      <div id="trackmanDropzone" class="border border-dashed border-[#333c4a] hover:border-[#3b82f6] rounded-md p-5 text-center bg-[#10141b] transition cursor-pointer">
         <div class="text-[#60a5fa] font-mono-num text-xs font-bold uppercase tracking-wider mb-1">Drag &amp; Drop TrackMan B1 Export Here</div>
         <p class="text-xs text-slate-400 mb-3">
           Automatically reads <span class="font-mono-num text-slate-300">Pitcher, Throws, TaggedPitchType, RelSpeed, SpinRate, SpinAxis, RelHeight, RelSide, Extension, InducedVertBreak, HorzBreak</span>
@@ -487,7 +556,7 @@
         Uploaded TrackMan metrics are saved privately to your account and may be used in anonymized form to improve EAE pitching benchmarks.
       </p>
 
-      <div id="uploadStatusBox" class="text-xs font-mono-num text-slate-400 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
+      <div id="uploadStatusBox" class="text-xs font-mono-num text-slate-400 bg-slate-950/80 p-3 rounded-md border border-slate-800">
         Ready to load TrackMan B1 CSV, JSON, or text-based TrackMan PDF reports (pitch-by-pitch or pitch-type summary tables). Missing fields use standard high school and college defaults.
       </div>
     </div>
@@ -495,12 +564,12 @@
 
   <!-- Supabase Auth & Private Saved Bullpen Sessions Modal -->
   <div id="authModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
-    <div class="glass-card rounded-lg max-w-md w-full p-5 sm:p-6 space-y-4">
+    <div class="glass-card rounded-md max-w-md w-full p-5 sm:p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div>
           <h3 class="text-lg font-extrabold text-white">Sign In or Create Account</h3>
         </div>
-        <button id="closeAuthModalBtn" type="button" class="touch-target px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+        <button id="closeAuthModalBtn" type="button" class="touch-target px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
           Close
         </button>
       </div>
@@ -575,7 +644,7 @@
             </div>
             <div id="authAccountEmailText" class="text-xs font-bold text-white truncate">coach@program.edu</div>
           </div>
-          <button id="authSignOutBtn" type="button" class="touch-target px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-semibold transition">
+          <button id="authSignOutBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-semibold transition">
             Sign Out
           </button>
         </div>
@@ -588,7 +657,7 @@
         </div>
       </div>
 
-      <div id="authStatusBox" class="text-xs font-mono-num text-slate-400 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
+      <div id="authStatusBox" class="text-xs font-mono-num text-slate-400 bg-slate-950/80 p-3 rounded-md border border-slate-800">
         Guest Mode active: showing the 15 anonymized benchmark profiles. Sign in to upload and save TrackMan PDF/CSV bullpens privately to your account.
       </div>
     </div>
@@ -596,7 +665,7 @@
 
   <!-- Password Recovery ("Set New Password") Modal -->
   <div id="passwordRecoveryModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
-    <div class="glass-card rounded-lg max-w-md w-full p-5 sm:p-6 space-y-4">
+    <div class="glass-card rounded-md max-w-md w-full p-5 sm:p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-[#262c36] pb-3">
         <div>
           <h3 class="text-lg font-extrabold text-white">Set New Password</h3>
@@ -627,12 +696,12 @@
 
   <!-- Contact Modal -->
   <div id="contactModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
-    <div class="glass-card rounded-lg max-w-md w-full p-5 sm:p-6 space-y-4">
+    <div class="glass-card rounded-md max-w-md w-full p-5 sm:p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div>
           <h3 class="text-lg font-extrabold text-white">Contact &amp; Consulting</h3>
         </div>
-        <button id="closeContactModalBtn" type="button" class="touch-target px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+        <button id="closeContactModalBtn" type="button" class="touch-target px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
           Close
         </button>
       </div>
@@ -662,7 +731,7 @@
 
   <!-- Move / Rename Athlete Folder Modal -->
   <div id="renameSessionModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
-    <div class="glass-card rounded-lg max-w-md w-full p-5 sm:p-6 space-y-4">
+    <div class="glass-card rounded-md max-w-md w-full p-5 sm:p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-[#262c36] pb-3">
         <div>
           <h3 class="text-base font-bold text-white">Move / Rename Athlete Folder</h3>
@@ -729,7 +798,7 @@
       <div class="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
         <div class="flex flex-col w-full md:w-auto">
           <label for="pitcherSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Bullpen Session</label>
-          <select id="pitcherSelect" class="touch-target w-full md:w-auto bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-2.5 py-2 md:py-1.5 font-medium focus:outline-none focus:border-sky-400">
+          <select id="pitcherSelect" class="touch-target w-full md:w-auto bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-md px-2.5 py-2 md:py-1.5 font-medium focus:outline-none focus:border-sky-400">
             <option value="prospect_01">Prospect #01 — Low-3/4 Fastball/CH RHP (83.0 mph FF / Fade CH / Gyro SL)</option>
             <option value="prospect_02">Prospect #02 — Developing HS RHP (77.2 mph FF / 11-5 CU / CH)</option>
             <option value="prospect_03">Prospect #03 — High-Spin Carry RHP (90.5 mph FF 20&quot; IVB / 12-6 CU / CH)</option>
@@ -813,12 +882,8 @@
               Delete Session
             </button>
 
-            <button id="exportDossierBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
-              Print Scout Sheet
-            </button>
-
-            <button id="savePdfBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
-              Save PDF
+            <button id="exportDossierBtn" type="button" title="Select 'Save as PDF' or your printer in the print dialog" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
+              Export Scout Sheet (PDF / Print)
             </button>
 
             <button id="copyReportBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
@@ -878,19 +943,19 @@
   </header>
 
   <!-- Main Content Container -->
-  <main class="max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-5 pb-[calc(5.25rem+env(safe-area-inset-bottom))] md:pb-6 space-y-5 sm:space-y-6 flex-1">
+  <main class="max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-5 pb-24 md:pb-6 space-y-5 sm:space-y-6 flex-1">
 
     <!-- Printable 8.5x11 Scout Dossier Header -->
     <div id="printDossierHeader" class="hidden items-center justify-between bg-slate-900/90 border border-slate-700 rounded-md p-4">
       <div>
-        <div class="text-xs font-mono-num font-bold uppercase text-sky-400">EAE • OFFICIAL COLLEGE BASEBALL SCOUTING REPORT</div>
+        <div class="text-xs font-mono-num font-bold text-sky-400">EAE — Easy Arsenal Evaluation • Official Scouting Report</div>
         <h2 id="dossierTitleName" class="text-xl font-extrabold text-white mt-0.5">Prospect #01 • RHP</h2>
-        <p id="dossierSubMeta" class="text-xs font-mono-num text-slate-400">TrackMan B1 Verified Bullpen • Evaluated Against NCAA Division 1 Hitters</p>
+        <p id="dossierSubMeta" class="text-xs font-mono-num text-slate-400">TrackMan Verified Bullpen • Evaluated Against NCAA Division 1 Hitters</p>
       </div>
       <div class="text-right font-mono-num">
-        <div class="text-xs text-slate-400">Report Date</div>
-        <div class="text-sm font-bold text-white">11/05/2026</div>
+        <div id="dossierReportDate" class="text-xs font-bold text-white">Report Date: 11/23/2026</div>
         <div class="text-[11px] text-emerald-400">Scale: 100 = College D1 Average</div>
+        <div class="text-[10px] text-slate-400">Created by Jaxson Smith Peterson Baseball Consulting</div>
       </div>
     </div>
 
@@ -898,47 +963,40 @@
     <section id="section-311" class="hidden glass-card rounded-md p-4 sm:p-5 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#262c36]">
         <div>
-          <h2 id="hero311PitcherName" class="text-xl sm:text-2xl font-extrabold text-white">Prospect #01 • RHP</h2>
+          <h2 id="hero311PitcherName" class="text-xl sm:text-2xl font-extrabold text-white leading-tight">Prospect #01 • RHP</h2>
           <p id="hero311Meta" class="text-xs font-mono-num text-[#cbd5e1] mt-0.5">HS Showcase Bullpen • 15 Pitches</p>
         </div>
-        <span class="px-2.5 py-1 rounded-md bg-[#10141b] border border-[#262c36] text-xs font-mono-num text-[#60a5fa] font-semibold">
+        <span class="px-2.5 py-1 rounded bg-[#10141b] border border-[#262c36] text-xs font-mono-num text-[#60a5fa] font-semibold">
           30 Sec
         </span>
       </div>
 
-      <!-- 3 Numbers -->
-      <div id="hero311NumbersGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+      <!-- 3 Numbers (Flat hairline-divided KPIs) -->
+      <div id="hero311NumbersGrid" class="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#262c36]"></div>
 
-      <!-- 1 Thing to Work On (Promoted above the fold right below the 3 Numbers) -->
-      <div class="rounded-md bg-[#10141b] border border-[#262c36] p-4 space-y-2.5">
+      <!-- 1 Thing to Work On / Priority Development Focus -->
+      <div class="border-t border-[#262c36] pt-4 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">1 Thing to Work On Next</span>
-          <span class="text-xs font-mono-num text-[#94a3b8]">Highest-impact bullpen focus</span>
+          <h3 id="hero311QuickWinHeading" class="text-[15px] font-semibold text-white">1 Thing to Work On Next</h3>
+          <span class="text-xs font-mono-num text-[#94a3b8]">Coachable ROI Focus</span>
         </div>
         <div id="hero311QuickWinBox"></div>
       </div>
 
       <!-- 1 Picture (Hosts shared #movementCanvasContainer in 30 Sec mode) -->
-      <div class="rounded-lg bg-[#10141b] border border-[#262c36] p-3">
-        <div class="flex flex-wrap items-center justify-between gap-2 text-xs mb-2 px-1">
+      <div class="border-t border-[#262c36] pt-4">
+        <div class="flex items-center justify-between gap-2 text-xs mb-2">
           <span class="text-[13px] font-semibold text-slate-100">Pitch Movement Chart (Ride vs. Run)</span>
-          <span class="font-mono-num text-xs text-[#cbd5e1]">Pitcher's View (+Right = Arm-Side Run)</span>
+          <span class="px-2 py-0.5 rounded border border-[#262c36] font-mono-num text-[11px] text-[#cbd5e1]" title="+Right = Arm-Side Run">Pitcher's View</span>
         </div>
         <div id="hero311MovementHost"></div>
-      </div>
-
-      <!-- CTA to 2-Min Breakdown -->
-      <div class="flex justify-end pt-1">
-        <button id="see2MinBreakdownBtn" type="button" class="touch-target px-4 py-2 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-[13px] font-semibold transition">
-          See 2-Min Breakdown →
-        </button>
       </div>
     </section>
 
     <!-- ======================================================================= -->
     <!-- SECTION 1: PLAYER SCOUT CARD (EXECUTIVE GLANCE)                         -->
     <!-- ======================================================================= -->
-    <section id="section-tier1" class="tier-section glass-card rounded-lg p-4 sm:p-5">
+    <section id="section-tier1" class="tier-section glass-card rounded-md p-4 sm:p-5">
       <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800">
         <div>
           <h2 id="pitcherHeaderName" class="text-xl sm:text-2xl font-extrabold text-white mt-0.5">Prospect #01 • RHP</h2>
@@ -951,15 +1009,15 @@
         </div>
       </div>
 
-      <!-- Top Row: Hero Metric Pill + NCAA D1 Distribution Gauge -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4 items-stretch">
-        <!-- Hero Arsenal+ Pill -->
-        <div class="lg:col-span-5 rounded-lg bg-[#10141b] border border-[#262c36] p-4 flex flex-col justify-between">
+      <!-- Top Row: Hero Metric + NCAA D1 Distribution Gauge (Flat Hairline Layout) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#262c36] mt-4 items-stretch">
+        <!-- Hero Arsenal+ -->
+        <div class="lg:col-span-5 pb-4 lg:pb-0 lg:pr-5 flex flex-col justify-between">
           <div class="flex items-start justify-between gap-2">
             <div>
-              <div id="heroMetricTitleLabel" class="text-xs font-semibold uppercase tracking-wider text-slate-400">Overall Pitching Arsenal+</div>
-              <div class="flex items-baseline gap-2.5 mt-1">
-                <span id="heroArsenalPlus" class="text-4xl sm:text-5xl font-extrabold font-mono-num text-white">89.0</span>
+              <div id="heroMetricTitleLabel" class="text-xs font-semibold text-slate-400">Overall Pitching Arsenal+</div>
+              <div class="flex items-baseline gap-2.5 mt-1.5">
+                <span id="heroArsenalPlus" class="text-4xl sm:text-5xl font-extrabold font-mono-num leading-none text-white">89.0</span>
                 <span id="heroArsenalDeltaBadge" class="hidden px-2 py-0.5 rounded text-xs font-mono-num font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">+0.0</span>
               </div>
               <div class="mt-2 flex flex-wrap items-center gap-1.5">
@@ -990,7 +1048,7 @@
         </div>
 
         <!-- Horizontal NCAA D1 Speedometer / Percentile Gauge -->
-        <div class="lg:col-span-7 glass-card-subtle rounded-md p-4 flex flex-col justify-between">
+        <div class="lg:col-span-7 pt-4 lg:pt-0 lg:pl-5 flex flex-col justify-between">
           <div class="flex items-center justify-between text-xs">
             <span id="gaugeTitleLabel" class="font-semibold text-slate-300">College Division 1 Scale (100 = Average D1 Pitcher)</span>
             <span id="gaugePercentileText" class="font-mono-num font-bold text-sky-400">14th %ile Present • 78th %ile Projected</span>
@@ -1021,8 +1079,8 @@
         <!-- Dynamically populated pitch cards -->
       </div>
 
-      <!-- Scouting Report Narrative Box -->
-      <div class="mt-4 rounded-lg bg-[#10141b] border border-[#262c36] p-4">
+      <!-- Scouting Report Narrative -->
+      <div class="mt-4 pt-4 border-t border-[#262c36]">
         <div class="flex items-center justify-between gap-2 mb-1.5">
           <div class="flex items-center gap-2">
             <span id="scoutSpeakHeaderTitle" class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">Scouting Director's Summary</span>
@@ -1033,7 +1091,7 @@
       </div>
 
       <!-- Lowest-Hanging Fruit: Top 2 Quick Wins Recommender -->
-      <div id="quickWinsCard" class="mt-4 rounded-lg bg-[#10141b] border border-[#262c36] p-4">
+      <div id="quickWinsCard" class="mt-4 rounded-md bg-[#10141b] border border-[#262c36] p-4">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
           <div class="flex items-center gap-2">
             <span id="quickWinsHeaderTitle" class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">Lowest-Hanging Fruit: Top 2 Quick Wins</span>
@@ -1045,7 +1103,7 @@
       </div>
 
       <!-- Athlete Progression Panel (shown when selected athlete has 2+ saved sessions) -->
-      <div id="athleteProgressionCard" class="hidden mt-4 rounded-lg bg-[#10141b] border border-[#262c36] p-4 space-y-3">
+      <div id="athleteProgressionCard" class="hidden mt-4 rounded-md bg-[#10141b] border border-[#262c36] p-4 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2">
             <span id="athleteProgressionTitle" class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">Athlete Progression (2 Sessions)</span>
@@ -1073,7 +1131,7 @@
     <!-- ======================================================================= -->
     <!-- SECTION 5: WHAT-IF PITCH LAB (COUNTERFACTUAL SIMULATOR)                 -->
     <!-- ======================================================================= -->
-    <section id="section-pitchlab" class="tier-section glass-card rounded-lg p-4 sm:p-5 no-print">
+    <section id="section-pitchlab" class="tier-section glass-card rounded-md p-4 sm:p-5 no-print">
       <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
         <div>
           <h2 class="text-lg sm:text-xl font-extrabold text-white mt-0.5">Interactive Pitching Coach "What-If" Simulator</h2>
@@ -1092,10 +1150,10 @@
           <button type="button" data-preset="pronated_ssw_ch" class="lab-preset-btn px-2.5 py-1 rounded-md text-xs font-medium bg-[#10141b] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] transition">
             More Changeup Drop &amp; Fade
           </button>
-          <button id="resetCurrentPitchBtn" type="button" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 transition">
+          <button id="resetCurrentPitchBtn" type="button" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 transition">
             Reset Current Pitch
           </button>
-          <button id="resetLabBtn" type="button" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          <button id="resetLabBtn" type="button" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
             Reset Entire Arsenal
           </button>
         </div>
@@ -1120,7 +1178,7 @@
         <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div class="sm:col-span-2 flex items-center justify-between bg-slate-900/80 px-3.5 py-2.5 rounded-md border border-slate-800">
             <label for="labPitchSelect" class="text-xs font-semibold text-slate-300">Select Pitch to Tweak (Changes stay saved when switching):</label>
-            <select id="labPitchSelect" class="bg-slate-950 border border-slate-700 text-sky-300 text-xs font-mono-num font-bold rounded-lg px-3 py-1.5">
+            <select id="labPitchSelect" class="bg-slate-950 border border-slate-700 text-sky-300 text-xs font-mono-num font-bold rounded-md px-3 py-1.5">
               <option value="0">Pitch 1 (Fastball)</option>
               <option value="1">Pitch 2 (Secondary #1)</option>
               <option value="2">Pitch 3 (Secondary #2)</option>
@@ -1183,7 +1241,7 @@
         </div>
 
         <!-- Live Coaching Impact Output Panel -->
-        <div class="lg:col-span-5 rounded-lg bg-[#10141b] border border-[#262c36] p-4 flex flex-col justify-between">
+        <div class="lg:col-span-5 rounded-md bg-[#10141b] border border-[#262c36] p-4 flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">Pitching Coach Impact Preview</span>
@@ -1191,14 +1249,14 @@
             </div>
 
             <div class="grid grid-cols-2 gap-3 my-3">
-              <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+              <div class="p-3 rounded-md bg-slate-950 border border-slate-800">
                 <div id="labMetricBox1Title" class="text-[11px] text-slate-400">New College Stuff+</div>
                 <div class="flex items-baseline gap-2 mt-0.5">
                   <span id="labSimPitchStuff" class="text-2xl font-extrabold font-mono-num text-white">70.0</span>
                   <span id="labSimPitchDelta" class="text-xs font-mono-num font-bold text-emerald-400">+0.0</span>
                 </div>
               </div>
-              <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+              <div class="p-3 rounded-md bg-slate-950 border border-slate-800">
                 <div id="labMetricBox2Title" class="text-[11px] text-slate-400">New Overall Arsenal+</div>
                 <div class="flex items-baseline gap-2 mt-0.5">
                   <span id="labSimArsenal" class="text-2xl font-extrabold font-mono-num text-sky-400">89.0</span>
@@ -1207,7 +1265,7 @@
               </div>
             </div>
 
-            <div id="labKinematicsSummary" class="text-xs font-mono-num text-slate-300 bg-slate-950/70 p-2.5 rounded-lg border border-slate-800/80 mb-3">
+            <div id="labKinematicsSummary" class="text-xs font-mono-num text-slate-300 bg-slate-950/70 p-2.5 rounded-md border border-slate-800/80 mb-3">
               Velo: 83.0 mph | Break: +15.4" Ride, +13.0" Run | Hitter Window: 161ms
             </div>
 
@@ -1225,7 +1283,7 @@
     <!-- ======================================================================= -->
     <!-- SECTION 2: 3D PITCH TUNNEL & DECISION WINDOW                            -->
     <!-- ======================================================================= -->
-    <section id="section-tier2" class="tier-section glass-card rounded-lg p-4 sm:p-5">
+    <section id="section-tier2" class="tier-section glass-card rounded-md p-4 sm:p-5">
       <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
         <div>
           <h2 id="tier2MainTitle" class="text-lg sm:text-xl font-extrabold text-white mt-0.5">
@@ -1235,7 +1293,7 @@
 
         <!-- 3D Camera, Batter Silhouette & Animation Controls -->
         <div class="flex flex-wrap items-center gap-1.5 no-print">
-          <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg px-2 py-0.5 mr-1">
+          <div class="flex items-center bg-slate-900 border border-slate-700 rounded-md px-2 py-0.5 mr-1">
             <label for="batterStanceSelect" class="text-[11px] text-slate-400 font-semibold mr-1.5">Batter:</label>
             <select id="batterStanceSelect" class="bg-transparent text-sky-300 text-xs font-mono-num font-bold focus:outline-none">
               <option value="RHB">Right-Handed (RHB)</option>
@@ -1244,19 +1302,19 @@
             </select>
           </div>
 
-          <button type="button" data-cam="catcher" class="cam-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition">
+          <button type="button" data-cam="catcher" class="cam-preset-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-500 text-slate-950 transition">
             Catcher View
           </button>
-          <button type="button" data-cam="commit" class="cam-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
+          <button type="button" data-cam="commit" class="cam-preset-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
             Decision Point (23.8 ft)
           </button>
-          <button type="button" data-cam="side" class="cam-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
+          <button type="button" data-cam="side" class="cam-preset-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
             Side View
           </button>
-          <button type="button" data-cam="pitcher" class="cam-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
+          <button type="button" data-cam="pitcher" class="cam-preset-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
             Pitcher View
           </button>
-          <button id="toggleAnimBtn" type="button" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition">
+          <button id="toggleAnimBtn" type="button" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition">
             Pause Flight
           </button>
         </div>
@@ -1268,7 +1326,7 @@
           <div id="webglCanvasContainer" class="w-full h-full cursor-grab active:cursor-grabbing" style="touch-action: none;"></div>
 
           <!-- Overlay Legend inside 3D Viewport -->
-          <div class="absolute top-3 left-3 bg-[#0d1015]/95 border border-[#262c36] rounded-lg p-3 text-xs space-y-1.5 pointer-events-none max-w-xs">
+          <div class="absolute top-3 left-3 bg-[#0d1015]/95 border border-[#262c36] rounded-md p-3 text-xs space-y-1.5 pointer-events-none max-w-xs">
             <div id="webglLegendHeader" class="font-bold text-slate-200 text-[11px] uppercase tracking-wider">Pitch Speed &amp; Hitter Reaction Time</div>
             <div id="webglLegendItems" class="space-y-1.5 font-mono-num text-[11px]"></div>
             <div class="pt-1.5 border-t border-slate-800 text-[10px] font-mono-num text-slate-400 space-y-0.5">
@@ -1285,7 +1343,7 @@
             </div>
           </div>
 
-          <div class="absolute bottom-3 right-3 bg-slate-950/80 px-2.5 py-1 rounded-lg border border-slate-800 text-[11px] text-slate-400 pointer-events-none">
+          <div class="absolute bottom-3 right-3 bg-slate-950/80 px-2.5 py-1 rounded-md border border-slate-800 text-[11px] text-slate-400 pointer-events-none">
             Blue Window = Where Hitter Must Commit to Swing • Drag to rotate
           </div>
         </div>
@@ -1307,7 +1365,7 @@
     <!-- ======================================================================= -->
     <!-- SECTION 3: MOVEMENT & SPIN CLOCK                                        -->
     <!-- ======================================================================= -->
-    <section id="section-tier3" class="tier-section glass-card rounded-lg p-4 sm:p-5">
+    <section id="section-tier3" class="tier-section glass-card rounded-md p-4 sm:p-5">
       <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800">
         <div>
           <h2 id="tier3MainTitle" class="text-lg sm:text-xl font-extrabold text-white mt-0.5">
@@ -1319,7 +1377,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4 items-stretch">
+      <div id="tier3ChartsGrid" class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4 items-stretch">
         <!-- 2D IVB vs HB Movement Canvas -->
         <div class="lg:col-span-7 glass-card-subtle rounded-md p-3 flex flex-col">
           <div class="flex items-center justify-between text-xs mb-2 px-1">
@@ -1328,7 +1386,7 @@
           </div>
           <div id="tier3MovementHost">
             <div id="movementCanvasContainer" class="relative h-80 sm:h-96 w-full">
-              <canvas id="movementMatrixCanvas" class="w-full h-full rounded-lg bg-slate-950 border border-slate-800"></canvas>
+              <canvas id="movementMatrixCanvas" class="w-full h-full rounded-md bg-slate-950 border border-slate-800"></canvas>
             </div>
           </div>
         </div>
@@ -1340,8 +1398,8 @@
               <span id="spinClockTitleLabel" class="font-semibold text-slate-200">12-Hour Spin Direction &amp; Arm Slot Angle</span>
               <span id="armSlotClockLabel" class="font-mono-num text-[11px] text-sky-400">Slot: Low-3/4 (21.5°)</span>
             </div>
-            <div class="relative h-64 w-full">
-              <canvas id="spinClockCanvas" class="w-full h-full rounded-lg bg-slate-950 border border-slate-800"></canvas>
+            <div id="spinClockCanvasWrap" class="relative h-64 w-full">
+              <canvas id="spinClockCanvas" class="w-full h-full rounded-md bg-slate-950 border border-slate-800"></canvas>
             </div>
           </div>
 
@@ -1356,7 +1414,7 @@
     <!-- ======================================================================= -->
     <!-- SECTION 4: HITTER SPLITS & GRADE RANGE                                  -->
     <!-- ======================================================================= -->
-    <section id="section-tier4" class="tier-section glass-card rounded-lg p-4 sm:p-5">
+    <section id="section-tier4" class="tier-section glass-card rounded-md p-4 sm:p-5">
       <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800">
         <div>
           <h2 id="tier4MainTitle" class="text-lg sm:text-xl font-extrabold text-white mt-0.5">
@@ -1368,15 +1426,15 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4">
+      <div id="tier4ContentGrid" class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4">
         <!-- Grade Range / Forest Plot Canvas -->
-        <div class="lg:col-span-5 glass-card-subtle rounded-md p-3 flex flex-col">
+        <div id="tier4ForestCol" class="lg:col-span-5 glass-card-subtle rounded-md p-3 flex flex-col">
           <div class="flex items-center justify-between text-xs mb-2 px-1">
             <span id="forestPlotTopTitle" class="font-semibold text-slate-200">College Stuff+ Grade &amp; Likely Range by Pitch</span>
             <span id="forestPlotRightNote" class="text-[11px] font-mono-num text-slate-400">100 = College D1 Avg</span>
           </div>
           <div class="relative h-72 w-full">
-            <canvas id="bayesForestCanvas" class="w-full h-full rounded-lg bg-slate-950 border border-slate-800"></canvas>
+            <canvas id="bayesForestCanvas" class="w-full h-full rounded-md bg-slate-950 border border-slate-800"></canvas>
           </div>
         </div>
 
@@ -1442,7 +1500,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.16 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.20 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -2436,7 +2494,8 @@
 
       const throwsSign = handedness === 'L' ? -1.0 : 1.0;
       const absRelSide = Math.abs(Number(pitch.relSide) || 1.85);
-      const xStart = -throwsSign * absRelSide;
+      // Catcher view (+Z toward mound): +X = catcher-left / 3B side (RHP), -X = catcher-right / 1B side (LHP)
+      const xStart = throwsSign * absRelSide;
       const zStart = pitch.relHeight;
 
       const xTarget = (pitch.plateSide !== undefined ? pitch.plateSide : 0.0) + throwsSign * (pitch.hb / 12.0) * 0.52;
@@ -3068,9 +3127,10 @@
       }
       const pCount = profile.pitches.length;
       const baseArsenal = presentEval.arsenalPlus;
+      const gradedList = Array.isArray(presentEval.gradedPitches) ? presentEval.gradedPitches : [];
       const candidates = [];
 
-      function evalCandidate(meta, targetIdx, labMap, feasibilityWeight) {
+      function evalCandidate(meta, targetIdx, labMap, feasibilityWeight, arsenalGapBonus = 0.0) {
         const sim = evaluateFullPipeline(profile, appState.pacingMode, labMap, appState.coupledSlotArc, 'present');
         const gain = sim.arsenalPlus - baseArsenal;
         candidates.push({
@@ -3078,27 +3138,33 @@
           targetIdx,
           labMap,
           arsenalGain: Number(gain.toFixed(2)),
-          weightedScore: gain * feasibilityWeight
+          weightedScore: gain * feasibilityWeight + arsenalGapBonus
         });
       }
 
-      // (a) Fastball Velocity (+2.0 mph on primary FF/SI)
       const fbIdx = profile.pitches.findIndex((p) => p.code === 'FF' || p.code === 'SI');
+      const primaryFbIdx = fbIdx !== -1 ? fbIdx : 0;
+      const primaryFb = profile.pitches[primaryFbIdx];
+      const primaryFbVelo = Number(primaryFb && primaryFb.velo) || 85.0;
+      const primaryFbGraded = gradedList[primaryFbIdx] || {};
+      const primaryFbStuff = Number(primaryFbGraded.shrunkStuff) || 95.0;
+
+      // 1. Diminishing Returns Weight on Primary Fastball Velocity (+2.0 mph)
       if (fbIdx !== -1) {
-        const fbP = profile.pitches[fbIdx];
+        const fbVeloWeight = primaryFbVelo < 87.0 ? 1.0 : (primaryFbVelo < 91.0 ? 0.55 : 0.15);
         const labMap = createEmptyPitchLabState(pCount + 2);
         labMap[fbIdx].velo = 2.0;
         evalCandidate({
           id: 'fb_velo',
-          title: `Add +2.0 mph ${fbP.code} Velocity`,
+          title: `Add +2.0 mph ${primaryFb.code} Velocity`,
           badge: 'Velocity Lever',
-          playerCue: `Work on adding 2 mph to your ${fbP.name} (to ${(fbP.velo + 2.0).toFixed(1)} mph) through leg drive and strength training — a faster fastball makes every other pitch harder to hit.`,
-          scoutCue: `Build +2.0 mph on the ${fbP.name} (to ${(fbP.velo + 2.0).toFixed(1)} mph) via lower-half drive and offseason strength to compress hitter reaction time and unlock offspeed.`,
-          rndCue: `ΔRelSpeed +2.0 mph on ${fbP.code} raises FB Anchor Viability γ and reduces batter reaction margin at 23.8 ft.`
-        }, fbIdx, labMap, 0.82);
+          playerCue: `Work on adding 2 mph to your ${primaryFb.name} (from ${primaryFbVelo.toFixed(1)} to ${(primaryFbVelo + 2.0).toFixed(1)} mph) through leg drive and strength training — a faster fastball makes every other pitch harder to hit.`,
+          scoutCue: `Build +2.0 mph on the ${primaryFb.name} (from ${primaryFbVelo.toFixed(1)} to ${(primaryFbVelo + 2.0).toFixed(1)} mph) via lower-half drive and strength to compress hitter reaction time and unlock offspeed.`,
+          rndCue: `ΔRelSpeed +2.0 mph on ${primaryFb.code} (${primaryFbVelo.toFixed(1)} mph) raises FB Anchor Viability γ and trims batter reaction margin.`
+        }, fbIdx, labMap, fbVeloWeight, 0.0);
       }
 
-      // (b) Stride Extension (+3.5 in across all pitches)
+      // 2. Stride Extension (+3.5 in across all pitches)
       {
         const labMap = createEmptyPitchLabState(pCount + 2);
         for (let i = 0; i < pCount; i++) labMap[i].ext = 3.5;
@@ -3109,73 +3175,147 @@
           playerCue: 'Finish your stride 3 to 4 inches closer to home plate on every throw so your pitches get on hitters quicker without throwing harder.',
           scoutCue: 'Gain +3.5 inches of release extension toward home plate across the full arsenal to make every pitch play faster without extra arm stress.',
           rndCue: 'ΔExtension +3.5" (+0.29 ft) across all pitch types increases perceived velocity and trims total flight time.'
-        }, 0, labMap, 1.08);
+        }, 0, labMap, 0.90, 0.0);
       }
 
-      // (c) Changeup / Splitter Separation (-2.5 in IVB, +2.5 in HB arm-side fade)
+      // 3. FF-CH / FS Velocity Separation & Offspeed Drop
       const chIdx = profile.pitches.findIndex((p) => p.code === 'CH' || p.code === 'FS');
       if (chIdx !== -1) {
         const chP = profile.pitches[chIdx];
+        const veloSep = primaryFbVelo - chP.velo;
         const labMap = createEmptyPitchLabState(pCount + 2);
-        labMap[chIdx].ivb = -2.5;
-        labMap[chIdx].hb = 2.5;
-        evalCandidate({
-          id: 'ch_sep',
-          title: `More ${chP.code} Drop & Arm-Side Fade`,
-          badge: 'Grip Quick Win',
-          playerCue: `Let the ${chP.name} fall off your fingers with a slightly deeper grip so it drops and fades more away from your fastball.`,
-          scoutCue: `Pronate through release or deepen the ${chP.name} grip to add -2.5" drop and +2.5" arm-side fade, widening movement separation off the fastball.`,
-          rndCue: `ΔIVB -2.5", ΔHB +2.5" on ${chP.code} expands FB-${chP.code} separation vector and SSW seam-shift profile.`
-        }, chIdx, labMap, 1.18);
+        if (veloSep < 8.0) {
+          const targetSepDelta = Math.max(-4.0, Math.min(-1.0, (primaryFbVelo - 9.0) - chP.velo));
+          labMap[chIdx].velo = Number(targetSepDelta.toFixed(1));
+          labMap[chIdx].ivb = -3.0;
+          labMap[chIdx].hb = 2.0;
+          evalCandidate({
+            id: 'ch_velo_sep',
+            title: `Widen ${primaryFb.code}–${chP.code} Velocity Separation (8–10 mph Gap)`,
+            badge: 'Arsenal Separation',
+            playerCue: `Your ${chP.name} (${chP.velo.toFixed(1)} mph) is only ${veloSep.toFixed(1)} mph slower than your ${primaryFb.code} (${primaryFbVelo.toFixed(1)} mph). Kill vertical lift (-3.0" ride) to create an 8–10 mph speed gap so hitters swing over it.`,
+            scoutCue: `Current ${primaryFb.code}–${chP.code} gap is only ${veloSep.toFixed(1)} mph (${primaryFbVelo.toFixed(1)} vs. ${chP.velo.toFixed(1)} mph). Target an 8–10 mph separation window and kill -3.0" vertical lift to prevent hitters from sitting on both speeds.`,
+            rndCue: `FB–${chP.code} ΔVelo = ${veloSep.toFixed(1)} mph (< 8.0 mph threshold); ΔVelo ${targetSepDelta.toFixed(1)} mph, ΔIVB -3.0" expands speed-differential synergy.`
+          }, chIdx, labMap, 1.15, 3.2);
+        } else {
+          labMap[chIdx].ivb = -2.5;
+          labMap[chIdx].hb = 2.5;
+          evalCandidate({
+            id: 'ch_sep',
+            title: `More ${chP.code} Drop & Arm-Side Fade`,
+            badge: 'Grip Quick Win',
+            playerCue: `Let the ${chP.name} (${chP.velo.toFixed(1)} mph) fall off your fingers with a slightly deeper grip so it drops and fades more away from your fastball.`,
+            scoutCue: `Pronate through release or deepen the ${chP.name} grip to add -2.5" drop and +2.5" arm-side fade, widening movement separation off the ${primaryFb.code}.`,
+            rndCue: `ΔIVB -2.5", ΔHB +2.5" on ${chP.code} expands FB-${chP.code} separation vector and SSW seam-shift profile.`
+          }, chIdx, labMap, 1.10, 0.4);
+        }
       }
 
-      // (d) Tighten Breaking Ball (+2.0 mph, -2.0 in IVB on SL/CU; or -3.0 in HB sweep on SW)
-      const swIdx = profile.pitches.findIndex((p) => p.code === 'SW');
-      const brkIdx = profile.pitches.findIndex((p) => p.code === 'SL' || p.code === 'CU');
-      if (swIdx !== -1) {
-        const swP = profile.pitches[swIdx];
-        const labMap = createEmptyPitchLabState(pCount + 2);
-        labMap[swIdx].hb = -3.0;
-        evalCandidate({
-          id: 'brk_sweep',
-          title: `Add +3.0" ${swP.code} Horizontal Sweep`,
-          badge: 'Grip Quick Win',
-          playerCue: `Experiment with shifting your fingers slightly off-center on the ${swP.name} to get a few extra inches of side-to-side sweep across the plate.`,
-          scoutCue: `Shift grip slightly off-center on the ${swP.name} to generate -3.0" extra glove-side sweep and sharper late plate separation.`,
-          rndCue: `ΔHB -3.0" glove-side sweep on ${swP.code} boosts 10×10 grid whiff probability and late divergence.`
-        }, swIdx, labMap, 1.12);
-      } else if (brkIdx !== -1) {
+      // 4. Dead-Zone / Below-Average Breaking Ball (SL / SW / CU)
+      const brkIdx = profile.pitches.findIndex((p) => p.code === 'SW' || p.code === 'SL' || p.code === 'CU');
+      if (brkIdx !== -1) {
         const brkP = profile.pitches[brkIdx];
+        const brkGraded = gradedList[brkIdx] || {};
+        const brkStuff = Number(brkGraded.shrunkStuff) || 95.0;
+        const inDeadZone = brkP.ivb >= 5.0 && brkP.ivb <= 10.0 && Math.abs(brkP.hb) < 8.0;
+        const belowAvgVsGoodFb = brkStuff < 95.0 && primaryFbStuff >= 105.0;
+        const gapBonus = (inDeadZone || belowAvgVsGoodFb) ? 3.0 : 0.2;
         const labMap = createEmptyPitchLabState(pCount + 2);
-        labMap[brkIdx].velo = 2.0;
-        labMap[brkIdx].ivb = -2.0;
-        evalCandidate({
-          id: 'brk_tighten',
-          title: `Tighten ${brkP.code} (+2.0 mph / -2.0" Drop)`,
-          badge: 'Grip Quick Win',
-          playerCue: `Throw your ${brkP.name} with the same fast arm speed as your fastball so it stays tighter and breaks later near the plate.`,
-          scoutCue: `Stay behind the ${brkP.name} longer with aggressive hand speed (+2.0 mph, -2.0" tighter drop) so it tunnels later before diving out of the zone.`,
-          rndCue: `ΔRelSpeed +2.0 mph, ΔIVB -2.0" on ${brkP.code} compresses reaction margin and sharpens vertical break profile.`
-        }, brkIdx, labMap, 1.12);
+        if (brkP.code === 'SW' || (brkP.code === 'SL' && Math.abs(brkP.hb) >= Math.abs(brkP.ivb))) {
+          labMap[brkIdx].hb = -3.0;
+          evalCandidate({
+            id: 'brk_sweep',
+            title: inDeadZone
+              ? `Get ${brkP.code} Out of the Dead Zone (+3.0" Sweep)`
+              : `Sharpen ${brkP.code} Horizontal Sweep (+3.0")`,
+            badge: 'Breaking Ball Design',
+            playerCue: `Your ${brkP.name} (${brkP.velo.toFixed(1)} mph, ${brkP.ivb.toFixed(1)}" IVB) needs sharper glove-side sweep so hitters can't barrel it up. Shift your fingers slightly off-center to add 3 inches of horizontal sweep.`,
+            scoutCue: `Your ${brkP.name} (${brkStuff.toFixed(0)} Stuff+) pairs behind a ${primaryFbStuff.toFixed(0)} Stuff+ ${primaryFb.code}; adding -3.0" glove-side sweep pulls it out of the hitter's bat path.`,
+            rndCue: `ΔHB -3.0" on ${brkP.code} (IVB ${brkP.ivb.toFixed(1)}", HB ${brkP.hb.toFixed(1)}") moves breaking shape out of dead-zone overlap.`
+          }, brkIdx, labMap, 1.15, gapBonus);
+        } else {
+          labMap[brkIdx].ivb = -3.0;
+          labMap[brkIdx].velo = 1.5;
+          evalCandidate({
+            id: 'brk_tighten',
+            title: inDeadZone
+              ? `Pull ${brkP.code} Out of the Dead Zone (-3.0" Drop)`
+              : `Sharpen ${brkP.code} Vertical Drop (-3.0" IVB)`,
+            badge: 'Breaking Ball Design',
+            playerCue: `Your ${brkP.name} (${brkP.velo.toFixed(1)} mph, ${brkP.ivb.toFixed(1)}" vertical break) can miss more bats with sharper downward bite. Stay on top of the ball at release to add 3 inches of late drop.`,
+            scoutCue: `Stay behind and over the ${brkP.name} (${brkStuff.toFixed(0)} Stuff+) to add -3.0" vertical drop and +1.5 mph firmness so it tunnels off the ${primaryFb.code} (${primaryFbStuff.toFixed(0)} Stuff+) before biting down.`,
+            rndCue: `ΔIVB -3.0", ΔRelSpeed +1.5 mph on ${brkP.code} (${brkP.ivb.toFixed(1)}" IVB) exits dead-zone range and raises whiff probability.`
+          }, brkIdx, labMap, 1.15, gapBonus);
+        }
       }
 
-      // (e) Fastball Carry / Ride (+2.0 in IVB on FF when base IVB < 18.0 in)
+      // 5. Fastball Shape / Carry Optimization (FF IVB < 13.0" or low spin eff at >= 88 mph)
       const ffIdx = profile.pitches.findIndex((p) => p.code === 'FF');
-      if (ffIdx !== -1 && profile.pitches[ffIdx].ivb < 18.0) {
+      if (ffIdx !== -1) {
         const ffP = profile.pitches[ffIdx];
-        const labMap = createEmptyPitchLabState(pCount + 2);
-        labMap[ffIdx].ivb = 2.0;
-        evalCandidate({
-          id: 'ff_ride',
-          title: 'Add +2.0" Fastball Carry / Ride',
-          badge: 'Spin Efficiency Win',
-          playerCue: `Stay directly behind the baseball at release so your fastball has cleaner backspin and more upward carry through the top of the strike zone.`,
-          scoutCue: `Get cleanly behind the baseball at 12:30–1:00 tilt to lift Four-Seam ride from +${ffP.ivb.toFixed(1)}" to +${(ffP.ivb + 2.0).toFixed(1)}" and flatten approach angle up in the zone.`,
-          rndCue: `ΔIVB +2.0" on FF (base ${ffP.ivb.toFixed(1)}" < 18.0") flattens VAA and elevates top-of-zone whiff probability.`
-        }, ffIdx, labMap, 1.10);
+        const lowRideFlat = ffP.ivb < 13.0;
+        const lowEffSolidVelo = ffP.velo >= 88.0 && ffP.spinEff < 86.0;
+        if (lowRideFlat || lowEffSolidVelo || ffP.ivb < 18.0) {
+          const ivbBoost = (lowRideFlat || lowEffSolidVelo) ? 2.5 : 2.0;
+          const gapBonus = (lowRideFlat || lowEffSolidVelo) ? 2.4 : 0.0;
+          const labMap = createEmptyPitchLabState(pCount + 2);
+          labMap[ffIdx].ivb = ivbBoost;
+          evalCandidate({
+            id: 'ff_ride',
+            title: (lowRideFlat || lowEffSolidVelo)
+              ? `Optimize ${ffP.code} Seam Orientation & Backspin (+${ivbBoost.toFixed(1)}" Ride)`
+              : `Add +${ivbBoost.toFixed(1)}" Fastball Carry / Ride`,
+            badge: 'Fastball Shape',
+            playerCue: `At ${ffP.velo.toFixed(1)} mph, your ${ffP.name} only gets +${ffP.ivb.toFixed(1)}" of vertical ride. Focus on staying directly behind the ball for cleaner backspin—or test a sinker grip to miss barrels down.`,
+            scoutCue: `With ${ffP.velo.toFixed(1)} mph velocity and +${ffP.ivb.toFixed(1)}" IVB (${ffP.spinEff.toFixed(0)}% spin eff), cleaning up seam orientation (+${ivbBoost.toFixed(1)}" ride) or testing a sinker shape will unlock higher fastball whiffs.`,
+            rndCue: `ΔIVB +${ivbBoost.toFixed(1)}" on FF (base ${ffP.ivb.toFixed(1)}", ${ffP.spinEff.toFixed(0)}% eff) flattens VAA and lifts top-of-zone whiff rate.`
+          }, ffIdx, labMap, 1.10, gapBonus);
+        }
       }
 
-      // (f) Release Alignment (if any secondary has hand release gap > 3.0 in from FB)
+      // 6. Strike-Zone / Command Bottleneck (Stuff+ >= 102 or FB >= 90 mph, but Zone% < 48%)
+      let zWeight = 0;
+      let zSum = 0;
+      profile.pitches.forEach((p) => {
+        if (typeof p.zonePct === 'number' && Number.isFinite(p.zonePct)) {
+          const w = Math.max(1, Number(p.count) || 1);
+          zSum += p.zonePct * w;
+          zWeight += w;
+        }
+      });
+      if (zWeight > 0) {
+        const overallZonePct = zSum / zWeight;
+        if (overallZonePct < 48.0 && (baseArsenal >= 102.0 || primaryFbVelo >= 90.0)) {
+          const labMap = createEmptyPitchLabState(pCount + 2);
+          labMap[primaryFbIdx].ext = 2.0;
+          evalCandidate({
+            id: 'zone_command',
+            title: 'Attack the Strike Zone More Consistently',
+            badge: 'Execution Priority',
+            playerCue: `Your stuff already plays at the college level (${primaryFbVelo.toFixed(1)} mph ${primaryFb.code}), but only ${overallZonePct.toFixed(0)}% of pitches landed in the zone. Challenge hitters early in counts and trust your movement.`,
+            scoutCue: `Arsenal grades at ${baseArsenal.toFixed(1)} Arsenal+ (${primaryFbVelo.toFixed(1)} mph ${primaryFb.code}), yet Zone% is ${overallZonePct.toFixed(0)}% (< 48%). Filling up the zone early will let existing velocity and break play immediately.`,
+            rndCue: `Overall Zone% = ${overallZonePct.toFixed(1)}% (< 48% threshold) with ${baseArsenal.toFixed(1)} Arsenal+; in-zone strike rate is the primary bottleneck.`
+          }, primaryFbIdx, labMap, 1.0, 3.5);
+        }
+      }
+
+      // 7. Two-Pitch Arsenal Gap (no CH/FS third weapon)
+      const hasOffspeed = profile.pitches.some((p) => p.code === 'CH' || p.code === 'FS');
+      if (pCount === 2 && !hasOffspeed) {
+        const secP = profile.pitches[1];
+        const labMap = createEmptyPitchLabState(pCount + 2);
+        labMap[1].hb = secP.code === 'SW' ? -2.0 : -1.5;
+        evalCandidate({
+          id: 'third_pitch_gap',
+          title: 'Develop a Third Platoon-Neutral Offspeed Pitch (CH/FS)',
+          badge: 'Arsenal Depth',
+          playerCue: `Right now you only show ${primaryFb.code} and ${secP.code}. Adding a changeup or splitter will keep opposite-handed hitters off your fastball and give you a reliable third look.`,
+          scoutCue: `Two-pitch mix (${primaryFb.code} + ${secP.code}) lacks an arm-side offspeed option; developing a CH or FS will protect against opposite-handed platoon splits.`,
+          rndCue: `2-pitch profile (${primaryFb.code}/${secP.code}) without CH/FS leaves platoon-split gap against opposite-handed hitters.`
+        }, 1, labMap, 1.0, 2.2);
+      }
+
+      // 8. Release Alignment (if any secondary has hand release gap > 3.0 in from FB)
       if (Array.isArray(presentEval.pairwise) && presentEval.pairwise.length > 0) {
         const worstPair = [...presentEval.pairwise].sort((a, b) => b.dRelIn - a.dRelIn)[0];
         if (worstPair && worstPair.dRelIn > 3.0) {
@@ -3195,14 +3335,14 @@
                 playerCue: `Try releasing your ${secP.name} from the exact same arm slot as your fastball so hitters can't tell which pitch is coming out of your hand.`,
                 scoutCue: `Your ${secP.name} releases ${worstPair.dRelIn.toFixed(1)}" away from your fastball; matching slot height (${clampedRelH >= 0 ? '+' : ''}${clampedRelH.toFixed(1)}") hides the pitch longer at the hitter's decision point.`,
                 rndCue: `ΔRelHeight ${clampedRelH >= 0 ? '+' : ''}${clampedRelH.toFixed(1)}" on ${secP.code} closes ${worstPair.dRelIn.toFixed(1)}" release gap and raises pairwise tunnel synergy.`
-              }, secIdx, labMap, 1.25);
+              }, secIdx, labMap, 1.20, 0.5);
             }
           }
         }
       }
 
       candidates.sort((a, b) => b.weightedScore - a.weightedScore);
-      const positive = candidates.filter((c) => c.arsenalGain > 0.05);
+      const positive = candidates.filter((c) => c.weightedScore > 0.05);
       const top2 = (positive.length >= 2 ? positive : candidates).slice(0, 2);
 
       // Command & Pitch-Shape Consistency coaching note
@@ -3301,9 +3441,9 @@
       }
       if (stance === 'NONE') return;
 
-      const xOffset = stance === 'RHB' ? -2.20 : 2.20;
+      const xOffset = stance === 'RHB' ? 2.20 : -2.20;
       const zOffset = 1.20;
-      const sideSign = stance === 'RHB' ? -1.0 : 1.0;
+      const sideSign = stance === 'RHB' ? 1.0 : -1.0;
 
       const bodyMat = new THREE.MeshStandardMaterial({
         color: 0x38bdf8,
@@ -3370,9 +3510,9 @@
         ? explicitHand
         : ((Number.isFinite(rawRelSideNum) && rawRelSideNum < 0) ? 'L' : 'R');
       const throwsSign = effectiveThrows === 'L' ? -1.0 : 1.0;
-      // Catcher view (+Z looking toward mound): -X = 1st-base side (RHP), +X = 3rd-base side (LHP)
+      // Catcher view (+Z looking toward mound): +X = catcher-left / 3B side (RHP), -X = catcher-right / 1B side (LHP)
       const absRelSide = (Number.isFinite(rawRelSideNum) && Math.abs(rawRelSideNum) > 0.05) ? Math.abs(rawRelSideNum) : 1.85;
-      const handX = -throwsSign * absRelSide;
+      const handX = throwsSign * absRelSide;
       const handY = (Number.isFinite(Number(relHeight)) && Number(relHeight) > 2.0) ? Number(relHeight) : 5.85;
       const extVal = (Number.isFinite(Number(ext)) && Number(ext) > 0.5) ? Number(ext) : 6.00;
       const handZ = Math.max(48.0, 60.5 - extVal);
@@ -3433,16 +3573,16 @@
       const hipPos = [handX * 0.32, moundY + 2.55 * scale, strideZ + 1.35];
       const chestPos = [handX * 0.48, moundY + 4.05 * scale, strideZ + 0.45];
       const headPos = [handX * 0.44, moundY + 4.92 * scale, strideZ + 0.20];
-      const throwShoulder = [handX * 0.58 - throwsSign * 0.28, Math.min(handY - 0.22, moundY + 4.22 * scale), strideZ + 0.30];
-      const gloveShoulder = [handX * 0.22 + throwsSign * 0.58, moundY + 4.00 * scale, strideZ + 0.50];
-      const backFoot = [-throwsSign * 0.35, moundY, rubberZ];
-      const leadFoot = [handX * 0.16 + throwsSign * 0.26, moundY - 0.18, strideZ];
+      const throwShoulder = [handX * 0.58 + throwsSign * 0.28, Math.min(handY - 0.22, moundY + 4.22 * scale), strideZ + 0.30];
+      const gloveShoulder = [handX * 0.22 - throwsSign * 0.58, moundY + 4.00 * scale, strideZ + 0.50];
+      const backFoot = [throwsSign * 0.35, moundY, rubberZ];
+      const leadFoot = [handX * 0.16 - throwsSign * 0.26, moundY - 0.18, strideZ];
       const elbowPos = [
-        (throwShoulder[0] + handX) * 0.5 - throwsSign * 0.12,
+        (throwShoulder[0] + handX) * 0.5 + throwsSign * 0.12,
         (throwShoulder[1] + handY) * 0.5 + 0.12,
         (throwShoulder[2] + handZ) * 0.5 + 0.15
       ];
-      const gloveHand = [gloveShoulder[0] + throwsSign * 0.28, gloveShoulder[1] - 0.85 * scale, gloveShoulder[2] - 0.55];
+      const gloveHand = [gloveShoulder[0] - throwsSign * 0.28, gloveShoulder[1] - 0.85 * scale, gloveShoulder[2] - 0.55];
 
       // Legs
       addLimbSegment(backFoot, hipPos, 0.17 * scale, 0.13 * scale);
@@ -3847,8 +3987,12 @@
       ctx.font = '600 10px JetBrains Mono, monospace';
       ctx.fillText('0,0', cx + 4, cy + 12);
 
-      // Subtle D1 FF reference crosshair marker (+10.5" HB, +16.8" IVB)
-      const d1RefX = cx + 10.5 * scale;
+      const activeProf = PITCHER_PROFILES[appState.currentPitcherId] || {};
+      const isLhpChart = String(activeProf.throws || '').trim().toUpperCase() === 'L';
+      const hbPlotSign = isLhpChart ? -1 : 1;
+
+      // Subtle D1 FF reference crosshair marker (+10.5" arm-side HB, +16.8" IVB)
+      const d1RefX = cx + hbPlotSign * 10.5 * scale;
       const d1RefY = cy - 16.8 * scale;
       ctx.save();
       ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
@@ -3863,39 +4007,47 @@
       ctx.font = '600 11px JetBrains Mono, monospace';
       ctx.fillText(isPlain ? '+24" Vertical Ride' : '+24" IVB (Ride)', cx + 6, 18);
       ctx.fillText(isPlain ? '-24" Vertical Drop' : '-24" IVB (Drop)', cx + 6, h - 10);
-      ctx.fillText(isPlain ? '<- Glove-Side Break' : '<- Glove-Side (-HB)', 14, cy - 7);
-      ctx.fillText(isPlain ? 'Arm-Side Run ->' : 'Arm-Side (+HB) ->', w - 122, cy - 7);
+      if (isLhpChart) {
+        ctx.fillText(isPlain ? '← Arm-Side (+HB)' : '← Arm-Side (+HB)', 14, cy - 7);
+        ctx.fillText(isPlain ? 'Glove-Side (-HB) →' : 'Glove-Side (-HB) →', w - 134, cy - 7);
+      } else {
+        ctx.fillText(isPlain ? '← Glove-Side (-HB)' : '← Glove-Side (-HB)', 14, cy - 7);
+        ctx.fillText(isPlain ? 'Arm-Side (+HB) →' : 'Arm-Side (+HB) →', w - 126, cy - 7);
+      }
 
       const d1Clouds = [
-        { label: 'College FF Avg', hb: 10.5, ivb: 16.8, rx: 4.0, ry: 3.2 },
-        { label: 'College CH Avg', hb: 14.5, ivb: 6.5, rx: 4.5, ry: 3.8 },
-        { label: 'College SL Avg', hb: -6.0, ivb: 0.5, rx: 4.8, ry: 4.0 },
-        { label: 'College CU Avg', hb: -8.5, ivb: -12.5, rx: 4.5, ry: 4.5 }
+        { label: w < 560 ? 'D1 FF' : 'College FF Avg', hb: 10.5, ivb: 16.8, rx: 4.0, ry: 3.2 },
+        { label: w < 560 ? 'D1 CH' : 'College CH Avg', hb: 14.5, ivb: 6.5, rx: 4.5, ry: 3.8 },
+        { label: w < 560 ? 'D1 SL' : 'College SL Avg', hb: -6.0, ivb: 0.5, rx: 4.8, ry: 4.0 },
+        { label: w < 560 ? 'D1 CU' : 'College CU Avg', hb: -8.5, ivb: -12.5, rx: 4.5, ry: 4.5 }
       ];
       d1Clouds.forEach((c) => {
-        const x = cx + c.hb * scale;
+        const x = cx + hbPlotSign * c.hb * scale;
         const y = cy - c.ivb * scale;
         ctx.save();
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
-        ctx.fillStyle = 'rgba(148, 163, 184, 0.06)';
+        ctx.strokeStyle = light ? 'rgba(100, 116, 139, 0.35)' : 'rgba(148, 163, 184, 0.25)';
+        ctx.fillStyle = light ? 'rgba(100, 116, 139, 0.05)' : 'rgba(148, 163, 184, 0.06)';
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
         ctx.ellipse(x, y, c.rx * scale, c.ry * scale, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-        ctx.fillStyle = 'rgba(148, 163, 184, 0.55)';
-        ctx.fillText(c.label, x - 28, y - c.ry * scale - 4);
+        if (w >= 420) {
+          ctx.fillStyle = light ? 'rgba(71, 85, 105, 0.72)' : 'rgba(148, 163, 184, 0.52)';
+          ctx.font = '500 10px JetBrains Mono, monospace';
+          ctx.fillText(c.label, x - (w < 560 ? 14 : 28), y - c.ry * scale - 4);
+        }
         ctx.restore();
       });
 
       const pitches = simEval.gradedPitches;
       const fb = pitches[0];
-      const fbX = cx + fb.hb * scale;
+      const fbX = cx + hbPlotSign * fb.hb * scale;
       const fbY = cy - fb.ivb * scale;
 
       for (let i = 1; i < pitches.length; i++) {
         const sec = pitches[i];
-        const secX = cx + sec.hb * scale;
+        const secX = cx + hbPlotSign * sec.hb * scale;
         const secY = cy - sec.ivb * scale;
         ctx.save();
         ctx.strokeStyle = light ? 'rgba(51, 65, 85, 0.55)' : 'rgba(226, 232, 240, 0.45)';
@@ -3917,7 +4069,7 @@
       }
 
       pitches.forEach((p) => {
-        const px = cx + p.hb * scale;
+        const px = cx + hbPlotSign * p.hb * scale;
         const py = cy - p.ivb * scale;
         const magX = cx + p.magnusHb * scale;
         const magY = cy - p.magnusIvb * scale;
@@ -5152,6 +5304,14 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       return `Shows ${Math.abs(p.hb).toFixed(1)}" of horizontal break at ${p.velo.toFixed(1)} mph; throwing it with firm arm speed will make the late break play up even more.`;
     }
 
+    function getHbTooltipText(throwsHand) {
+      const isLhp = String(throwsHand || '').trim().toUpperCase() === 'L';
+      if (isLhp) {
+        return "Positive (+) = arm-side run (breaks left toward a left-handed hitter from the pitcher's view). Negative (-) = glove-side sweep/cut (breaks right across the plate toward a right-handed hitter).";
+      }
+      return "Positive (+) = arm-side run (breaks right toward a right-handed hitter from the pitcher's view). Negative (-) = glove-side sweep/cut (breaks left across the plate toward a left-handed hitter).";
+    }
+
     function infoTipHTML(term, definition, includeTerm = true) {
       const safeTerm = String(term).replace(/"/g, '&quot;');
       const safeDef = String(definition).replace(/"/g, '&quot;');
@@ -5238,7 +5398,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.16 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.20 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -5456,7 +5616,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         const zoneStr = (typeof p.zonePct === 'number' && Number.isFinite(p.zonePct)) ? `${p.zonePct.toFixed(0)}%` : '—';
         const takeaway = buildPlainPitchTakeaway(p, fb);
         return `
-        <div class="rounded-lg bg-[#151921] border ${p.hasActiveLabDelta ? 'border-[#3b82f6]' : 'border-[#262c36]'} p-4 flex flex-col justify-between space-y-2.5 eae-card-data">
+        <div class="rounded-md bg-[#151921] border ${p.hasActiveLabDelta ? 'border-[#3b82f6]' : 'border-[#262c36]'} p-4 flex flex-col justify-between space-y-2.5 eae-card-data">
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-2 min-w-0">
               <span class="w-3 h-3 rounded-full shrink-0" style="background:${p.color}"></span>
@@ -5491,7 +5651,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
               <strong class="text-white">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}"</strong>
             </div>
             <div class="rounded bg-[#10141b] border border-[#1f252e] px-2.5 py-1.5 flex items-center justify-between gap-1">
-              <span class="text-[#94a3b8]">${infoTipHTML('Horizontal Break (in)', 'Positive (+) means arm-side run toward your throwing side. Negative (-) means glove-side sweep breaking across the plate.')}</span>
+              <span class="text-[#94a3b8]">${infoTipHTML('Horizontal Break (in)', getHbTooltipText(profile.throws))}</span>
               <strong class="text-white">${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}"</strong>
             </div>
           </div>
@@ -5534,7 +5694,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           </div>
 
           <!-- Dual Present vs. What-If +5 mph Badge -->
-          <div class="px-2.5 py-1 rounded-lg bg-slate-950/90 border border-slate-800 text-[11px] font-mono-num text-slate-300 flex items-center justify-between">
+          <div class="px-2.5 py-1 rounded-md bg-slate-950/90 border border-slate-800 text-[11px] font-mono-num text-slate-300 flex items-center justify-between">
             <span>Present: <strong class="text-sky-300">${presP.shrunkStuff.toFixed(0)} Stuff+ (${presP.scout2080.short} Grade)</strong></span>
             <span>|</span>
             <span>What-If +5 mph: <strong class="text-emerald-300">${projP.shrunkStuff.toFixed(0)} Stuff+ (${projP.scout2080.short} Grade)</strong></span>
@@ -5856,7 +6016,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           <th class="py-2 pr-1.5">Pitch</th>
           <th class="py-2 px-1.5 text-right">Velo</th>
           <th class="py-2 px-1.5 text-right">${infoTipHTML('IVB', 'Induced Vertical Break (in): upward carry/ride (+) or downward drop (-) caused by spin, excluding gravity.')}</th>
-          <th class="py-2 px-1.5 text-right">${infoTipHTML('HB', 'Horizontal Break (in): arm-side run (+) or glove-side sweep (-) from the pitcher perspective.')}</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML('HB', getHbTooltipText(profile.throws))}</th>
           <th class="py-2 px-1.5 text-right">${infoTipHTML('VAA', 'Vertical Approach Angle (deg): steepness of the pitch crossing home plate; flatter angles play up in the zone.')}</th>
           <th class="py-2 px-1.5 text-right">${infoTipHTML(fb.vaaHeightAdjusted ? 'Height-Adj VAA' : 'VAA vs. Slot', fb.vaaHeightAdjusted ? 'Actual VAA minus expected VAA for this pitcher height (0.90 x height). Positive (+) is flatter than expected; negative (-) is steeper.' : 'Actual VAA minus expected VAA for this release height. Set Pitcher Height to compare against height-expected release.')}</th>
           <th class="py-2 px-1.5 text-right">${infoTipHTML('CSW%', 'Called Strike + Whiff %: share of pitches earning a called strike or swing-and-miss.')}</th>
@@ -5886,7 +6046,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           <th class="py-2 pr-1.5">Pitch</th>
           <th class="py-2 px-1.5 text-right">Velo</th>
           <th class="py-2 px-1.5 text-right">${infoTipHTML('IVB', 'Induced Vertical Break (in): spin-induced vertical movement excluding gravity.')}</th>
-          <th class="py-2 px-1.5 text-right">${infoTipHTML('HB', 'Horizontal Break (in): pitcher-view horizontal movement (+ arm-side, - glove-side).')}</th>
+          <th class="py-2 px-1.5 text-right">${infoTipHTML('HB', getHbTooltipText(profile.throws))}</th>
           <th class="py-2 px-1.5 text-right">${infoTipHTML('VAA', 'Vertical Approach Angle (deg) at home plate.')}</th>
           <th class="py-2 px-1.5 text-right">${infoTipHTML(fb.vaaHeightAdjusted ? 'Height-Adj VAA' : 'VAA vs. Slot', fb.vaaHeightAdjusted ? 'Actual VAA minus expected VAA at 0.90 x pitcher height (+ = Flat, - = Steep).' : 'Actual VAA minus expected VAA at observed release height. Set Pitcher Height for height-adjusted comparison.')}</th>
           <th class="py-2 px-1.5 text-right">HAA</th>
@@ -5937,6 +6097,11 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const h311Meta = document.getElementById('hero311Meta');
       const h311Nums = document.getElementById('hero311NumbersGrid');
       const h311Qw = document.getElementById('hero311QuickWinBox');
+      const h311QwHeading = document.getElementById('hero311QuickWinHeading');
+      if (h311QwHeading) {
+        const usePlainLabel = isPlayer || appState.timeDepth === '30sec';
+        h311QwHeading.textContent = usePlainLabel ? '1 Thing to Work On Next' : 'Priority Development Focus';
+      }
       if (h311Name) h311Name.textContent = fullHeaderTitle;
       if (h311Meta) h311Meta.textContent = fullHeaderMeta;
       if (h311Nums) {
@@ -5958,29 +6123,32 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           false
         );
         h311Nums.innerHTML = `
-          <div class="rounded-lg bg-[#10141b] border border-[#262c36] p-3.5 flex flex-col justify-between">
-            <div class="text-xs font-semibold uppercase tracking-wider text-[#cbd5e1]">Overall Arsenal+${tipArs311}</div>
+          <div class="py-2.5 sm:py-1 sm:pr-4 flex flex-col justify-between">
+            <div class="text-xs font-semibold text-[#cbd5e1]">Overall Arsenal+${tipArs311}</div>
             <div class="flex items-baseline justify-between gap-2 mt-1.5">
-              <span class="text-3xl font-extrabold font-mono-num text-white">${simEval.arsenalPlus.toFixed(1)}</span>
+              <span class="text-3xl font-extrabold font-mono-num leading-none text-white">${simEval.arsenalPlus.toFixed(1)}</span>
               <span class="px-2 py-0.5 rounded border text-xs font-mono-num font-bold ${arsTier.cls}">${arsTier.label}</span>
             </div>
-            <div class="text-xs font-mono-num text-[#94a3b8] mt-1">100 = College D1 Avg</div>
+            <div class="text-xs font-mono-num text-[#94a3b8] mt-1.5">100 = College D1 Avg</div>
           </div>
-          <div class="rounded-lg bg-[#10141b] border border-[#262c36] p-3.5 flex flex-col justify-between">
-            <div class="text-xs font-semibold uppercase tracking-wider text-[#cbd5e1]">Best Pitch Stuff+${tipBest311}</div>
+          <div class="py-2.5 sm:py-1 sm:px-4 flex flex-col justify-between">
+            <div class="text-xs font-semibold text-[#cbd5e1]">Best Pitch Stuff+${tipBest311}</div>
             <div class="flex items-baseline justify-between gap-2 mt-1.5">
-              <span class="text-3xl font-extrabold font-mono-num text-[#60a5fa]">${bestPitch.shrunkStuff.toFixed(0)}</span>
+              <span class="text-3xl font-extrabold font-mono-num leading-none text-[#60a5fa]">${bestPitch.shrunkStuff.toFixed(0)}</span>
               <span class="px-2 py-0.5 rounded border text-xs font-mono-num font-bold ${bestTier.cls}">${bestPitch.code} • ${bestTier.label}</span>
             </div>
-            <div class="text-xs font-mono-num text-[#94a3b8] mt-1">${bestPitch.name} (100 = D1 Avg)</div>
+            <div class="text-xs font-mono-num text-[#94a3b8] mt-1.5">${bestPitch.name} (100 = D1 Avg)</div>
           </div>
-          <div class="rounded-lg bg-[#10141b] border border-[#262c36] p-3.5 flex flex-col justify-between">
-            <div class="text-xs font-semibold uppercase tracking-wider text-[#cbd5e1]">Fastball Avg Velo${tipFb311}</div>
+          <div class="py-2.5 sm:py-1 sm:pl-4 flex flex-col justify-between">
+            <div class="text-xs font-semibold text-[#cbd5e1]">Fastball Avg Velo${tipFb311}</div>
             <div class="flex items-baseline justify-between gap-2 mt-1.5">
-              <span class="text-3xl font-extrabold font-mono-num text-white">${fb.velo.toFixed(1)} <span class="text-sm font-normal text-[#cbd5e1]">mph</span></span>
-              <span class="px-2 py-0.5 rounded bg-[#151921] border border-[#262c36] text-xs font-mono-num text-[#cbd5e1]">Max ${fb.maxVelo.toFixed(1)}</span>
+              <div class="flex items-baseline gap-1">
+                <span class="text-3xl font-extrabold font-mono-num leading-none text-white">${fb.velo.toFixed(1)}</span>
+                <span class="text-xs font-mono-num font-medium text-[#94a3b8]">mph</span>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-[#10141b] border border-[#262c36] text-xs font-mono-num text-[#cbd5e1]">Max ${fb.maxVelo.toFixed(1)} mph</span>
             </div>
-            <div class="text-xs font-mono-num text-[#94a3b8] mt-1">${fb.name} (${fb.ivb >= 0 ? '+' : ''}${fb.ivb.toFixed(1)}" Ride)</div>
+            <div class="text-xs font-mono-num text-[#94a3b8] mt-1.5">${fb.name} (${fb.ivb >= 0 ? '+' : ''}${fb.ivb.toFixed(1)}" Ride)</div>
           </div>
         `;
       }
@@ -5998,8 +6166,8 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
                 </div>
                 <p class="text-[13px] text-[#cbd5e1] leading-relaxed">${cue1}</p>
               </div>
-              <button id="hero311TestLabBtn" type="button" class="touch-target shrink-0 px-3.5 py-2 rounded-md bg-[#1e2530] hover:bg-[#262f3d] text-white border border-[#3b82f6] text-xs font-semibold transition">
-                Test in Pitch Lab →
+              <button id="hero311TestLabBtn" type="button" class="touch-target shrink-0 self-start sm:self-center px-3.5 py-2 rounded-md bg-[#1e2530] hover:bg-[#262f3d] text-slate-100 border border-[#262c36] text-xs font-semibold transition">
+                Test in Pitch Lab
               </button>
             </div>
           `;
@@ -6656,7 +6824,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       listEl.innerHTML = customKeys.map((k) => {
         const p = PITCHER_PROFILES[k];
         return `
-          <div class="flex items-center justify-between gap-2 bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-1.5">
+          <div class="flex items-center justify-between gap-2 bg-slate-900/90 border border-slate-800 rounded-md px-2.5 py-1.5">
             <div class="min-w-0">
               <div class="text-xs font-bold text-white truncate">${p.name} (${p.throws}HP)</div>
               <div class="text-[10px] text-slate-400">${p.date} • ${p.totalPitches} pitches • ${(p.sourceType || 'csv').toUpperCase()}</div>
@@ -7281,16 +7449,6 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           }
         });
       }
-      const see2MinBtn = document.getElementById('see2MinBreakdownBtn');
-      if (see2MinBtn) {
-        see2MinBtn.addEventListener('click', () => {
-          setTimeDepth('2min');
-          const sec1 = document.getElementById('section-tier1');
-          if (sec1 && typeof sec1.scrollIntoView === 'function') {
-            sec1.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        });
-      }
 
       const viewModeEl = document.getElementById('viewModeSelect');
       if (viewModeEl) {
@@ -7734,126 +7892,33 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const exportBtn = document.getElementById('exportDossierBtn');
       if (exportBtn) {
         exportBtn.addEventListener('click', () => {
-          appState.dossierPreview = !appState.dossierPreview;
-          document.body.classList.toggle('dossier-preview-mode', appState.dossierPreview);
-          const indicator = document.getElementById('dossierModeIndicator');
-          if (appState.dossierPreview) {
-            if (indicator) indicator.classList.remove('hidden');
-            ['section-tier1', 'section-tier2', 'section-tier3', 'section-tier4'].forEach((id) => {
-              const sec = document.getElementById(id);
-              if (sec) sec.classList.remove('hidden');
-            });
-            renderAll();
-            showToast('Formatted 8.5×11 Scout Sheet — Opening Print Dialog');
-            setTimeout(() => {
-              try { window.print(); } catch (e) {}
-            }, 180);
-          } else {
-            if (indicator) indicator.classList.add('hidden');
-            renderAll();
-            showToast('Returned to Interactive 3D View');
+          const prevDepth = appState.timeDepth;
+          const tier3Host = document.getElementById('tier3MovementHost');
+          const mvContainer = document.getElementById('movementCanvasContainer');
+          if (tier3Host && mvContainer && mvContainer.parentElement !== tier3Host) {
+            tier3Host.appendChild(mvContainer);
           }
-        });
-      }
-
-      const savePdfBtn = document.getElementById('savePdfBtn');
-      if (savePdfBtn) {
-        savePdfBtn.addEventListener('click', async () => {
-          const profile = PITCHER_PROFILES[appState.currentPitcherId] || {};
-          const safeName = String(profile.name || 'Prospect').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
-          const filename = `${safeName}_EAE_Scout_Sheet.pdf`;
-          const wasDossier = appState.dossierPreview;
-          if (typeof window.html2pdf !== 'function') {
-            showToast('PDF generator offline — opening 8.5×11 Print Dialog');
-            if (!wasDossier && exportBtn) exportBtn.click();
-            else try { window.print(); } catch (e) {}
-            return;
+          ['section-tier1', 'section-tier2', 'section-tier3', 'section-tier4'].forEach((id) => {
+            const sec = document.getElementById(id);
+            if (sec) sec.classList.remove('hidden');
+          });
+          const dateEl = document.getElementById('dossierReportDate');
+          if (dateEl) {
+            const now = new Date();
+            dateEl.textContent = `Report Date: ${now.toLocaleDateString('en-US')}`;
           }
-          showToast(`Generating ${filename}...`);
-          try {
-            const pdfRoot = document.createElement('div');
-            pdfRoot.style.width = '7.7in';
-            pdfRoot.style.maxWidth = '7.7in';
-            pdfRoot.style.padding = '0';
-            pdfRoot.style.margin = '0 auto';
-            pdfRoot.style.background = '#ffffff';
-            pdfRoot.style.color = '#0f172a';
-            pdfRoot.style.fontFamily = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
-            pdfRoot.style.fontSize = '9.5pt';
-
-            const styleClone = document.createElement('style');
-            styleClone.textContent = `
-              .pdf-sheet * { color: #0f172a !important; box-shadow: none !important; }
-              .pdf-sheet .glass-card, .pdf-sheet .glass-card-subtle, .pdf-sheet .tier-section {
-                background: #ffffff !important; border: 1px solid #cbd5e1 !important;
-                border-radius: 6px !important; padding: 8px 10px !important; margin-bottom: 6px !important;
-                break-inside: avoid; page-break-inside: avoid;
-              }
-              .pdf-sheet #printDossierHeader {
-                display: flex !important; justify-content: space-between; align-items: center;
-                border-bottom: 2px solid #0f172a !important; padding-bottom: 6px !important; margin-bottom: 8px !important;
-              }
-              .pdf-sheet #cascadeTableWrapper { display: block !important; overflow: visible !important; }
-              .pdf-sheet #playerPitchCardsContainer, .pdf-sheet .no-print { display: none !important; }
-              .pdf-sheet table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-              .pdf-sheet th, .pdf-sheet td { font-size: 8pt !important; padding: 3px 4px !important; border-bottom: 1px solid #e2e8f0; }
-            `;
-            pdfRoot.className = 'pdf-sheet';
-            pdfRoot.appendChild(styleClone);
-
-            const idsToInclude = ['printDossierHeader', 'section-tier1', 'section-tier3', 'section-tier4'];
-            idsToInclude.forEach((secId) => {
-              const orig = document.getElementById(secId);
-              if (!orig) return;
-              const clone = orig.cloneNode(true);
-              clone.classList.remove('hidden');
-              // Convert canvases inside orig into crisp PNG images inside clone
-              const origCanvases = orig.querySelectorAll('canvas');
-              const cloneCanvases = clone.querySelectorAll('canvas');
-              origCanvases.forEach((oc, idx) => {
-                const cc = cloneCanvases[idx];
-                if (!cc || !cc.parentNode) return;
-                try {
-                  const img = document.createElement('img');
-                  img.src = oc.toDataURL('image/png');
-                  img.style.width = '100%';
-                  img.style.maxHeight = '195px';
-                  img.style.objectFit = 'contain';
-                  img.style.background = '#0f172a';
-                  img.style.borderRadius = '6px';
-                  img.style.border = '1px solid #94a3b8';
-                  cc.parentNode.replaceChild(img, cc);
-                } catch (err) {}
-              });
-              pdfRoot.appendChild(clone);
-            });
-
-            const host = document.createElement('div');
-            host.style.position = 'fixed';
-            host.style.left = '-99999px';
-            host.style.top = '0';
-            host.style.width = '7.7in';
-            host.appendChild(pdfRoot);
-            document.body.appendChild(host);
-
-            await window.html2pdf()
-              .set({
-                margin: [0.4, 0.4, 0.4, 0.4],
-                filename,
-                image: { type: 'jpeg', quality: 0.96 },
-                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-              })
-              .from(pdfRoot)
-              .save();
-
-            document.body.removeChild(host);
-            showToast(`Saved ${filename}`);
-          } catch (err) {
-            showToast('PDF export failed — opening Print Dialog');
+          renderAll();
+          showToast("Choose 'Save as PDF' or select your printer");
+          const restoreAfterPrint = () => {
+            appState.timeDepth = prevDepth;
+            applyTimeDepthVisibility();
+            renderAll();
+            window.removeEventListener('afterprint', restoreAfterPrint);
+          };
+          window.addEventListener('afterprint', restoreAfterPrint);
+          setTimeout(() => {
             try { window.print(); } catch (e) {}
-          }
+          }, 180);
         });
       }
 
@@ -7862,9 +7927,9 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           const cam = btn.getAttribute('data-cam');
           setCameraPreset(cam);
           document.querySelectorAll('.cam-preset-btn').forEach((b) => {
-            b.className = 'cam-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition';
+            b.className = 'cam-preset-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition';
           });
-          btn.className = 'cam-preset-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition';
+          btn.className = 'cam-preset-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-500 text-slate-950 transition';
         });
       });
 
