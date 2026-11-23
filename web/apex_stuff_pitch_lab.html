@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.20 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.21 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -764,19 +764,19 @@
     </div>
   </div>
 
-  <!-- Top Navigation & Control Bar -->
-  <header class="sticky top-0 z-40 border-b border-[#262c36] bg-[#10141b] no-print pt-[env(safe-area-inset-top)]">
-    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex flex-col md:flex-row md:items-center md:justify-between gap-2.5">
-      <!-- Compact Brand + Mobile Pitcher Selector + Drawer Button -->
-      <div class="flex items-center justify-between gap-2 w-full md:w-auto">
+  <!-- Top Navigation & Control Bar (Compact 2-Row Desktop Toolbar) -->
+  <header class="border-b border-[#262c36] bg-[#10141b] no-print pt-[env(safe-area-inset-top)]">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 space-y-2">
+      <!-- Row 1: Brand + Inline Action Buttons -->
+      <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-2.5 min-w-0">
-          <div class="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-md bg-[#1e2530] border border-[#333c4a] flex items-center justify-center font-mono-num font-bold text-white text-xs sm:text-sm tracking-wider">
+          <div class="w-9 h-9 shrink-0 rounded-md bg-[#1e2530] border border-[#333c4a] flex items-center justify-center font-mono-num font-bold text-white text-xs tracking-wider">
             EAE
           </div>
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-1.5">
               <h1 class="text-sm sm:text-base font-bold tracking-tight text-white truncate">EAE</h1>
-              <span id="headerBadgeVersion" class="hidden sm:inline-flex px-2 py-0.5 text-[11px] font-mono-num font-medium uppercase tracking-wider rounded bg-[#1e2530] text-slate-300 border border-[#2c3440]">
+              <span id="headerBadgeVersion" class="hidden sm:inline-flex px-2 py-0.5 text-[11px] font-mono-num font-medium rounded bg-[#1e2530] text-slate-300 border border-[#2c3440]">
                 Easy Arsenal Evaluation
               </span>
               <span id="engineStatusPill" class="px-2 py-0.5 text-[10px] sm:text-[11px] font-mono-num font-medium rounded bg-[#151921] text-slate-300 border border-[#262c36] flex items-center gap-1.5" title="Loads ./data/processed/ncaa_d1_stuff_model.json via fetch() when served over HTTP/HTTPS, or falls back to offline heuristic engine under file://">
@@ -787,17 +787,53 @@
           </div>
         </div>
 
-        <!-- Mobile Drawer Toggle Button (< 768px) -->
-        <button id="mobileDrawerBtn" type="button" aria-expanded="false" class="md:hidden touch-target shrink-0 px-3 py-2 rounded-md bg-[#151921] hover:bg-[#1e2530] border border-[#262c36] text-slate-200 text-xs font-semibold flex items-center gap-1.5">
-          <span>Controls / Upload</span>
-          <span id="mobileDrawerChevron" class="text-[10px]">▼</span>
-        </button>
+        <div class="flex items-center gap-1.5">
+          <div class="hidden md:flex flex-wrap items-center gap-1.5">
+            <button id="openUploadModalBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
+              Upload TrackMan
+            </button>
+            <button id="renameSavedSessionBtn" type="button" class="hidden touch-target px-2.5 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-[#60a5fa] border border-[#262c36] text-xs font-semibold transition">
+              Move / Rename Athlete
+            </button>
+            <button id="deleteSavedSessionBtn" type="button" class="hidden touch-target px-2.5 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-rose-400 border border-[#262c36] text-xs font-semibold transition">
+              Delete Session
+            </button>
+            <button id="exportDossierBtn" type="button" title="Choose 'Save as PDF' or select your printer" class="touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
+              Export Scout Sheet (PDF / Print)
+            </button>
+            <button id="copyReportBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
+              Copy Report
+            </button>
+            <button id="openAuthModalBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition flex items-center justify-center gap-1.5">
+              <span id="headerAuthBtnText" class="truncate max-w-[140px]">Sign In / Account</span>
+              <span id="headerAuthRoleBadge" class="hidden px-1.5 py-0.5 rounded bg-[#1e2530] text-[#60a5fa] border border-[#333c4a] text-[10px] font-mono-num font-semibold whitespace-nowrap"></span>
+            </button>
+            <button id="quickSignOutBtn" type="button" class="hidden touch-target px-2.5 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-300 border border-[#262c36] text-xs font-medium transition">
+              Sign Out
+            </button>
+            <button id="themeToggleBtn" type="button" aria-pressed="false" class="touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+              <span id="themeToggleIcon" class="inline-flex items-center" aria-hidden="true">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+              </span>
+              <span id="themeToggleText">Daylight Mode</span>
+            </button>
+            <button id="openContactModalBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
+              Contact
+            </button>
+          </div>
+
+          <!-- Mobile Drawer Toggle Button (< 768px) -->
+          <button id="mobileDrawerBtn" type="button" aria-expanded="false" class="md:hidden touch-target shrink-0 px-3 py-2 rounded-md bg-[#151921] hover:bg-[#1e2530] border border-[#262c36] text-slate-200 text-xs font-semibold flex items-center gap-1.5">
+            <span>Controls / Upload</span>
+            <span id="mobileDrawerChevron" class="text-[10px]">▼</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Always-Visible Pitcher Selector on Mobile + Full Controls on Desktop / Expanded Drawer -->
-      <div class="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
-        <div class="flex flex-col w-full md:w-auto">
-          <label for="pitcherSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Bullpen Session</label>
+      <!-- Row 2: Horizontal Control Strip -->
+      <div class="flex flex-col lg:flex-row lg:items-end gap-2 pt-1 border-t border-[#1f252e]">
+        <div class="flex flex-col flex-1 min-w-0">
+          <label for="pitcherSelect" class="text-[11px] font-semibold text-slate-400 mb-0.5">Bullpen Session</label>
           <select id="pitcherSelect" class="touch-target w-full md:w-auto bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-md px-2.5 py-2 md:py-1.5 font-medium focus:outline-none focus:border-sky-400">
             <option value="prospect_01">Prospect #01 — Low-3/4 Fastball/CH RHP (83.0 mph FF / Fade CH / Gyro SL)</option>
             <option value="prospect_02">Prospect #02 — Developing HS RHP (77.2 mph FF / 11-5 CU / CH)</option>
@@ -817,10 +853,9 @@
           </select>
         </div>
 
-        <!-- Slide-Down Mobile Drawer / Desktop Inline Controls -->
-        <div id="headerControlsPanel" class="hidden md:flex flex-wrap items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-[#262c36]">
-          <div class="flex flex-col flex-1 min-w-[150px] md:flex-none">
-            <label for="viewModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-300 mb-0.5">View Mode</label>
+        <div id="headerControlsPanel" class="hidden md:flex flex-wrap lg:flex-nowrap items-end gap-2 pt-2 md:pt-0">
+          <div class="flex flex-col flex-1 min-w-[155px] lg:flex-none">
+            <label for="viewModeSelect" class="text-[11px] font-semibold text-slate-300 mb-0.5">View Mode</label>
             <select id="viewModeSelect" class="touch-target bg-[#151921] border border-[#262c36] text-slate-100 text-[13px] rounded-md px-2.5 py-1.5 font-medium focus:outline-none focus:border-[#3b82f6]">
               <option value="player" selected>Player / Parent / HS Coach</option>
               <option value="scout">College Coach / Pro Scout</option>
@@ -828,16 +863,16 @@
             </select>
           </div>
 
-          <div class="flex flex-col flex-1 min-w-[160px] md:flex-none">
-            <label for="gradeModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Grade Mode</label>
+          <div class="flex flex-col flex-1 min-w-[155px] lg:flex-none">
+            <label for="gradeModeSelect" class="text-[11px] font-semibold text-slate-400 mb-0.5">Grade Mode</label>
             <select id="gradeModeSelect" class="touch-target bg-[#151921] border border-[#262c36] text-slate-100 text-xs rounded-md px-2.5 py-1.5 font-medium focus:outline-none focus:border-[#3b82f6]">
               <option value="present">Present D1 Reality (Current Velo)</option>
               <option value="projected">What-If +5 mph Simulation</option>
             </select>
           </div>
 
-          <div class="flex flex-col flex-1 min-w-[150px] md:flex-none">
-            <label for="pacingSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Effort Adjustment</label>
+          <div class="flex flex-col flex-1 min-w-[145px] lg:flex-none">
+            <label for="pacingSelect" class="text-[11px] font-semibold text-slate-400 mb-0.5">Effort Adjustment</label>
             <select id="pacingSelect" class="touch-target bg-[#151921] border border-[#262c36] text-slate-100 text-xs rounded-md px-2.5 py-1.5 font-medium focus:outline-none focus:border-[#3b82f6]">
               <option value="raw">Bullpen Max Effort (0.0 mph)</option>
               <option value="starter">Starter Game Pacing (-1.5 mph)</option>
@@ -845,8 +880,8 @@
             </select>
           </div>
 
-          <div class="flex flex-col flex-1 min-w-[130px] md:flex-none">
-            <label for="sessionHeightSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-300 mb-0.5">Pitcher Height</label>
+          <div class="flex flex-col flex-1 min-w-[115px] lg:flex-none">
+            <label for="sessionHeightSelect" class="text-[11px] font-semibold text-slate-300 mb-0.5">Pitcher Height</label>
             <select id="sessionHeightSelect" class="touch-target bg-[#151921] border border-[#262c36] text-slate-100 text-xs rounded-md px-2.5 py-1.5 font-medium focus:outline-none focus:border-[#3b82f6]">
               <option value="">Not Specified</option>
               <option value="66">5'6&quot;</option>
@@ -868,54 +903,14 @@
               <option value="82">6'10&quot;</option>
             </select>
           </div>
-
-          <div class="flex flex-wrap items-center gap-1.5 w-full md:w-auto md:mt-3.5">
-            <button id="openUploadModalBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
-              Upload TrackMan
-            </button>
-
-            <button id="renameSavedSessionBtn" type="button" class="hidden touch-target flex-1 md:flex-none px-2.5 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-[#60a5fa] border border-[#262c36] text-xs font-semibold transition">
-              Move / Rename Athlete
-            </button>
-
-            <button id="deleteSavedSessionBtn" type="button" class="hidden touch-target flex-1 md:flex-none px-2.5 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-rose-400 border border-[#262c36] text-xs font-semibold transition">
-              Delete Session
-            </button>
-
-            <button id="exportDossierBtn" type="button" title="Select 'Save as PDF' or your printer in the print dialog" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
-              Export Scout Sheet (PDF / Print)
-            </button>
-
-            <button id="copyReportBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
-              Copy Report
-            </button>
-
-            <button id="openAuthModalBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition flex items-center justify-center gap-1.5">
-              <span id="headerAuthBtnText" class="truncate max-w-[150px]">Sign In / Account</span>
-              <span id="headerAuthRoleBadge" class="hidden px-1.5 py-0.5 rounded bg-[#1e2530] text-[#60a5fa] border border-[#333c4a] text-[10px] font-mono-num font-semibold whitespace-nowrap"></span>
-            </button>
-
-            <button id="quickSignOutBtn" type="button" class="hidden touch-target flex-1 md:flex-none px-2.5 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-300 border border-[#262c36] text-xs font-medium transition">
-              Sign Out
-            </button>
-
-            <button id="themeToggleBtn" type="button" aria-pressed="false" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
-              <span id="themeToggleIcon" class="inline-flex items-center" aria-hidden="true">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-              </span>
-              <span id="themeToggleText">Daylight Mode</span>
-            </button>
-
-            <button id="openContactModalBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
-              Contact
-            </button>
-          </div>
         </div>
       </div>
     </div>
+  </header>
 
-    <!-- Desktop / Tablet Navigation Tabs (hidden on <768px where Bottom Bar is active) -->
-    <div class="hidden md:flex max-w-7xl mx-auto px-4 pb-2 items-center justify-between gap-2 overflow-x-auto">
+  <!-- Sticky Compact Section Jump Tabs (Desktop / Tablet) -->
+  <div class="hidden md:flex sticky top-0 z-40 bg-[#10141b] border-b border-[#262c36] no-print">
+    <div class="max-w-7xl w-full mx-auto px-4 py-1.5 flex items-center justify-between gap-2 overflow-x-auto">
       <div class="flex items-center gap-1.5">
         <button type="button" data-tier-tab="all" class="tier-tab-btn px-3 py-1.5 rounded-md text-xs font-semibold bg-[#3b82f6] text-white transition whitespace-nowrap">
           All Sections
@@ -937,10 +932,10 @@
         </button>
       </div>
       <span id="dossierModeIndicator" class="hidden text-[11px] font-mono-num text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-md whitespace-nowrap">
-        8.5×11 Print View Active (Click "Print Scout Sheet" to exit)
+        8.5×11 Print View Active
       </span>
     </div>
-  </header>
+  </div>
 
   <!-- Main Content Container -->
   <main class="max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-5 pb-24 md:pb-6 space-y-5 sm:space-y-6 flex-1">
@@ -1080,14 +1075,14 @@
       </div>
 
       <!-- Scouting Report Narrative -->
-      <div class="mt-4 pt-4 border-t border-[#262c36]">
+      <div class="mt-4 pt-4 border-t border-[#262c36] w-full min-w-0 overflow-hidden">
         <div class="flex items-center justify-between gap-2 mb-1.5">
           <div class="flex items-center gap-2">
             <span id="scoutSpeakHeaderTitle" class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">Scouting Director's Summary</span>
           </div>
           <span id="scoutSpeakShrinkageTag" class="text-[11px] font-mono-num text-slate-400">Small-Sample Adjusted • Fastball Setup: 42%</span>
         </div>
-        <p id="scoutSpeakExecutiveText" class="text-sm text-slate-200 leading-relaxed"></p>
+        <p id="scoutSpeakExecutiveText" class="w-full min-w-0 text-sm text-slate-200 leading-relaxed break-words"></p>
       </div>
 
       <!-- Lowest-Hanging Fruit: Top 2 Quick Wins Recommender -->
@@ -1321,30 +1316,28 @@
       </div>
 
       <!-- 3D WebGL Viewport Container + Pairwise Telemetry -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
-        <div id="webglCanvasWrapper" class="lg:col-span-8 relative h-96 sm:h-[450px] rounded-md overflow-hidden bg-slate-950 border border-slate-800">
-          <div id="webglCanvasContainer" class="w-full h-full cursor-grab active:cursor-grabbing" style="touch-action: none;"></div>
-
-          <!-- Overlay Legend inside 3D Viewport -->
-          <div class="absolute top-3 left-3 bg-[#0d1015]/95 border border-[#262c36] rounded-md p-3 text-xs space-y-1.5 pointer-events-none max-w-xs">
-            <div id="webglLegendHeader" class="font-bold text-slate-200 text-[11px] uppercase tracking-wider">Pitch Speed &amp; Hitter Reaction Time</div>
-            <div id="webglLegendItems" class="space-y-1.5 font-mono-num text-[11px]"></div>
-            <div class="pt-1.5 border-t border-slate-800 text-[10px] font-mono-num text-slate-400 space-y-0.5">
-              <div class="flex items-center gap-1.5">
-                <span class="w-2.5 h-1 rounded-sm bg-emerald-400 inline-block"></span>
-                <span>&lt;145ms: Elite Deception</span>
-                <span class="w-2.5 h-1 rounded-sm bg-amber-400 inline-block ml-1"></span>
-                <span>145–175ms: Avg</span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <span class="w-2.5 h-1 rounded-sm bg-rose-400 inline-block"></span>
-                <span>&gt;175ms: Easy for Hitter to Read</span>
-              </div>
-            </div>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4 items-start">
+        <div class="lg:col-span-8 space-y-2.5">
+          <div id="webglCanvasWrapper" class="relative h-80 sm:h-[440px] rounded-md overflow-hidden bg-slate-950 border border-[#262c36]">
+            <div id="webglCanvasContainer" class="w-full h-full cursor-grab active:cursor-grabbing" style="touch-action: none;"></div>
           </div>
 
-          <div class="absolute bottom-3 right-3 bg-slate-950/80 px-2.5 py-1 rounded-md border border-slate-800 text-[11px] text-slate-400 pointer-events-none">
-            Blue Window = Where Hitter Must Commit to Swing • Drag to rotate
+          <div class="px-2.5 py-1.5 rounded-md bg-[#10141b] border border-[#262c36] text-[11px] font-mono-num text-slate-400 flex flex-wrap items-center justify-between gap-2">
+            <span>Blue Window = Where Hitter Must Commit to Swing • Drag to rotate</span>
+            <span>Scroll / Pinch to Zoom</span>
+          </div>
+
+          <!-- Docked Pitch Speed & Hitter Reaction Time Panel (Unobstructed 3D) -->
+          <div class="rounded-md bg-[#10141b] border border-[#262c36] p-3.5 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#262c36]">
+              <div id="webglLegendHeader" class="text-[13px] font-semibold text-slate-100">Pitch Speed &amp; Hitter Reaction Time</div>
+              <div class="flex flex-wrap items-center gap-3 text-[11px] font-mono-num text-slate-400">
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-1 rounded-sm bg-emerald-400 inline-block"></span>&lt;145ms: Elite Deception</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-1 rounded-sm bg-amber-400 inline-block"></span>145–175ms: Avg</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-1 rounded-sm bg-rose-400 inline-block"></span>&gt;175ms: Easy for Hitter to Read</span>
+              </div>
+            </div>
+            <div id="webglLegendItems" class="grid grid-cols-1 md:grid-cols-3 gap-2.5 font-mono-num text-xs"></div>
           </div>
         </div>
 
@@ -1500,7 +1493,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.20 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.21 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -5398,7 +5391,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.20 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.21 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -5598,8 +5591,18 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const pctPresent = stuffToPercentile(presentBaselineEval.arsenalPlus);
       const pctProj = stuffToPercentile(projectedBaselineEval.arsenalPlus);
       const pctActive = stuffToPercentile(simEval.arsenalPlus);
+      const formatOrdinal = (n) => {
+        const num = Math.round(Number(n));
+        const mod100 = num % 100;
+        if (mod100 >= 11 && mod100 <= 13) return `${num}th`;
+        const mod10 = num % 10;
+        if (mod10 === 1) return `${num}st`;
+        if (mod10 === 2) return `${num}nd`;
+        if (mod10 === 3) return `${num}rd`;
+        return `${num}th`;
+      };
       document.getElementById('gaugePercentileText').textContent =
-        `Current: ${pctActive}th %ile D1 (Present: ${pctPresent}th %ile | What-If +5 mph: ${pctProj}th %ile)`;
+        `Current: ${formatOrdinal(pctActive)} %ile D1 (Present: ${formatOrdinal(pctPresent)} %ile | What-If +5 mph: ${formatOrdinal(pctProj)} %ile)`;
 
       const baseLeft = Math.min(96, Math.max(4, ((simEval.weightedBaseStuff - 65) / 65) * 100));
       const arsLeft = Math.min(96, Math.max(4, ((simEval.arsenalPlus - 65) / 65) * 100));
@@ -5752,7 +5755,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       if (isScout) {
         // Sentence 1 (Present Arsenal & Fastball)
         const s1 = presFb.velo < 88.0
-          ? `Right now, ${profile.name}'s ${presFb.velo.toFixed(1)} mph fastball grades out below college average (${presFb.shrunkStuff.toFixed(0)} College Stuff+, ${presFb.scout2080.short} Grade) despite good life (${presFb.ivb >= 0 ? '+' : ''}${presFb.ivb.toFixed(1)}" vertical ride and ${presFb.ext.toFixed(1)} ft of extension), because college hitters have ${presFb.reactionMarginMs.toFixed(0)} milliseconds to read and react to the pitch.`
+          ? `Right now, ${profile.name}'s ${presFb.velo.toFixed(1)} mph fastball grades out below college average (${presFb.shrunkStuff.toFixed(0)} College Stuff+, ${presFb.scout2080.short} Grade) despite good lift (${presFb.ivb >= 0 ? '+' : ''}${presFb.ivb.toFixed(1)}" vertical ride and ${presFb.ext.toFixed(1)} ft of extension), because college hitters have ${presFb.reactionMarginMs.toFixed(0)} milliseconds to read and react to the pitch.`
           : `Right now, ${profile.name} attacks hitters with a college-ready ${presFb.velo.toFixed(1)} mph fastball (${presFb.shrunkStuff.toFixed(0)} College Stuff+, ${presFb.scout2080.short} Grade) that jumps out of a ${presFb.ext.toFixed(1)}-ft extension window and gives batters just ${presFb.reactionMarginMs.toFixed(0)} milliseconds to react.`;
 
         // Sentence 2 (Best Secondary & Platoon Split)
@@ -5791,19 +5794,22 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         }
       }
 
-      // Render Lowest-Hanging Fruit: Top 2 Quick Wins
+      // Render Lowest-Hanging Fruit (Single card in Player view, 2-card grid in Scout/R&D)
       const qwContainer = document.getElementById('quickWinsContainer');
       if (qwContainer) {
-        qwContainer.innerHTML = quickWinsList.map((qw, idx) => {
+        const displayQuickWins = isPlayer ? quickWinsList.slice(0, 1) : quickWinsList;
+        qwContainer.className = isPlayer ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 md:grid-cols-2 gap-3';
+        qwContainer.innerHTML = displayQuickWins.map((qw, idx) => {
           const cueText = isPlayer ? (qw.playerCue || qw.scoutCue) : (mode === 'scout' ? qw.scoutCue : qw.rndCue);
           const gainPrefix = qw.arsenalGain >= 0 ? '+' : '';
+          const titlePrefix = isPlayer ? '' : `${idx + 1}. `;
           return `
             <div class="rounded-md bg-slate-950/85 border border-slate-800 p-3.5 flex flex-col justify-between gap-2.5">
               <div class="space-y-1.5">
                 <div class="flex items-start justify-between gap-2">
                   <div>
                     <span class="text-[10px] font-mono-num uppercase tracking-wider text-sky-400 font-semibold">${qw.badge}</span>
-                    <div class="text-sm font-bold text-white">${idx + 1}. ${qw.title}</div>
+                    <div class="text-sm font-bold text-white">${titlePrefix}${qw.title}</div>
                   </div>
                   <span class="shrink-0 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono-num text-xs font-extrabold">
                     ${gainPrefix}${qw.arsenalGain.toFixed(1)} Arsenal+
@@ -5916,13 +5922,13 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       // Section 2: 3D Legend & Tunnel Cards
       document.getElementById('webglLegendItems').innerHTML = simEval.gradedPitches.map((p) => `
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded bg-[#151921] border border-[#262c36]">
           <span class="flex items-center gap-1.5">
             <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${p.color}"></span>
             <span class="text-slate-200 font-semibold">${p.code}</span>
-            <span class="text-slate-400">${p.velo.toFixed(1)}mph</span>
+            <span class="text-slate-400">${p.velo.toFixed(1)} mph</span>
           </span>
-          <span class="px-1.5 py-0.5 rounded border text-[10px] font-bold ${p.reactionMeta.badgeClass}">
+          <span class="px-1.5 py-0.5 rounded border text-[11px] font-bold ${p.reactionMeta.badgeClass}">
             ${p.reactionMarginMs.toFixed(0)}ms • ${p.reactionMeta.tier}
           </span>
         </div>
