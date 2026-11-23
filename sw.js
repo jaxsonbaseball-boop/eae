@@ -1,4 +1,4 @@
-const CACHE_NAME = "eae-cache-v5.21";
+const CACHE_NAME = "eae-cache-v5.22";
 const PRECACHE_URLS = [
   "./",
   "./index.html",

@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.21 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.22 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -909,7 +909,7 @@
   </header>
 
   <!-- Sticky Compact Section Jump Tabs (Desktop / Tablet) -->
-  <div class="hidden md:flex sticky top-0 z-40 bg-[#10141b] border-b border-[#262c36] no-print">
+  <div class="hidden md:flex md:sticky md:top-0 z-40 bg-[#10141b] border-b border-[#262c36] no-print">
     <div class="max-w-7xl w-full mx-auto px-4 py-1.5 flex items-center justify-between gap-2 overflow-x-auto">
       <div class="flex items-center gap-1.5">
         <button type="button" data-tier-tab="all" class="tier-tab-btn px-3 py-1.5 rounded-md text-xs font-semibold bg-[#3b82f6] text-white transition whitespace-nowrap">
@@ -1268,7 +1268,7 @@
           </div>
 
           <div class="mt-3 pt-2.5 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
-            <span id="labFooterLeftText">Gray dashed line in 3D view shows original pitch</span>
+            <span id="labFooterLeftText">Dashed reference path in 3D view shows original pitch trajectory</span>
             <span id="labArcReadout" class="text-indigo-300 font-mono-num">Release Side: +0.0" • Spin Tilt: 1:30</span>
           </div>
         </div>
@@ -1279,62 +1279,98 @@
     <!-- SECTION 2: 3D PITCH TUNNEL & DECISION WINDOW                            -->
     <!-- ======================================================================= -->
     <section id="section-tier2" class="tier-section glass-card rounded-md p-4 sm:p-5">
-      <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
-        <div>
-          <h2 id="tier2MainTitle" class="text-lg sm:text-xl font-extrabold text-white mt-0.5">
-            Interactive 3D Pitch Flight &amp; Hitter Decision Point (23.8 ft Out)
-          </h2>
-        </div>
-
-        <!-- 3D Camera, Batter Silhouette & Animation Controls -->
-        <div class="flex flex-wrap items-center gap-1.5 no-print">
-          <div class="flex items-center bg-slate-900 border border-slate-700 rounded-md px-2 py-0.5 mr-1">
-            <label for="batterStanceSelect" class="text-[11px] text-slate-400 font-semibold mr-1.5">Batter:</label>
-            <select id="batterStanceSelect" class="bg-transparent text-sky-300 text-xs font-mono-num font-bold focus:outline-none">
-              <option value="RHB">Right-Handed (RHB)</option>
-              <option value="LHB">Left-Handed (LHB)</option>
-              <option value="NONE">None</option>
-            </select>
-          </div>
-
-          <button type="button" data-cam="catcher" class="cam-preset-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-500 text-slate-950 transition">
-            Catcher View
-          </button>
-          <button type="button" data-cam="commit" class="cam-preset-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
-            Decision Point (23.8 ft)
-          </button>
-          <button type="button" data-cam="side" class="cam-preset-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
-            Side View
-          </button>
-          <button type="button" data-cam="pitcher" class="cam-preset-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
-            Pitcher View
-          </button>
-          <button id="toggleAnimBtn" type="button" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition">
-            Pause Flight
-          </button>
-        </div>
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
+        <h2 id="tier2MainTitle" class="text-lg sm:text-xl font-extrabold text-white">
+          Interactive 3D Pitch Flight &amp; Hitter Decision Point (23.8 ft Out)
+        </h2>
+        <span class="text-[11px] font-mono-num text-slate-400">Freeze-frame spheres at 23.8 ft decision plane &amp; 0 ft plate</span>
       </div>
 
-      <!-- 3D WebGL Viewport Container + Pairwise Telemetry -->
+      <!-- 3D WebGL Viewport Container + Responsive Controls + Pairwise Telemetry -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4 items-start">
-        <div class="lg:col-span-8 space-y-2.5">
-          <div id="webglCanvasWrapper" class="relative h-80 sm:h-[440px] rounded-md overflow-hidden bg-slate-950 border border-[#262c36]">
+        <div class="lg:col-span-8 flex flex-col gap-2.5">
+          <!-- Order 1 (Mobile & Desktop): Compact Camera + Batter + Pitch Isolation Bar -->
+          <div id="tunnelControlsBar" class="order-1 space-y-2 no-print">
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 whitespace-nowrap">
+              <div class="flex items-center bg-slate-900 border border-slate-700 rounded-md px-2 py-1 shrink-0">
+                <label for="batterStanceSelect" class="text-[11px] text-slate-400 font-semibold mr-1.5">Batter:</label>
+                <select id="batterStanceSelect" class="bg-transparent text-sky-300 text-xs font-mono-num font-bold focus:outline-none">
+                  <option value="RHB">RHB</option>
+                  <option value="LHB">LHB</option>
+                  <option value="NONE">None</option>
+                </select>
+              </div>
+              <button type="button" data-cam="catcher" class="cam-preset-btn shrink-0 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-sky-500 text-slate-950 transition">
+                Catcher View
+              </button>
+              <button type="button" data-cam="batter" class="cam-preset-btn shrink-0 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
+                Batter View
+              </button>
+              <button type="button" data-cam="commit" class="cam-preset-btn shrink-0 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
+                Decision (23.8 ft)
+              </button>
+              <button type="button" data-cam="side" class="cam-preset-btn shrink-0 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
+                Side View
+              </button>
+              <button type="button" data-cam="pitcher" class="cam-preset-btn shrink-0 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-700 transition">
+                Pitcher View
+              </button>
+            </div>
+
+            <!-- Pitch Isolation Toggles -->
+            <div id="tunnelPitchFilterBar" class="flex flex-wrap items-center gap-1.5"></div>
+          </div>
+
+          <!-- Order 3 on Mobile (below canvas), Order 2 on Desktop (above canvas): Flight Scrub + Speed + Play/Pause -->
+          <div id="tunnelPlaybackBar" class="order-3 md:order-2 flex flex-wrap sm:flex-nowrap items-center gap-2 px-3 py-2 rounded-md bg-[#10141b] border border-[#262c36] no-print">
+            <button id="toggleAnimBtn" type="button" class="touch-target shrink-0 px-3 py-1.5 rounded-md text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition">
+              Pause Flight
+            </button>
+            <button id="toggleSpeedBtn" type="button" class="touch-target shrink-0 px-2.5 py-1.5 rounded-md text-xs font-mono-num font-semibold bg-[#151921] text-slate-200 border border-[#262c36] hover:bg-[#1e2530] transition">
+              1.0x
+            </button>
+            <div class="flex-1 min-w-[160px] flex items-center gap-2">
+              <span class="text-[11px] font-mono-num text-slate-400 shrink-0">60.5 ft</span>
+              <input id="tunnelScrubSlider" type="range" min="0" max="100" step="1" value="0" aria-label="Scrub pitch flight from release to plate" class="w-full" />
+              <span id="tunnelScrubDistReadout" class="text-[11px] font-mono-num text-sky-300 shrink-0 w-14 text-right">Plate 0 ft</span>
+            </div>
+          </div>
+
+          <!-- Order 2 on Mobile, Order 3 on Desktop: Unobstructed 3D WebGL Canvas -->
+          <div id="webglCanvasWrapper" class="order-2 md:order-3 relative h-80 sm:h-[440px] rounded-md overflow-hidden bg-slate-950 border border-[#262c36]">
             <div id="webglCanvasContainer" class="w-full h-full cursor-grab active:cursor-grabbing" style="touch-action: none;"></div>
           </div>
 
-          <div class="px-2.5 py-1.5 rounded-md bg-[#10141b] border border-[#262c36] text-[11px] font-mono-num text-slate-400 flex flex-wrap items-center justify-between gap-2">
-            <span>Blue Window = Where Hitter Must Commit to Swing • Drag to rotate</span>
+          <!-- Order 4: 2-Pitch Isolation Tunnel Metric Strip (shown when exactly 2 pitches isolated) -->
+          <div id="tunnelPairMetricStrip" class="order-4 hidden rounded-md bg-[#10141b] border border-[#262c36] px-3 py-2.5 grid grid-cols-3 gap-2 text-center font-mono-num">
+            <div>
+              <div class="text-[11px] text-slate-400">23.8 ft Decision Gap</div>
+              <div id="tunnelIsoGapVal" class="text-sm font-bold text-white">--</div>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400">Late Break Sep</div>
+              <div id="tunnelIsoBreakVal" class="text-sm font-bold text-sky-300">--</div>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400">Tunnel Grade</div>
+              <div id="tunnelIsoGradeVal" class="text-sm font-bold text-emerald-300">--</div>
+            </div>
+          </div>
+
+          <!-- Order 5: Compact Caption Bar -->
+          <div class="order-5 px-2.5 py-1.5 rounded-md bg-[#10141b] border border-[#262c36] text-[11px] font-mono-num text-slate-400 flex flex-wrap items-center justify-between gap-2">
+            <span>Blue Window = Decision Plane (23.8 ft) • Drag to rotate</span>
             <span>Scroll / Pinch to Zoom</span>
           </div>
 
-          <!-- Docked Pitch Speed & Hitter Reaction Time Panel (Unobstructed 3D) -->
-          <div class="rounded-md bg-[#10141b] border border-[#262c36] p-3.5 space-y-2.5">
+          <!-- Order 6: Docked Pitch Speed & Hitter Reaction Time Panel -->
+          <div class="order-6 rounded-md bg-[#10141b] border border-[#262c36] p-3.5 space-y-2.5">
             <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#262c36]">
               <div id="webglLegendHeader" class="text-[13px] font-semibold text-slate-100">Pitch Speed &amp; Hitter Reaction Time</div>
               <div class="flex flex-wrap items-center gap-3 text-[11px] font-mono-num text-slate-400">
-                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-1 rounded-sm bg-emerald-400 inline-block"></span>&lt;145ms: Elite Deception</span>
-                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-1 rounded-sm bg-amber-400 inline-block"></span>145–175ms: Avg</span>
-                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-1 rounded-sm bg-rose-400 inline-block"></span>&gt;175ms: Easy for Hitter to Read</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-3 h-[3px] rounded-sm bg-emerald-400 inline-block"></span>&lt;145ms: Elite Deception</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-3 h-[3px] rounded-sm bg-amber-400 inline-block"></span>145–175ms: Avg</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-3 h-[3px] rounded-sm bg-rose-400 inline-block"></span>&gt;175ms: Easy for Hitter to Read</span>
               </div>
             </div>
             <div id="webglLegendItems" class="grid grid-cols-1 md:grid-cols-3 gap-2.5 font-mono-num text-xs"></div>
@@ -1348,7 +1384,7 @@
           </div>
 
           <div class="rounded-md bg-slate-900/90 border border-slate-800 p-3 text-xs">
-            <div id="platoonBoxTitle" class="font-bold text-sky-300 uppercase tracking-wider text-[11px] mb-1">How Fastball Velocity Sets Up Offspeed</div>
+            <div id="platoonBoxTitle" class="font-bold text-sky-300 text-[12px] mb-1">How Fastball Velocity Sets Up Offspeed</div>
             <p id="platoonDiagnosisText" class="text-slate-300 text-xs leading-relaxed"></p>
           </div>
         </div>
@@ -1493,7 +1529,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.21 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.22 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -2397,6 +2433,9 @@
       coupledSlotArc: true,
       batterStance: 'RHB',
       animPlaying: true,
+      animSpeed: 1.0,
+      tunnelScrub: null,
+      tunnelSelectedPitches: [],
       cameraPreset: 'catcher',
       dossierPreview: false,
       get labDeltas() {
@@ -3815,6 +3854,9 @@
         sphericalCam = { radius: 38.0, theta: 1.54, phi: 1.42, target: makeTargetVec(0, 3.0, 28) };
       } else if (presetName === 'pitcher') {
         sphericalCam = { radius: 16.0, theta: Math.PI, phi: 1.36, target: makeTargetVec(0, 2.5, 22) };
+      } else if (presetName === 'batter') {
+        const isLhbCam = appState.batterStance === 'LHB';
+        sphericalCam = { radius: 54.5, theta: isLhbCam ? 0.04 : -0.04, phi: 1.56, target: makeTargetVec(0, 4.1, 55.5) };
       }
       updateCameraPosition();
     }
@@ -3854,7 +3896,13 @@
       }
       animatedBalls = [];
 
-      simEval.gradedPitches.forEach((p, idx) => {
+      const isoCodes = Array.isArray(appState.tunnelSelectedPitches) ? appState.tunnelSelectedPitches : [];
+      const visiblePitches = isoCodes.length > 0
+        ? simEval.gradedPitches.filter((p) => isoCodes.includes(p.code))
+        : simEval.gradedPitches;
+
+      visiblePitches.forEach((p, idx) => {
+        const origIdx = simEval.gradedPitches.indexOf(p);
         const vec3Pts = p.trajPoints.map((pt) => new THREE.Vector3(pt.x, pt.z, pt.y));
         const curve = new THREE.CatmullRomCurve3(vec3Pts);
         const tubeGeo = new THREE.TubeGeometry(curve, 52, 0.055, 10, false);
@@ -3876,11 +3924,39 @@
         const ballGeo = new THREE.SphereGeometry(0.12, 16, 16);
         const ballMat = new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 0.35 });
         const ballMesh = new THREE.Mesh(ballGeo, ballMat);
+        if (appState.tunnelScrub !== null) {
+          ballMesh.position.copy(curve.getPointAt(Math.max(0, Math.min(1, appState.tunnelScrub))));
+        }
         trajectoryGroup.add(ballMesh);
         animatedBalls.push({ mesh: ballMesh, curve, speedFactor: p.velo / 85.0 });
 
-        if ((p.hasActiveLabDelta || appState.gradeMode === 'projected') && baselineEval.gradedPitches[idx]) {
-          const basePitch = baselineEval.gradedPitches[idx];
+        // Freeze-frame translucent ghost sphere at 23.8 ft decision point
+        if (p.commitPos) {
+          const ghostDecGeo = new THREE.SphereGeometry(0.125, 16, 16);
+          const ghostDecMat = new THREE.MeshStandardMaterial({
+            color: colorHex,
+            transparent: true,
+            opacity: 0.42,
+            roughness: 0.3
+          });
+          const ghostDecMesh = new THREE.Mesh(ghostDecGeo, ghostDecMat);
+          ghostDecMesh.position.set(p.commitPos.x, p.commitPos.z, 23.8);
+          trajectoryGroup.add(ghostDecMesh);
+        }
+
+        // Solid freeze-frame sphere at 0 ft strike-zone plane
+        const endPt = vec3Pts[vec3Pts.length - 1];
+        if (endPt) {
+          const plateSphereGeo = new THREE.SphereGeometry(0.12, 16, 16);
+          const plateSphereMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.35 });
+          const plateSphereMesh = new THREE.Mesh(plateSphereGeo, plateSphereMat);
+          plateSphereMesh.position.copy(endPt);
+          trajectoryGroup.add(plateSphereMesh);
+        }
+
+        const baseRefPitch = baselineEval.gradedPitches[origIdx >= 0 ? origIdx : idx];
+        if ((p.hasActiveLabDelta || appState.gradeMode === 'projected') && baseRefPitch) {
+          const basePitch = baseRefPitch;
           const ghostPts = basePitch.trajPoints.map((pt) => new THREE.Vector3(pt.x, pt.z, pt.y));
           const ghostCurve = new THREE.CatmullRomCurve3(ghostPts);
           const ghostGeo = new THREE.TubeGeometry(ghostCurve, 44, 0.036, 8, false);
@@ -3920,12 +3996,19 @@
       }
       rafLoopId = requestAnimationFrame(animateThreeJS);
       if (appState.animPlaying && animatedBalls.length > 0) {
-        animClock = (animClock + 0.011) % 1.0;
+        animClock = (animClock + 0.011 * (appState.animSpeed || 1.0)) % 1.0;
         animatedBalls.forEach((b) => {
           const t = Math.min(1.0, (animClock * b.speedFactor) % 1.0);
           const pos = b.curve.getPointAt(t);
           b.mesh.position.copy(pos);
         });
+        const scrubEl = document.getElementById('tunnelScrubSlider');
+        const scrubRead = document.getElementById('tunnelScrubDistReadout');
+        if (scrubEl) scrubEl.value = String(Math.round(animClock * 100));
+        if (scrubRead) {
+          const ftOut = Math.max(0, 60.5 * (1 - animClock));
+          scrubRead.textContent = `${ftOut.toFixed(1)} ft`;
+        }
       }
       if (threeRenderer && threeScene && threeCamera) {
         threeRenderer.render(threeScene, threeCamera);
@@ -5391,7 +5474,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.21 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.22 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -5498,7 +5581,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       setLabelText('labMetricBox1Title', isScout ? 'New College Stuff+' : 'Modified Pitch Stuff+');
       setLabelText('labMetricBox2Title', isScout ? 'New Overall Arsenal+' : 'Compound Arsenal+');
       setLabelText('labFooterLeftText', isScout
-        ? 'Gray wireframe in 3D view shows original pitch path'
+        ? 'Dashed reference path in 3D view shows original pitch trajectory'
         : '45-Step Drag Ballistics + Coupled Shoulder Arc');
     }
 
@@ -5622,7 +5705,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         <div class="rounded-md bg-[#151921] border ${p.hasActiveLabDelta ? 'border-[#3b82f6]' : 'border-[#262c36]'} p-4 flex flex-col justify-between space-y-2.5 eae-card-data">
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-2 min-w-0">
-              <span class="w-3 h-3 rounded-full shrink-0" style="background:${p.color}"></span>
+              <span class="w-3 h-[3px] rounded-sm shrink-0 inline-block" style="background:${p.color}"></span>
               <div class="min-w-0">
                 <div class="font-bold text-sm text-white truncate">${p.name}</div>
                 <div class="text-xs font-mono-num text-[#cbd5e1]">Usage: ${usagePct}% (${p.count} pitches)</div>
@@ -5680,7 +5763,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         <div class="rounded-md bg-slate-900/90 border ${p.hasActiveLabDelta ? 'border-indigo-400/70' : 'border-slate-800'} p-3.5 flex flex-col justify-between space-y-2">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <span class="w-3 h-3 rounded-full" style="background:${p.color}"></span>
+              <span class="w-3 h-[3px] rounded-sm shrink-0 inline-block" style="background:${p.color}"></span>
               <span class="font-bold text-sm text-white">${p.name}</span>
             </div>
             <span class="px-2 py-0.5 rounded text-[11px] font-mono-num font-bold bg-slate-800 text-sky-300">
@@ -5924,7 +6007,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       document.getElementById('webglLegendItems').innerHTML = simEval.gradedPitches.map((p) => `
         <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded bg-[#151921] border border-[#262c36]">
           <span class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${p.color}"></span>
+            <span class="w-3 h-[3px] rounded-sm shrink-0 inline-block" style="background:${p.color}"></span>
             <span class="text-slate-200 font-semibold">${p.code}</span>
             <span class="text-slate-400">${p.velo.toFixed(1)} mph</span>
           </span>
@@ -5933,6 +6016,59 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           </span>
         </div>
       `).join('');
+
+      // Populate Pitch Isolation Toggles & 2-Pitch Decision-Point Strip
+      const filterBar = document.getElementById('tunnelPitchFilterBar');
+      const availableCodes = simEval.gradedPitches.map((p) => p.code);
+      appState.tunnelSelectedPitches = (appState.tunnelSelectedPitches || []).filter((c) => availableCodes.includes(c));
+      if (filterBar) {
+        const allActive = appState.tunnelSelectedPitches.length === 0;
+        const allBtn = `<button type="button" data-iso-pitch="__ALL__" class="tunnel-iso-btn px-2.5 py-1 rounded-md text-xs font-semibold border transition ${allActive ? 'bg-[#3b82f6] text-white border-[#3b82f6]' : 'bg-[#151921] text-slate-300 border-[#262c36] hover:bg-[#1e2530]'}">All Pitches</button>`;
+        const pitchBtns = simEval.gradedPitches.map((p) => {
+          const isSel = appState.tunnelSelectedPitches.includes(p.code);
+          return `<button type="button" data-iso-pitch="${p.code}" class="tunnel-iso-btn inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono-num font-semibold border transition ${isSel ? 'bg-[#1e2530] text-white border-[#3b82f6]' : 'bg-[#151921] text-slate-300 border-[#262c36] hover:bg-[#1e2530]'}"><span class="w-3 h-[3px] rounded-sm inline-block" style="background:${p.color}"></span>${p.code}</button>`;
+        }).join('');
+        filterBar.innerHTML = allBtn + pitchBtns;
+        filterBar.querySelectorAll('.tunnel-iso-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const code = btn.getAttribute('data-iso-pitch');
+            if (code === '__ALL__') {
+              appState.tunnelSelectedPitches = [];
+            } else {
+              const cur = [...(appState.tunnelSelectedPitches || [])];
+              const idx = cur.indexOf(code);
+              if (idx >= 0) {
+                cur.splice(idx, 1);
+              } else {
+                if (cur.length >= 2) cur.shift();
+                cur.push(code);
+              }
+              appState.tunnelSelectedPitches = cur;
+            }
+            renderAll();
+          });
+        });
+      }
+      const isoStrip = document.getElementById('tunnelPairMetricStrip');
+      if (isoStrip) {
+        if (appState.tunnelSelectedPitches.length === 2) {
+          const pA = simEval.gradedPitches.find((p) => p.code === appState.tunnelSelectedPitches[0]);
+          const pB = simEval.gradedPitches.find((p) => p.code === appState.tunnelSelectedPitches[1]);
+          if (pA && pB && pA.commitPos && pB.commitPos) {
+            const decGapIn = Math.hypot(pA.commitPos.x - pB.commitPos.x, pA.commitPos.z - pB.commitPos.z) * 12.0;
+            const lateBreakIn = Math.hypot(pA.ivb - pB.ivb, pA.hb - pB.hb);
+            const tGrade = decGapIn <= 1.5 ? 'Plus-Plus' : (decGapIn <= 2.5 ? 'Plus' : (decGapIn <= 3.8 ? 'Average' : 'Early Read'));
+            document.getElementById('tunnelIsoGapVal').textContent = `${decGapIn.toFixed(1)}"`;
+            document.getElementById('tunnelIsoBreakVal').textContent = `${lateBreakIn.toFixed(1)}"`;
+            document.getElementById('tunnelIsoGradeVal').textContent = tGrade;
+            isoStrip.classList.remove('hidden');
+          } else {
+            isoStrip.classList.add('hidden');
+          }
+        } else {
+          isoStrip.classList.add('hidden');
+        }
+      }
 
       document.getElementById('tunnelPairCardsContainer').innerHTML = simEval.pairwise.map((pw) => {
         const marginPct = Math.min(100, Math.max(10, ((pw.secReactionMarginMs - 115) / 95) * 100));
@@ -5986,10 +6122,47 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       if (isPlayer) {
         if (tableWrapper) tableWrapper.classList.add('hidden');
         if (playerCardsEl) {
+          playerCardsEl.className = 'grid grid-cols-1 md:grid-cols-2 gap-3';
           playerCardsEl.classList.remove('hidden');
-          playerCardsEl.innerHTML = simEval.gradedPitches.map((p) => buildPlayerPitchCardHTML(p)).join('');
+          playerCardsEl.innerHTML = simEval.gradedPitches.map((p) => {
+            const rhh = p.stuffVsRHB;
+            const lhh = p.stuffVsLHB;
+            const diff = rhh - lhh;
+            const absDiff = Math.abs(diff);
+            let splitBadge = 'Platoon Neutral';
+            let insight = `Plays evenly against both right-handed (${rhh.toFixed(0)}) and left-handed (${lhh.toFixed(0)}) hitters.`;
+            if (diff >= 4.0) {
+              splitBadge = `+${absDiff.toFixed(1)} vs. RHH`;
+              insight = `Stronger matchup vs. right-handed hitters (${rhh.toFixed(0)} vs. ${lhh.toFixed(0)}), where the movement breaks away from the barrel.`;
+            } else if (diff <= -4.0) {
+              splitBadge = `+${absDiff.toFixed(1)} vs. LHH`;
+              insight = `Stronger weapon vs. left-handed hitters (${lhh.toFixed(0)} vs. ${rhh.toFixed(0)}), giving you a reliable opposite-handed out pitch.`;
+            }
+            return `
+              <div class="rounded-md bg-[#10141b] border border-[#262c36] p-3.5 space-y-2.5">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-[3px] rounded-sm shrink-0 inline-block" style="background:${p.color}"></span>
+                    <span class="text-sm font-bold text-white">${p.name}</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded border border-[#262c36] bg-[#151921] font-mono-num text-[11px] font-semibold text-sky-300">${splitBadge}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 font-mono-num">
+                  <div class="rounded bg-[#151921] border border-[#262c36] p-2.5 text-center">
+                    <div class="text-[11px] text-slate-400">vs. RHH Stuff+</div>
+                    <div class="text-xl font-extrabold text-emerald-300 mt-0.5">${rhh.toFixed(0)}</div>
+                  </div>
+                  <div class="rounded bg-[#151921] border border-[#262c36] p-2.5 text-center">
+                    <div class="text-[11px] text-slate-400">vs. LHH Stuff+</div>
+                    <div class="text-xl font-extrabold text-amber-300 mt-0.5">${lhh.toFixed(0)}</div>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">${insight}</p>
+              </div>
+            `;
+          }).join('');
         }
-        setLabelText('cascadeTableTopTitle', 'Pitch-by-Pitch Grade Cards (Plain English)');
+        setLabelText('cascadeTableTopTitle', 'Platoon Matchup Cards (vs. RHH & vs. LHH)');
         // Keep print splits table synced with Height-Adjusted VAA for @media print Scout Sheet
         headRow.innerHTML = `
           <th class="py-2 pr-1.5">Pitch</th>
@@ -7943,7 +8116,36 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       if (toggleAnimBtn) {
         toggleAnimBtn.addEventListener('click', (e) => {
           appState.animPlaying = !appState.animPlaying;
+          if (appState.animPlaying) appState.tunnelScrub = null;
           e.target.textContent = appState.animPlaying ? 'Pause Flight' : 'Play Flight';
+        });
+      }
+      const toggleSpeedBtn = document.getElementById('toggleSpeedBtn');
+      if (toggleSpeedBtn) {
+        toggleSpeedBtn.addEventListener('click', (e) => {
+          appState.animSpeed = appState.animSpeed === 1.0 ? 0.25 : 1.0;
+          e.target.textContent = appState.animSpeed === 0.25 ? '0.25x' : '1.0x';
+        });
+      }
+      const tunnelScrubSlider = document.getElementById('tunnelScrubSlider');
+      if (tunnelScrubSlider) {
+        tunnelScrubSlider.addEventListener('input', (e) => {
+          const pct = Math.max(0, Math.min(100, Number(e.target.value) || 0)) / 100.0;
+          appState.animPlaying = false;
+          appState.tunnelScrub = pct;
+          animClock = pct;
+          if (toggleAnimBtn) toggleAnimBtn.textContent = 'Play Flight';
+          const scrubRead = document.getElementById('tunnelScrubDistReadout');
+          if (scrubRead) {
+            scrubRead.textContent = `${Math.max(0, 60.5 * (1 - pct)).toFixed(1)} ft`;
+          }
+          animatedBalls.forEach((b) => {
+            const pos = b.curve.getPointAt(Math.min(1.0, Math.max(0.0, pct)));
+            b.mesh.position.copy(pos);
+          });
+          if (threeRenderer && threeScene && threeCamera) {
+            threeRenderer.render(threeScene, threeCamera);
+          }
         });
       }
 
