@@ -10,11 +10,12 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.14 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.16 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -28,9 +29,14 @@
       color: #e6edf3;
       overflow-x: hidden;
     }
+    .font-mono-num,
+    table,
+    th,
+    td {
+      font-variant-numeric: tabular-nums;
+    }
     .font-mono-num {
       font-family: 'JetBrains Mono', monospace;
-      font-variant-numeric: tabular-nums;
     }
     .glass-card {
       background-color: #151921;
@@ -60,23 +66,38 @@
     /* ===================================================================== */
     @page {
       size: letter portrait;
-      margin: 0.35in;
+      margin: 0.4in;
     }
     @media print {
       :root {
-        color-scheme: light;
+        color-scheme: light !important;
       }
-      body {
+      html,
+      body,
+      body.daylight-mode {
         background: #ffffff !important;
         color: #0f172a !important;
-        font-size: 10pt;
+        font-size: 9.5pt !important;
+        line-height: 1.3 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      main {
+        width: 7.7in !important;
+        max-width: 7.7in !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+      }
+      main > * + * {
+        margin-top: 6px !important;
       }
       .no-print,
       header,
       footer,
       #section-pitchlab,
       #section-311,
-      #timeDepthBar,
       #uploadModal,
       #authModal,
       #contactModal,
@@ -89,12 +110,17 @@
       }
       #printDossierHeader {
         display: flex !important;
-        border-bottom: 2px solid #0f172a;
-        padding-bottom: 8px;
-        margin-bottom: 10px;
+        background: #ffffff !important;
+        border: 1px solid #94a3b8 !important;
+        border-bottom: 2px solid #0f172a !important;
+        padding: 8px 10px !important;
+        margin-bottom: 6px !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
       }
       #cascadeTableWrapper {
         display: block !important;
+        overflow: visible !important;
       }
       #playerPitchCardsContainer {
         display: none !important;
@@ -102,25 +128,37 @@
       .tier-section {
         display: block !important;
         background: #ffffff !important;
-        border: 1px solid #cbd5e1 !important;
+        border: 1px solid #94a3b8 !important;
         box-shadow: none !important;
         color: #0f172a !important;
-        padding: 10px !important;
-        margin-bottom: 10px !important;
+        padding: 8px 10px !important;
+        margin-bottom: 6px !important;
         break-inside: avoid;
+        page-break-inside: avoid;
       }
       .glass-card,
-      .glass-card-subtle {
-        background: #f8fafc !important;
+      .glass-card-subtle,
+      body.daylight-mode .glass-card,
+      body.daylight-mode .glass-card-subtle {
+        background: #ffffff !important;
         border: 1px solid #cbd5e1 !important;
         color: #0f172a !important;
+        padding: 6px 8px !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
       }
-      h1, h2, h3, span, p, div, td, th, li {
+      h1, h2, h3, h4, span, p, div, td, th, li, strong {
         color: #0f172a !important;
+      }
+      #cascadeTableBody td,
+      #cascadeTableHeadRow th {
+        font-size: 8.5pt !important;
+        padding: 3px 5px !important;
       }
       canvas {
         border: 1px solid #94a3b8 !important;
         background: #0f172a !important;
+        max-height: 195px !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
@@ -401,7 +439,9 @@
           <div>
             <label for="uploadPitcherHeightSelect" class="block text-[11px] font-medium text-[#cbd5e1] mb-1">Pitcher Height</label>
             <select id="uploadPitcherHeightSelect" class="touch-target w-full rounded-md bg-[#151921] border border-[#262c36] px-2.5 py-2 text-xs text-slate-100 font-medium focus:outline-none focus:border-[#3b82f6]">
-              <option value="">Not Provided (Use Release Height)</option>
+              <option value="">Not Specified (Use Release Height)</option>
+              <option value="66">5'6&quot;</option>
+              <option value="67">5'7&quot;</option>
               <option value="68">5'8&quot;</option>
               <option value="69">5'9&quot;</option>
               <option value="70">5'10&quot;</option>
@@ -415,6 +455,8 @@
               <option value="78">6'6&quot;</option>
               <option value="79">6'7&quot;</option>
               <option value="80">6'8&quot;</option>
+              <option value="81">6'9&quot;</option>
+              <option value="82">6'10&quot;</option>
             </select>
           </div>
           <div>
@@ -525,7 +567,7 @@
 
       <!-- Signed-In Account Summary & Saved Sessions Manager -->
       <div id="authSignedInContainer" class="hidden space-y-3">
-        <div class="flex items-center justify-between gap-2 bg-slate-900/90 border border-emerald-500/30 rounded-xl p-3">
+        <div class="flex items-center justify-between gap-2 bg-slate-900/90 border border-emerald-500/30 rounded-md p-3">
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
               <span class="text-[10px] font-mono-num uppercase tracking-wider text-emerald-400">Signed In Account</span>
@@ -598,19 +640,19 @@
         Created by <strong class="text-white">Jaxson Smith Peterson Baseball Consulting</strong>. Reach out for bullpen audits, pitching development plans, or custom team integrations:
       </p>
       <div id="contactLinksList" class="space-y-2 text-xs">
-        <a href="mailto:jaxsonbaseball@gmail.com" class="touch-target flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 transition">
+        <a href="mailto:jaxsonbaseball@gmail.com" class="touch-target flex items-center justify-between px-3.5 py-2.5 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 transition">
           <span class="font-semibold text-slate-300">Email</span>
           <span class="font-mono-num font-bold text-sky-300">jaxsonbaseball@gmail.com</span>
         </a>
-        <a href="https://www.linkedin.com/in/jaxson-smith-peterson-bb61752b0" target="_blank" rel="noopener noreferrer" class="touch-target flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 transition">
+        <a href="https://www.linkedin.com/in/jaxson-smith-peterson-bb61752b0" target="_blank" rel="noopener noreferrer" class="touch-target flex items-center justify-between px-3.5 py-2.5 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 transition">
           <span class="font-semibold text-slate-300">LinkedIn</span>
           <span class="font-mono-num font-bold text-sky-300">Jaxson Smith Peterson</span>
         </a>
-        <a href="https://x.com/JaxsonBaseball" target="_blank" rel="noopener noreferrer" class="touch-target flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 transition">
+        <a href="https://x.com/JaxsonBaseball" target="_blank" rel="noopener noreferrer" class="touch-target flex items-center justify-between px-3.5 py-2.5 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 transition">
           <span class="font-semibold text-slate-300">X</span>
           <span class="font-mono-num font-bold text-sky-300">@JaxsonBaseball</span>
         </a>
-        <a href="https://www.instagram.com/JaxsonSmithPeterson/" target="_blank" rel="noopener noreferrer" class="touch-target flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 transition">
+        <a href="https://www.instagram.com/JaxsonSmithPeterson/" target="_blank" rel="noopener noreferrer" class="touch-target flex items-center justify-between px-3.5 py-2.5 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 transition">
           <span class="font-semibold text-slate-300">Instagram</span>
           <span class="font-mono-num font-bold text-sky-300">@JaxsonSmithPeterson</span>
         </a>
@@ -711,8 +753,8 @@
           <div class="flex flex-col flex-1 min-w-[150px] md:flex-none">
             <label for="viewModeSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-300 mb-0.5">View Mode</label>
             <select id="viewModeSelect" class="touch-target bg-[#151921] border border-[#262c36] text-slate-100 text-[13px] rounded-md px-2.5 py-1.5 font-medium focus:outline-none focus:border-[#3b82f6]">
-              <option value="player">Player / Parent / HS Coach</option>
-              <option value="scout" selected>College Coach / Pro Scout</option>
+              <option value="player" selected>Player / Parent / HS Coach</option>
+              <option value="scout">College Coach / Pro Scout</option>
               <option value="rnd">R&amp;D / Quant</option>
             </select>
           </div>
@@ -737,7 +779,9 @@
           <div class="flex flex-col flex-1 min-w-[130px] md:flex-none">
             <label for="sessionHeightSelect" class="text-[10px] font-semibold uppercase tracking-wider text-slate-300 mb-0.5">Pitcher Height</label>
             <select id="sessionHeightSelect" class="touch-target bg-[#151921] border border-[#262c36] text-slate-100 text-xs rounded-md px-2.5 py-1.5 font-medium focus:outline-none focus:border-[#3b82f6]">
-              <option value="">Not Provided</option>
+              <option value="">Not Specified</option>
+              <option value="66">5'6&quot;</option>
+              <option value="67">5'7&quot;</option>
               <option value="68">5'8&quot;</option>
               <option value="69">5'9&quot;</option>
               <option value="70">5'10&quot;</option>
@@ -751,6 +795,8 @@
               <option value="78">6'6&quot;</option>
               <option value="79">6'7&quot;</option>
               <option value="80">6'8&quot;</option>
+              <option value="81">6'9&quot;</option>
+              <option value="82">6'10&quot;</option>
             </select>
           </div>
 
@@ -769,6 +815,10 @@
 
             <button id="exportDossierBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
               Print Scout Sheet
+            </button>
+
+            <button id="savePdfBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
+              Save PDF
             </button>
 
             <button id="copyReportBtn" type="button" class="touch-target flex-1 md:flex-none px-3 py-2 md:py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-medium transition">
@@ -831,7 +881,7 @@
   <main class="max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-5 pb-[calc(5.25rem+env(safe-area-inset-bottom))] md:pb-6 space-y-5 sm:space-y-6 flex-1">
 
     <!-- Printable 8.5x11 Scout Dossier Header -->
-    <div id="printDossierHeader" class="hidden items-center justify-between bg-slate-900/90 border border-slate-700 rounded-xl p-4">
+    <div id="printDossierHeader" class="hidden items-center justify-between bg-slate-900/90 border border-slate-700 rounded-md p-4">
       <div>
         <div class="text-xs font-mono-num font-bold uppercase text-sky-400">EAE • OFFICIAL COLLEGE BASEBALL SCOUTING REPORT</div>
         <h2 id="dossierTitleName" class="text-xl font-extrabold text-white mt-0.5">Prospect #01 • RHP</h2>
@@ -844,34 +894,15 @@
       </div>
     </div>
 
-    <!-- "How Much Time Do You Have?" Depth Filter Bar -->
-    <div id="timeDepthBar" class="glass-card rounded-lg px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 no-print">
-      <div class="flex items-center gap-2">
-        <span class="text-[13px] font-semibold text-slate-100">How much time do you have?</span>
-        <span id="timeDepthHint" class="text-xs font-mono-num text-[#94a3b8]">3-1-1 Quick Snapshot</span>
-      </div>
-      <div class="grid grid-cols-3 gap-1 p-1 rounded-md bg-[#10141b] border border-[#262c36] w-full sm:w-auto">
-        <button id="timeDepth30SecBtn" type="button" data-time-depth="30sec" class="time-depth-btn touch-target px-3 py-1.5 rounded text-xs font-semibold text-slate-300 hover:text-white transition whitespace-nowrap">
-          30 Sec
-        </button>
-        <button id="timeDepth2MinBtn" type="button" data-time-depth="2min" class="time-depth-btn touch-target px-3 py-1.5 rounded text-xs font-semibold bg-[#3b82f6] text-white transition whitespace-nowrap">
-          2 Min
-        </button>
-        <button id="timeDepthDeepBtn" type="button" data-time-depth="deep" class="time-depth-btn touch-target px-3 py-1.5 rounded text-xs font-semibold text-slate-300 hover:text-white transition whitespace-nowrap">
-          Full Deep Dive
-        </button>
-      </div>
-    </div>
-
-    <!-- 3-1-1 HERO CARD (30 SEC VIEW: 3 NUMBERS, 1 PICTURE, 1 THING TO WORK ON) -->
-    <section id="section-311" class="hidden glass-card rounded-lg p-4 sm:p-5 space-y-4">
+    <!-- 30 SEC HERO CARD (3 NUMBERS, 1 PICTURE, 1 THING TO WORK ON) -->
+    <section id="section-311" class="hidden glass-card rounded-md p-4 sm:p-5 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#262c36]">
         <div>
           <h2 id="hero311PitcherName" class="text-xl sm:text-2xl font-extrabold text-white">Prospect #01 • RHP</h2>
           <p id="hero311Meta" class="text-xs font-mono-num text-[#cbd5e1] mt-0.5">HS Showcase Bullpen • 15 Pitches</p>
         </div>
         <span class="px-2.5 py-1 rounded-md bg-[#10141b] border border-[#262c36] text-xs font-mono-num text-[#60a5fa] font-semibold">
-          3-1-1 Snapshot (100 = D1 Avg)
+          30 Sec
         </span>
       </div>
 
@@ -879,7 +910,7 @@
       <div id="hero311NumbersGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
 
       <!-- 1 Thing to Work On (Promoted above the fold right below the 3 Numbers) -->
-      <div class="rounded-lg bg-[#10141b] border border-[#262c36] border-l-4 border-l-[#3b82f6] p-4 space-y-2.5">
+      <div class="rounded-md bg-[#10141b] border border-[#262c36] p-4 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <span class="text-xs font-bold uppercase tracking-wider text-[#60a5fa]">1 Thing to Work On Next</span>
           <span class="text-xs font-mono-num text-[#94a3b8]">Highest-impact bullpen focus</span>
@@ -959,7 +990,7 @@
         </div>
 
         <!-- Horizontal NCAA D1 Speedometer / Percentile Gauge -->
-        <div class="lg:col-span-7 glass-card-subtle rounded-xl p-4 flex flex-col justify-between">
+        <div class="lg:col-span-7 glass-card-subtle rounded-md p-4 flex flex-col justify-between">
           <div class="flex items-center justify-between text-xs">
             <span id="gaugeTitleLabel" class="font-semibold text-slate-300">College Division 1 Scale (100 = Average D1 Pitcher)</span>
             <span id="gaugePercentileText" class="font-mono-num font-bold text-sky-400">14th %ile Present • 78th %ile Projected</span>
@@ -1071,7 +1102,7 @@
       </div>
 
       <!-- Active Multi-Pitch Modifications Status Strip -->
-      <div class="mt-3 flex flex-wrap items-center justify-between gap-2 bg-slate-950/75 px-3.5 py-2 rounded-xl border border-slate-800/90 text-xs">
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-2 bg-slate-950/75 px-3.5 py-2 rounded-md border border-slate-800/90 text-xs">
         <div class="flex flex-wrap items-center gap-2">
           <span class="font-semibold text-slate-400">Current Pitch Grades:</span>
           <div id="activeLabPillsStrip" class="flex flex-wrap items-center gap-1.5 font-mono-num"></div>
@@ -1087,7 +1118,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4">
         <!-- Sliders Column -->
         <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          <div class="sm:col-span-2 flex items-center justify-between bg-slate-900/80 px-3.5 py-2.5 rounded-xl border border-slate-800">
+          <div class="sm:col-span-2 flex items-center justify-between bg-slate-900/80 px-3.5 py-2.5 rounded-md border border-slate-800">
             <label for="labPitchSelect" class="text-xs font-semibold text-slate-300">Select Pitch to Tweak (Changes stay saved when switching):</label>
             <select id="labPitchSelect" class="bg-slate-950 border border-slate-700 text-sky-300 text-xs font-mono-num font-bold rounded-lg px-3 py-1.5">
               <option value="0">Pitch 1 (Fastball)</option>
@@ -1097,7 +1128,7 @@
           </div>
 
           <!-- Slider 1: Velocity -->
-          <div class="glass-card-subtle p-3 rounded-xl">
+          <div class="glass-card-subtle p-3 rounded-md">
             <div class="flex justify-between text-xs mb-1">
               <span id="sliderLabelVelo" class="text-slate-300 font-medium">Add / Subtract Velocity</span>
               <span id="labVeloVal" class="font-mono-num font-bold text-sky-400">+0.0 mph</span>
@@ -1106,7 +1137,7 @@
           </div>
 
           <!-- Slider 2: Spin Rate -->
-          <div class="glass-card-subtle p-3 rounded-xl">
+          <div class="glass-card-subtle p-3 rounded-md">
             <div class="flex justify-between text-xs mb-1">
               <span id="sliderLabelSpin" class="text-slate-300 font-medium">Add / Subtract Spin Rate</span>
               <span id="labSpinVal" class="font-mono-num font-bold text-sky-400">+0 rpm</span>
@@ -1115,7 +1146,7 @@
           </div>
 
           <!-- Slider 3: Vertical Break -->
-          <div class="glass-card-subtle p-3 rounded-xl">
+          <div class="glass-card-subtle p-3 rounded-md">
             <div class="flex justify-between text-xs mb-1">
               <span id="sliderLabelIvb" class="text-slate-300 font-medium">More Ride (+) / More Drop (-)</span>
               <span id="labIvbVal" class="font-mono-num font-bold text-sky-400">+0.0 in</span>
@@ -1124,7 +1155,7 @@
           </div>
 
           <!-- Slider 4: Horizontal Break -->
-          <div class="glass-card-subtle p-3 rounded-xl">
+          <div class="glass-card-subtle p-3 rounded-md">
             <div class="flex justify-between text-xs mb-1">
               <span id="sliderLabelHb" class="text-slate-300 font-medium">Arm-Side Run (+) / Glove Sweep (-)</span>
               <span id="labHbVal" class="font-mono-num font-bold text-sky-400">+0.0 in</span>
@@ -1133,7 +1164,7 @@
           </div>
 
           <!-- Slider 5: Raise / Lower Arm Slot -->
-          <div class="glass-card-subtle p-3 rounded-xl">
+          <div class="glass-card-subtle p-3 rounded-md">
             <div class="flex justify-between text-xs mb-1">
               <span id="sliderLabelRelH" class="text-slate-300 font-medium">Raise / Lower Arm Slot</span>
               <span id="labRelHVal" class="font-mono-num font-bold text-sky-400">+0.0 in</span>
@@ -1142,7 +1173,7 @@
           </div>
 
           <!-- Slider 6: Extension -->
-          <div class="glass-card-subtle p-3 rounded-xl">
+          <div class="glass-card-subtle p-3 rounded-md">
             <div class="flex justify-between text-xs mb-1">
               <span id="sliderLabelExt" class="text-slate-300 font-medium">Stride Extension Toward Plate</span>
               <span id="labExtVal" class="font-mono-num font-bold text-sky-400">+0.0 in</span>
@@ -1233,7 +1264,7 @@
 
       <!-- 3D WebGL Viewport Container + Pairwise Telemetry -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
-        <div id="webglCanvasWrapper" class="lg:col-span-8 relative h-96 sm:h-[450px] rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
+        <div id="webglCanvasWrapper" class="lg:col-span-8 relative h-96 sm:h-[450px] rounded-md overflow-hidden bg-slate-950 border border-slate-800">
           <div id="webglCanvasContainer" class="w-full h-full cursor-grab active:cursor-grabbing" style="touch-action: none;"></div>
 
           <!-- Overlay Legend inside 3D Viewport -->
@@ -1265,7 +1296,7 @@
             <!-- Dynamically populated pairwise tunneling cards -->
           </div>
 
-          <div class="rounded-xl bg-slate-900/90 border border-slate-800 p-3 text-xs">
+          <div class="rounded-md bg-slate-900/90 border border-slate-800 p-3 text-xs">
             <div id="platoonBoxTitle" class="font-bold text-sky-300 uppercase tracking-wider text-[11px] mb-1">How Fastball Velocity Sets Up Offspeed</div>
             <p id="platoonDiagnosisText" class="text-slate-300 text-xs leading-relaxed"></p>
           </div>
@@ -1290,7 +1321,7 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4 items-stretch">
         <!-- 2D IVB vs HB Movement Canvas -->
-        <div class="lg:col-span-7 glass-card-subtle rounded-xl p-3 flex flex-col">
+        <div class="lg:col-span-7 glass-card-subtle rounded-md p-3 flex flex-col">
           <div class="flex items-center justify-between text-xs mb-2 px-1">
             <span id="movementChartTopTitle" class="font-semibold text-slate-200">Vertical Ride/Drop vs. Horizontal Run/Sweep (Inches)</span>
             <span class="font-mono-num text-[11px] text-slate-400">Pitcher's View (+Right = Arm-Side Run)</span>
@@ -1303,7 +1334,7 @@
         </div>
 
         <!-- 12-Hour Spin-Tilt Clock & Late Seam Movement -->
-        <div class="lg:col-span-5 glass-card-subtle rounded-xl p-3 flex flex-col justify-between">
+        <div class="lg:col-span-5 glass-card-subtle rounded-md p-3 flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between text-xs mb-2 px-1">
               <span id="spinClockTitleLabel" class="font-semibold text-slate-200">12-Hour Spin Direction &amp; Arm Slot Angle</span>
@@ -1339,7 +1370,7 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4">
         <!-- Grade Range / Forest Plot Canvas -->
-        <div class="lg:col-span-5 glass-card-subtle rounded-xl p-3 flex flex-col">
+        <div class="lg:col-span-5 glass-card-subtle rounded-md p-3 flex flex-col">
           <div class="flex items-center justify-between text-xs mb-2 px-1">
             <span id="forestPlotTopTitle" class="font-semibold text-slate-200">College Stuff+ Grade &amp; Likely Range by Pitch</span>
             <span id="forestPlotRightNote" class="text-[11px] font-mono-num text-slate-400">100 = College D1 Avg</span>
@@ -1351,7 +1382,7 @@
 
         <!-- Hitter Splits Table & Coaching Priorities -->
         <div class="lg:col-span-7 flex flex-col justify-between space-y-4">
-          <div class="glass-card-subtle rounded-xl p-3.5 overflow-x-auto">
+          <div class="glass-card-subtle rounded-md p-3.5 overflow-x-auto">
             <div id="cascadeTableTopTitle" class="text-[13px] font-semibold text-slate-100 mb-2">Pitch Effectiveness vs. Right-Handed &amp; Left-Handed College Hitters</div>
             <div id="playerPitchCardsContainer" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
             <div id="cascadeTableWrapper" class="overflow-x-auto">
@@ -1372,7 +1403,7 @@
             </div>
           </div>
 
-          <div class="rounded-xl bg-slate-900/90 border border-slate-800 p-4">
+          <div class="rounded-md bg-slate-900/90 border border-slate-800 p-4">
             <div class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2">Top 3 Coaching &amp; Development Gameplan Priorities</div>
             <ol id="devPrioritiesList" class="list-decimal list-inside space-y-1.5 text-xs text-slate-200 leading-relaxed"></ol>
           </div>
@@ -1380,31 +1411,38 @@
       </div>
     </section>
 
+    <!-- Progressive Disclosure Toggle Button -->
+    <div id="progressiveDisclosureBar" class="no-print pt-1">
+      <button id="progressiveDisclosureBtn" type="button" aria-expanded="false" class="touch-target w-full rounded-md bg-[#151921] hover:bg-[#1e2530] border border-[#262c36] px-4 py-3 text-[13px] font-semibold text-slate-100 transition flex items-center justify-center gap-2">
+        Expand Full Report
+      </button>
+    </div>
+
   </main>
 
   <!-- Fixed Mobile Bottom Navigation Bar (< 768px) -->
   <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#10141b] border-t border-[#262c36] px-1.5 pt-1.5 pb-[calc(0.35rem+env(safe-area-inset-bottom))] no-print">
     <div class="grid grid-cols-5 gap-1">
-      <button type="button" data-tier-tab="tier1" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-xl py-1.5 px-1 text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40 transition">
+      <button type="button" data-tier-tab="tier1" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-md py-1.5 px-1 text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40 transition">
         <span>Scout Card</span>
       </button>
-      <button type="button" data-tier-tab="tier2" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-xl py-1.5 px-1 text-[10px] font-semibold text-slate-400 hover:text-slate-200 transition">
+      <button type="button" data-tier-tab="tier2" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-md py-1.5 px-1 text-[10px] font-semibold text-slate-400 hover:text-slate-200 transition">
         <span>3D Tunnel</span>
       </button>
-      <button type="button" data-tier-tab="tier3" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-xl py-1.5 px-1 text-[10px] font-semibold text-slate-400 hover:text-slate-200 transition">
+      <button type="button" data-tier-tab="tier3" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-md py-1.5 px-1 text-[10px] font-semibold text-slate-400 hover:text-slate-200 transition">
         <span>Movement</span>
       </button>
-      <button type="button" data-tier-tab="tier4" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-xl py-1.5 px-1 text-[10px] font-semibold text-slate-400 hover:text-slate-200 transition">
+      <button type="button" data-tier-tab="tier4" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-md py-1.5 px-1 text-[10px] font-semibold text-slate-400 hover:text-slate-200 transition">
         <span>Splits</span>
       </button>
-      <button type="button" data-tier-tab="pitchlab" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-xl py-1.5 px-1 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-500/20 transition">
+      <button type="button" data-tier-tab="pitchlab" class="mobile-nav-btn touch-target flex flex-col items-center justify-center rounded-md py-1.5 px-1 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-500/20 transition">
         <span>Pitch Lab</span>
       </button>
     </div>
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.14 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.16 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -2286,10 +2324,10 @@
       return state;
     }
 
-    // Application State (Default viewMode = 'scout' for plain-English Baseball/Scout View)
+    // Application State (Default viewMode = 'player' / '30sec' for Guest & Player/Parent/HS Coach)
     const appState = {
-      viewMode: 'scout', // 'player' | 'scout' | 'rnd'
-      timeDepth: '2min', // '30sec' | '2min' | 'deep'
+      viewMode: 'player', // 'player' | 'scout' | 'rnd'
+      timeDepth: '30sec', // '30sec' | '2min' | 'deep'
       xgbModelArtifact: null,
       xgbEngineLoaded: false,
       lastInferenceMs: 0.0,
@@ -2397,7 +2435,8 @@
       const dy = -yStart / N_STEPS;
 
       const throwsSign = handedness === 'L' ? -1.0 : 1.0;
-      const xStart = -throwsSign * pitch.relSide;
+      const absRelSide = Math.abs(Number(pitch.relSide) || 1.85);
+      const xStart = -throwsSign * absRelSide;
       const zStart = pitch.relHeight;
 
       const xTarget = (pitch.plateSide !== undefined ? pitch.plateSide : 0.0) + throwsSign * (pitch.hb / 12.0) * 0.52;
@@ -3325,10 +3364,18 @@
         pitcherMeshGroup.remove(ch);
       }
 
-      const throwsSign = throwsHand === 'L' ? -1.0 : 1.0;
-      const handX = -throwsSign * (Number(relSide) || 1.85);
-      const handY = Number(relHeight) || 5.85;
-      const handZ = Math.max(48.0, 60.5 - (Number(ext) || 6.10));
+      const rawRelSideNum = Number(relSide);
+      const explicitHand = String(throwsHand || '').trim().toUpperCase();
+      const effectiveThrows = (explicitHand === 'L' || explicitHand === 'R')
+        ? explicitHand
+        : ((Number.isFinite(rawRelSideNum) && rawRelSideNum < 0) ? 'L' : 'R');
+      const throwsSign = effectiveThrows === 'L' ? -1.0 : 1.0;
+      // Catcher view (+Z looking toward mound): -X = 1st-base side (RHP), +X = 3rd-base side (LHP)
+      const absRelSide = (Number.isFinite(rawRelSideNum) && Math.abs(rawRelSideNum) > 0.05) ? Math.abs(rawRelSideNum) : 1.85;
+      const handX = -throwsSign * absRelSide;
+      const handY = (Number.isFinite(Number(relHeight)) && Number(relHeight) > 2.0) ? Number(relHeight) : 5.85;
+      const extVal = (Number.isFinite(Number(ext)) && Number(ext) > 0.5) ? Number(ext) : 6.00;
+      const handZ = Math.max(48.0, 60.5 - extVal);
 
       const moundY = 0.83;
       const rubberZ = 60.5;
@@ -3381,15 +3428,15 @@
         pitcherMeshGroup.add(line);
       }
 
-      // Stride-release biomechanics coordinates (oriented toward home plate at z = 0)
-      const strideZ = Math.min(rubberZ - 2.6, handZ + 0.85);
-      const hipPos = [handX * 0.22, moundY + 2.55 * scale, strideZ + 1.15];
-      const chestPos = [handX * 0.34, moundY + 4.05 * scale, strideZ + 0.35];
-      const headPos = [handX * 0.32, moundY + 4.92 * scale, strideZ + 0.10];
-      const throwShoulder = [handX * 0.52 - throwsSign * 0.32, Math.min(handY - 0.25, moundY + 4.25 * scale), strideZ + 0.25];
-      const gloveShoulder = [handX * 0.16 + throwsSign * 0.55, moundY + 4.00 * scale, strideZ + 0.45];
+      // Stride-release biomechanics coordinates (pivot foot at rubberZ=60.5, stride foot at z=60.5-ext)
+      const strideZ = Math.max(48.0, Math.min(rubberZ - 2.6, handZ));
+      const hipPos = [handX * 0.32, moundY + 2.55 * scale, strideZ + 1.35];
+      const chestPos = [handX * 0.48, moundY + 4.05 * scale, strideZ + 0.45];
+      const headPos = [handX * 0.44, moundY + 4.92 * scale, strideZ + 0.20];
+      const throwShoulder = [handX * 0.58 - throwsSign * 0.28, Math.min(handY - 0.22, moundY + 4.22 * scale), strideZ + 0.30];
+      const gloveShoulder = [handX * 0.22 + throwsSign * 0.58, moundY + 4.00 * scale, strideZ + 0.50];
       const backFoot = [-throwsSign * 0.35, moundY, rubberZ];
-      const leadFoot = [handX * 0.18 + throwsSign * 0.25, moundY - 0.18, strideZ];
+      const leadFoot = [handX * 0.16 + throwsSign * 0.26, moundY - 0.18, strideZ];
       const elbowPos = [
         (throwShoulder[0] + handX) * 0.5 - throwsSign * 0.12,
         (throwShoulder[1] + handY) * 0.5 + 0.12,
@@ -4968,20 +5015,14 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const sec4 = document.getElementById('section-tier4');
       const secLab = document.getElementById('section-pitchlab');
       const progCard = document.getElementById('athleteProgressionCard');
-      const hintEl = document.getElementById('timeDepthHint');
-
-      document.querySelectorAll('.time-depth-btn').forEach((btn) => {
-        const isActive = btn.getAttribute('data-time-depth') === depth;
-        btn.className = isActive
-          ? 'time-depth-btn touch-target px-3 py-1.5 rounded text-xs font-semibold bg-[#3b82f6] text-white transition whitespace-nowrap'
-          : 'time-depth-btn touch-target px-3 py-1.5 rounded text-xs font-semibold text-slate-300 hover:text-white transition whitespace-nowrap';
-      });
-
-      if (hintEl) {
-        hintEl.textContent = depth === '30sec'
-          ? '3-1-1 Quick Snapshot'
-          : (depth === '2min' ? 'Scout Card, Movement & Splits' : 'All Sections + 3D Tunnel & Pitch Lab');
+      const discBtn = document.getElementById('progressiveDisclosureBtn');
+      if (discBtn) {
+        const isDeep = depth === 'deep';
+        discBtn.textContent = isDeep ? 'Collapse to Summary' : 'Expand Full Report';
+        discBtn.setAttribute('aria-expanded', isDeep ? 'true' : 'false');
       }
+
+
 
       const mvContainer = document.getElementById('movementCanvasContainer');
       const host311 = document.getElementById('hero311MovementHost');
@@ -5034,7 +5075,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         applyTimeDepthVisibility();
       }
       if (!opts.silent) {
-        const lbl = valid === '30sec' ? '30 Sec (3-1-1 Snapshot)' : (valid === '2min' ? '2-Min Breakdown' : 'Full Deep Dive');
+        const lbl = valid === '30sec' ? '30 Sec' : (valid === '2min' ? '2 Min' : 'Full Deep Dive');
         showToast(`Depth: ${lbl}`);
       }
     }
@@ -5064,8 +5105,16 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
     function maybeApplyRoleDefaultViewMode(roleStr) {
       if (getSavedManualViewMode()) return;
       const normRole = String(roleStr || '').trim().toLowerCase();
-      if ((normRole === 'player' || normRole === 'parent' || normRole === 'hs coach') && appState.viewMode !== 'player') {
-        setViewMode('player', { persist: false, silent: true });
+      let targetMode = null;
+      if (normRole === 'player' || normRole === 'parent' || normRole === 'hs coach') {
+        targetMode = 'player';
+      } else if (normRole === 'college coach' || normRole === 'pro scout') {
+        targetMode = 'scout';
+      } else if (normRole.includes('r&d') || normRole.includes('quant') || normRole.includes('analyst')) {
+        targetMode = 'rnd';
+      }
+      if (targetMode && appState.viewMode !== targetMode) {
+        setViewMode(targetMode, { persist: false, silent: true });
       }
     }
 
@@ -5189,7 +5238,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.14 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.16 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -5465,7 +5514,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           : `<span class="text-xs font-mono-num text-slate-400">90% CI [${p.ci90[0].toFixed(0)}, ${p.ci90[1].toFixed(0)}] • w=${p.w.toFixed(2)}</span>`;
 
         return `
-        <div class="rounded-xl bg-slate-900/90 border ${p.hasActiveLabDelta ? 'border-indigo-400/70' : 'border-slate-800'} p-3.5 flex flex-col justify-between space-y-2">
+        <div class="rounded-md bg-slate-900/90 border ${p.hasActiveLabDelta ? 'border-indigo-400/70' : 'border-slate-800'} p-3.5 flex flex-col justify-between space-y-2">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="w-3 h-3 rounded-full" style="background:${p.color}"></span>
@@ -5589,7 +5638,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           const cueText = isPlayer ? (qw.playerCue || qw.scoutCue) : (mode === 'scout' ? qw.scoutCue : qw.rndCue);
           const gainPrefix = qw.arsenalGain >= 0 ? '+' : '';
           return `
-            <div class="rounded-xl bg-slate-950/85 border border-slate-800 p-3.5 flex flex-col justify-between gap-2.5">
+            <div class="rounded-md bg-slate-950/85 border border-slate-800 p-3.5 flex flex-col justify-between gap-2.5">
               <div class="space-y-1.5">
                 <div class="flex items-start justify-between gap-2">
                   <div>
@@ -5722,7 +5771,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       document.getElementById('tunnelPairCardsContainer').innerHTML = simEval.pairwise.map((pw) => {
         const marginPct = Math.min(100, Math.max(10, ((pw.secReactionMarginMs - 115) / 95) * 100));
         return `
-        <div class="rounded-xl bg-slate-900/90 border border-slate-800 p-3 text-xs space-y-2">
+        <div class="rounded-md bg-slate-900/90 border border-slate-800 p-3 text-xs space-y-2">
           <div class="flex items-center justify-between">
             <span class="font-bold text-white">${pw.primary} + ${pw.secondary} Tunnel Pair</span>
             <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-mono-num font-bold">
@@ -5883,7 +5932,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           ];
       document.getElementById('devPrioritiesList').innerHTML = devItems.map((item) => `<li>${item}</li>`).join('');
 
-      // Populate 3-1-1 Hero Card (30 Sec Snapshot)
+      // Populate 30 Sec Hero Card
       const h311Name = document.getElementById('hero311PitcherName');
       const h311Meta = document.getElementById('hero311Meta');
       const h311Nums = document.getElementById('hero311NumbersGrid');
@@ -5983,8 +6032,25 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       applyTimeDepthVisibility();
 
-      // Update 3D WebGL & 2D Canvases
-      update3DPitcherSilhouette(profile.throws, fb.relHeight, fb.relSide, fb.ext, profile.pitcherHeightIn);
+      // Update 3D WebGL & 2D Canvases using session-averaged TrackMan release point (x0, z0, ext)
+      let totW = 0, sumSide = 0, sumHeight = 0, sumExt = 0;
+      (simEval.gradedPitches || []).forEach((gp) => {
+        const w = Math.max(1, Number(gp.count) || 1);
+        const rawSide = Number(gp.relSide);
+        const rawH = Number(gp.relHeight);
+        const rawE = (Number.isFinite(Number(gp.ext)) && Number(gp.ext) > 0.5) ? Number(gp.ext) : 6.0;
+        if (Number.isFinite(rawSide)) sumSide += rawSide * w;
+        if (Number.isFinite(rawH)) sumHeight += rawH * w;
+        sumExt += rawE * w;
+        totW += w;
+      });
+      const meanRelSide = totW > 0 ? (sumSide / totW) : fb.relSide;
+      const meanRelHeight = totW > 0 ? (sumHeight / totW) : fb.relHeight;
+      const meanExt = totW > 0 ? (sumExt / totW) : (Number.isFinite(Number(fb.ext)) ? Number(fb.ext) : 6.0);
+      const sessionThrows = (profile.throws === 'L' || profile.throws === 'R')
+        ? profile.throws
+        : (meanRelSide < 0 ? 'L' : 'R');
+      update3DPitcherSilhouette(sessionThrows, meanRelHeight, meanRelSide, meanExt, profile.pitcherHeightIn);
       rebuild3DTrajectories(presentBaselineEval, simEval);
       drawMovementMatrix(presentBaselineEval, simEval);
       drawSpinClock(simEval);
@@ -7194,11 +7260,27 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       }
       appState.timeDepth = defaultTimeDepthForViewMode(appState.viewMode);
 
-      document.querySelectorAll('.time-depth-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          setTimeDepth(btn.getAttribute('data-time-depth'));
+      const discBtn = document.getElementById('progressiveDisclosureBtn');
+      if (discBtn) {
+        discBtn.addEventListener('click', () => {
+          if (appState.timeDepth !== 'deep') {
+            const was30 = appState.timeDepth === '30sec';
+            appState.activeTierTab = 'all';
+            setTimeDepth('deep');
+            if (was30) {
+              const sec1 = document.getElementById('section-tier1');
+              if (sec1 && typeof sec1.scrollIntoView === 'function') {
+                sec1.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }
+          } else {
+            const targetSummary = appState.viewMode === 'player' ? '30sec' : '2min';
+            appState.activeTierTab = 'all';
+            setTimeDepth(targetSummary);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
         });
-      });
+      }
       const see2MinBtn = document.getElementById('see2MinBreakdownBtn');
       if (see2MinBtn) {
         see2MinBtn.addEventListener('click', () => {
@@ -7670,6 +7752,107 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             if (indicator) indicator.classList.add('hidden');
             renderAll();
             showToast('Returned to Interactive 3D View');
+          }
+        });
+      }
+
+      const savePdfBtn = document.getElementById('savePdfBtn');
+      if (savePdfBtn) {
+        savePdfBtn.addEventListener('click', async () => {
+          const profile = PITCHER_PROFILES[appState.currentPitcherId] || {};
+          const safeName = String(profile.name || 'Prospect').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
+          const filename = `${safeName}_EAE_Scout_Sheet.pdf`;
+          const wasDossier = appState.dossierPreview;
+          if (typeof window.html2pdf !== 'function') {
+            showToast('PDF generator offline — opening 8.5×11 Print Dialog');
+            if (!wasDossier && exportBtn) exportBtn.click();
+            else try { window.print(); } catch (e) {}
+            return;
+          }
+          showToast(`Generating ${filename}...`);
+          try {
+            const pdfRoot = document.createElement('div');
+            pdfRoot.style.width = '7.7in';
+            pdfRoot.style.maxWidth = '7.7in';
+            pdfRoot.style.padding = '0';
+            pdfRoot.style.margin = '0 auto';
+            pdfRoot.style.background = '#ffffff';
+            pdfRoot.style.color = '#0f172a';
+            pdfRoot.style.fontFamily = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
+            pdfRoot.style.fontSize = '9.5pt';
+
+            const styleClone = document.createElement('style');
+            styleClone.textContent = `
+              .pdf-sheet * { color: #0f172a !important; box-shadow: none !important; }
+              .pdf-sheet .glass-card, .pdf-sheet .glass-card-subtle, .pdf-sheet .tier-section {
+                background: #ffffff !important; border: 1px solid #cbd5e1 !important;
+                border-radius: 6px !important; padding: 8px 10px !important; margin-bottom: 6px !important;
+                break-inside: avoid; page-break-inside: avoid;
+              }
+              .pdf-sheet #printDossierHeader {
+                display: flex !important; justify-content: space-between; align-items: center;
+                border-bottom: 2px solid #0f172a !important; padding-bottom: 6px !important; margin-bottom: 8px !important;
+              }
+              .pdf-sheet #cascadeTableWrapper { display: block !important; overflow: visible !important; }
+              .pdf-sheet #playerPitchCardsContainer, .pdf-sheet .no-print { display: none !important; }
+              .pdf-sheet table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+              .pdf-sheet th, .pdf-sheet td { font-size: 8pt !important; padding: 3px 4px !important; border-bottom: 1px solid #e2e8f0; }
+            `;
+            pdfRoot.className = 'pdf-sheet';
+            pdfRoot.appendChild(styleClone);
+
+            const idsToInclude = ['printDossierHeader', 'section-tier1', 'section-tier3', 'section-tier4'];
+            idsToInclude.forEach((secId) => {
+              const orig = document.getElementById(secId);
+              if (!orig) return;
+              const clone = orig.cloneNode(true);
+              clone.classList.remove('hidden');
+              // Convert canvases inside orig into crisp PNG images inside clone
+              const origCanvases = orig.querySelectorAll('canvas');
+              const cloneCanvases = clone.querySelectorAll('canvas');
+              origCanvases.forEach((oc, idx) => {
+                const cc = cloneCanvases[idx];
+                if (!cc || !cc.parentNode) return;
+                try {
+                  const img = document.createElement('img');
+                  img.src = oc.toDataURL('image/png');
+                  img.style.width = '100%';
+                  img.style.maxHeight = '195px';
+                  img.style.objectFit = 'contain';
+                  img.style.background = '#0f172a';
+                  img.style.borderRadius = '6px';
+                  img.style.border = '1px solid #94a3b8';
+                  cc.parentNode.replaceChild(img, cc);
+                } catch (err) {}
+              });
+              pdfRoot.appendChild(clone);
+            });
+
+            const host = document.createElement('div');
+            host.style.position = 'fixed';
+            host.style.left = '-99999px';
+            host.style.top = '0';
+            host.style.width = '7.7in';
+            host.appendChild(pdfRoot);
+            document.body.appendChild(host);
+
+            await window.html2pdf()
+              .set({
+                margin: [0.4, 0.4, 0.4, 0.4],
+                filename,
+                image: { type: 'jpeg', quality: 0.96 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+              })
+              .from(pdfRoot)
+              .save();
+
+            document.body.removeChild(host);
+            showToast(`Saved ${filename}`);
+          } catch (err) {
+            showToast('PDF export failed — opening Print Dialog');
+            try { window.print(); } catch (e) {}
           }
         });
       }
