@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.27 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.28 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -65,7 +65,7 @@
     /* ===================================================================== */
     @page {
       size: letter portrait;
-      margin: 0.45in;
+      margin: 0.4in;
     }
     @media print {
       :root {
@@ -218,14 +218,14 @@
     }
 
     /* Dedicated JSPBC 1-Page Scout Card & Multi-Page Staff Packet Print Engine */
-    #jspbcPrintContainer {
+    #printReportRoot {
       display: none;
     }
     @media print {
-      body.jspbc-print-packet > *:not(#jspbcPrintContainer) {
+      .no-print-shell {
         display: none !important;
       }
-      body.jspbc-print-packet #jspbcPrintContainer {
+      #printReportRoot {
         display: block !important;
         width: 7.6in !important;
         max-width: 7.6in !important;
@@ -533,6 +533,7 @@
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-[#3b82f6] selection:text-white">
+  <div class="no-print-shell min-h-screen flex flex-col flex-1">
 
   <!-- Toast Notification -->
   <div id="toastBanner" class="fixed bottom-5 right-5 z-50 hidden items-center gap-2.5 px-4 py-2.5 rounded-md bg-[#1e2530] border border-[#3b82f6] text-white font-semibold text-xs shadow-md transition-all duration-200">
@@ -1262,11 +1263,17 @@
     <!-- ======================================================================= -->
     <section id="section-pitchlab" class="tier-section glass-card rounded-md p-4 sm:p-5 no-print">
       <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
-        <div>
-          <h2 class="text-lg sm:text-xl font-extrabold text-white mt-0.5">Interactive Pitching Coach "What-If" Simulator</h2>
+        <div class="flex items-center gap-2.5">
+          <h2 class="text-lg sm:text-xl font-extrabold text-white">Pitch-Design Sandbox ("What-If" Sliders)</h2>
+          <button id="toggleSandboxCollapseBtn" type="button" aria-expanded="true" class="touch-target px-2.5 py-1 rounded-md text-xs font-semibold bg-[#10141b] hover:bg-[#1e2530] text-slate-300 border border-[#262c36] transition">
+            Collapse
+          </button>
         </div>
         <!-- Quick Scenario Preset & Reset Buttons -->
         <div class="flex flex-wrap items-center gap-1.5">
+          <button id="applyQuickWinTargetBtn" type="button" class="touch-target px-2.5 py-1 rounded-md text-xs font-semibold bg-[#3b82f6] hover:bg-blue-500 text-white transition">
+            Apply Quick-Win Target
+          </button>
           <button type="button" data-preset="velo_boost" class="lab-preset-btn px-2.5 py-1 rounded-md text-xs font-medium bg-[#10141b] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] transition">
             +3.0 mph Offseason Velo
           </button>
@@ -1280,7 +1287,7 @@
             More Changeup Drop &amp; Fade
           </button>
           <button id="resetCurrentPitchBtn" type="button" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 transition">
-            Reset Current Pitch
+            Reset to Actual
           </button>
           <button id="resetLabBtn" type="button" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
             Reset Entire Arsenal
@@ -1288,6 +1295,7 @@
         </div>
       </div>
 
+      <div id="pitchSandboxBody">
       <!-- Active Multi-Pitch Modifications Status Strip -->
       <div class="mt-3 flex flex-wrap items-center justify-between gap-2 bg-slate-950/75 px-3.5 py-2 rounded-md border border-slate-800/90 text-xs">
         <div class="flex flex-wrap items-center gap-2">
@@ -1320,7 +1328,7 @@
               <span id="sliderLabelVelo" class="text-slate-300 font-medium">Add / Subtract Velocity</span>
               <span id="labVeloVal" class="font-mono-num font-bold text-sky-400">+0.0 mph</span>
             </div>
-            <input id="labVeloSlider" type="range" min="-4.0" max="8.0" step="0.5" value="0.0" class="w-full" />
+            <input id="labVeloSlider" type="range" min="-5.0" max="8.0" step="0.5" value="0.0" class="w-full" />
           </div>
 
           <!-- Slider 2: Spin Rate -->
@@ -1329,7 +1337,7 @@
               <span id="sliderLabelSpin" class="text-slate-300 font-medium">Add / Subtract Spin Rate</span>
               <span id="labSpinVal" class="font-mono-num font-bold text-sky-400">+0 rpm</span>
             </div>
-            <input id="labSpinSlider" type="range" min="-400" max="500" step="25" value="0" class="w-full" />
+            <input id="labSpinSlider" type="range" min="-500" max="500" step="25" value="0" class="w-full" />
           </div>
 
           <!-- Slider 3: Vertical Break -->
@@ -1338,7 +1346,7 @@
               <span id="sliderLabelIvb" class="text-slate-300 font-medium">More Ride (+) / More Drop (-)</span>
               <span id="labIvbVal" class="font-mono-num font-bold text-sky-400">+0.0 in</span>
             </div>
-            <input id="labIvbSlider" type="range" min="-7.0" max="7.0" step="0.5" value="0.0" class="w-full" />
+            <input id="labIvbSlider" type="range" min="-10.0" max="10.0" step="0.5" value="0.0" class="w-full" />
           </div>
 
           <!-- Slider 4: Horizontal Break -->
@@ -1347,7 +1355,7 @@
               <span id="sliderLabelHb" class="text-slate-300 font-medium">Arm-Side Run (+) / Glove Sweep (-)</span>
               <span id="labHbVal" class="font-mono-num font-bold text-sky-400">+0.0 in</span>
             </div>
-            <input id="labHbSlider" type="range" min="-7.0" max="7.0" step="0.5" value="0.0" class="w-full" />
+            <input id="labHbSlider" type="range" min="-10.0" max="10.0" step="0.5" value="0.0" class="w-full" />
           </div>
 
           <!-- Slider 5: Raise / Lower Arm Slot -->
@@ -1356,7 +1364,7 @@
               <span id="sliderLabelRelH" class="text-slate-300 font-medium">Raise / Lower Arm Slot</span>
               <span id="labRelHVal" class="font-mono-num font-bold text-sky-400">+0.0 in</span>
             </div>
-            <input id="labRelHSlider" type="range" min="-6.0" max="6.0" step="0.5" value="0.0" class="w-full" />
+            <input id="labRelHSlider" type="range" min="-6.0" max="6.0" step="1.2" value="0.0" class="w-full" />
           </div>
 
           <!-- Slider 6: Extension -->
@@ -1365,7 +1373,7 @@
               <span id="sliderLabelExt" class="text-slate-300 font-medium">Stride Extension Toward Plate</span>
               <span id="labExtVal" class="font-mono-num font-bold text-sky-400">+0.0 in</span>
             </div>
-            <input id="labExtSlider" type="range" min="-6.0" max="8.0" step="0.5" value="0.0" class="w-full" />
+            <input id="labExtSlider" type="range" min="-6.0" max="9.6" step="1.2" value="0.0" class="w-full" />
           </div>
         </div>
 
@@ -1394,6 +1402,12 @@
               </div>
             </div>
 
+            <div id="labComparisonStrip" class="grid grid-cols-2 gap-2 text-xs font-mono-num bg-slate-950/80 p-2.5 rounded-md border border-[#262c36] mb-2.5">
+              <div><span class="text-slate-400">Stuff+ Shift:</span> <strong id="labBeforeAfterStuff" class="text-white">--</strong></div>
+              <div><span class="text-slate-400">Grade Shift:</span> <strong id="labBeforeAfterGrade" class="text-emerald-300">--</strong></div>
+              <div><span class="text-slate-400">Simulated VAA:</span> <strong id="labSimVaaVal" class="text-sky-300">--</strong></div>
+              <div><span class="text-slate-400">Flight Time:</span> <strong id="labSimFlightMsVal" class="text-white">--</strong></div>
+            </div>
             <div id="labKinematicsSummary" class="text-xs font-mono-num text-slate-300 bg-slate-950/70 p-2.5 rounded-md border border-slate-800/80 mb-3">
               Velo: 83.0 mph | Break: +15.4" Ride, +13.0" Run | Hitter Window: 161ms
             </div>
@@ -1407,6 +1421,7 @@
           </div>
         </div>
       </div>
+      </div><!-- /#pitchSandboxBody -->
     </section>
 
     <!-- ======================================================================= -->
@@ -1451,8 +1466,16 @@
               </button>
             </div>
 
-            <!-- Pitch Isolation Toggles -->
-            <div id="tunnelPitchFilterBar" class="flex flex-wrap items-center gap-1.5"></div>
+            <!-- Pitch Isolation Toggles + Two-Pitch Tunnel Pair Selector -->
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div id="tunnelPitchFilterBar" class="flex flex-wrap items-center gap-1.5"></div>
+              <div class="flex items-center gap-1.5 text-xs font-mono-num bg-[#10141b] border border-[#262c36] rounded-md px-2.5 py-1">
+                <span class="text-slate-400">Tunnel Pair:</span>
+                <select id="tunnelPitchASelect" class="bg-transparent text-sky-300 font-bold focus:outline-none"></select>
+                <span class="text-slate-500">vs.</span>
+                <select id="tunnelPitchBSelect" class="bg-transparent text-emerald-300 font-bold focus:outline-none"></select>
+              </div>
+            </div>
           </div>
 
           <!-- Order 3 on Mobile (below canvas), Order 2 on Desktop (above canvas): Flight Scrub + Speed + Play/Pause -->
@@ -1475,19 +1498,29 @@
             <div id="webglCanvasContainer" class="w-full h-full cursor-grab active:cursor-grabbing" style="touch-action: none;"></div>
           </div>
 
-          <!-- Order 4: 2-Pitch Isolation Tunnel Metric Strip (shown when exactly 2 pitches isolated) -->
-          <div id="tunnelPairMetricStrip" class="order-4 hidden rounded-md bg-[#10141b] border border-[#262c36] px-3 py-2.5 grid grid-cols-3 gap-2 text-center font-mono-num">
-            <div>
-              <div class="text-[11px] text-slate-400">23.8 ft Decision Gap</div>
-              <div id="tunnelIsoGapVal" class="text-sm font-bold text-white">--</div>
+          <!-- Order 4: Decision-Point Two-Pitch Tunnel & Deception Scorecard -->
+          <div id="tunnelPairMetricStrip" class="order-4 rounded-md bg-[#10141b] border border-[#262c36] p-3 space-y-2 font-mono-num">
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-[#262c36]">
+              <span class="text-xs font-sans font-semibold text-slate-100">Tunnel &amp; Deception Scorecard</span>
+              <span id="tunnelScorecardCue" class="text-[11px] font-sans text-sky-300">Tight Tunnel with late divergence</span>
             </div>
-            <div>
-              <div class="text-[11px] text-slate-400">Late Break Sep</div>
-              <div id="tunnelIsoBreakVal" class="text-sm font-bold text-sky-300">--</div>
-            </div>
-            <div>
-              <div class="text-[11px] text-slate-400">Tunnel Grade</div>
-              <div id="tunnelIsoGradeVal" class="text-sm font-bold text-emerald-300">--</div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+              <div class="rounded bg-[#151921] border border-[#262c36] p-2">
+                <div class="text-[10px] text-slate-400">Release Sep</div>
+                <div id="tunnelIsoRelVal" class="text-sm font-bold text-white">--</div>
+              </div>
+              <div class="rounded bg-[#151921] border border-[#262c36] p-2">
+                <div class="text-[10px] text-slate-400">23.8 ft Tunnel Sep</div>
+                <div id="tunnelIsoGapVal" class="text-sm font-bold text-white">--</div>
+              </div>
+              <div class="rounded bg-[#151921] border border-[#262c36] p-2">
+                <div class="text-[10px] text-slate-400">Plate Sep</div>
+                <div id="tunnelIsoBreakVal" class="text-sm font-bold text-sky-300">--</div>
+              </div>
+              <div class="rounded bg-[#151921] border border-[#262c36] p-2">
+                <div class="text-[10px] text-slate-400">Break:Tunnel Ratio</div>
+                <div id="tunnelIsoGradeVal" class="text-sm font-bold text-emerald-300">--</div>
+              </div>
             </div>
           </div>
 
@@ -1703,7 +1736,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.27 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.28 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -6008,7 +6041,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.27 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.28 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -6527,6 +6560,19 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       document.getElementById('labSimArsenalDelta').textContent = `${arsenalDelta >= 0 ? '+' : ''}${arsenalDelta.toFixed(1)}`;
       const vaaTagLabel = simTarget.vaaHeightAdjusted ? 'Height-Adj VAA' : 'VAA vs. Slot';
       const vaaDeltaStr = `${simTarget.vaaVsExpected >= 0 ? '+' : ''}${simTarget.vaaVsExpected.toFixed(1)}°`;
+      const baStuffEl = document.getElementById('labBeforeAfterStuff');
+      const baGradeEl = document.getElementById('labBeforeAfterGrade');
+      const simVaaEl = document.getElementById('labSimVaaVal');
+      const simFlightEl = document.getElementById('labSimFlightMsVal');
+      if (baStuffEl) baStuffEl.textContent = `${baseTarget.shrunkStuff.toFixed(1)} → ${simTarget.shrunkStuff.toFixed(1)}`;
+      if (baGradeEl) baGradeEl.textContent = `${baseTarget.scout2080.short} → ${simTarget.scout2080.short}`;
+      if (simVaaEl) simVaaEl.textContent = `${simTarget.vaa.toFixed(1)}°`;
+      if (simFlightEl) {
+        const flightMs = (simTarget.trajPoints && simTarget.trajPoints.length)
+          ? (simTarget.trajPoints[simTarget.trajPoints.length - 1].tSec * 1000.0)
+          : ((60.5 - simTarget.ext) / (simTarget.velo * 1.467) * 1000.0);
+        simFlightEl.textContent = `${flightMs.toFixed(0)} ms`;
+      }
       document.getElementById('labKinematicsSummary').textContent = isScout
         ? `Speed: ${simTarget.velo.toFixed(1)} mph (Plate ${simTarget.plateSpeedMph.toFixed(1)} mph) | Break: ${simTarget.ivb >= 0 ? '+' : ''}${simTarget.ivb.toFixed(1)}" V, ${simTarget.hb >= 0 ? '+' : ''}${simTarget.hb.toFixed(1)}" H | ${vaaTagLabel}: ${simTarget.vaaTier.label} (${vaaDeltaStr}) | Hitter Time: ${simTarget.reactionMarginMs.toFixed(0)}ms`
         : `4-Head XGB (${appState.lastInferenceMs.toFixed(2)}ms): P(Sw) ${(simTarget.pSwing * 100).toFixed(1)}% | P(Whiff|Sw) ${(simTarget.pWhiff * 100).toFixed(1)}% | ${vaaTagLabel}: ${simTarget.vaaTier.label} (${vaaDeltaStr}) | xwOBAcon ${simTarget.xwobacon.toFixed(3)} | xRV ${simTarget.gridXrv >= 0 ? '+' : ''}${simTarget.gridXrv.toFixed(4)}`;
@@ -6597,24 +6643,44 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           });
         });
       }
+      const selA = document.getElementById('tunnelPitchASelect');
+      const selB = document.getElementById('tunnelPitchBSelect');
+      if (selA && selB && simEval.gradedPitches.length >= 2) {
+        const opts = simEval.gradedPitches.map((p) => `<option value="${p.code}">${p.code}</option>`).join('');
+        const prevA = selA.value;
+        const prevB = selB.value;
+        selA.innerHTML = opts;
+        selB.innerHTML = opts;
+        selA.value = availableCodes.includes(prevA) ? prevA : simEval.gradedPitches[0].code;
+        const defaultB = simEval.gradedPitches.find((p) => p.code !== selA.value)?.code || simEval.gradedPitches[1].code;
+        selB.value = (availableCodes.includes(prevB) && prevB !== selA.value) ? prevB : defaultB;
+      }
       const isoStrip = document.getElementById('tunnelPairMetricStrip');
-      if (isoStrip) {
-        if (appState.tunnelSelectedPitches.length === 2) {
-          const pA = simEval.gradedPitches.find((p) => p.code === appState.tunnelSelectedPitches[0]);
-          const pB = simEval.gradedPitches.find((p) => p.code === appState.tunnelSelectedPitches[1]);
-          if (pA && pB && pA.commitPos && pB.commitPos) {
-            const decGapIn = Math.hypot(pA.commitPos.x - pB.commitPos.x, pA.commitPos.z - pB.commitPos.z) * 12.0;
-            const lateBreakIn = Math.hypot(pA.ivb - pB.ivb, pA.hb - pB.hb);
-            const tGrade = decGapIn <= 1.5 ? 'Plus-Plus' : (decGapIn <= 2.5 ? 'Plus' : (decGapIn <= 3.8 ? 'Average' : 'Early Read'));
-            document.getElementById('tunnelIsoGapVal').textContent = `${decGapIn.toFixed(1)}"`;
-            document.getElementById('tunnelIsoBreakVal').textContent = `${lateBreakIn.toFixed(1)}"`;
-            document.getElementById('tunnelIsoGradeVal').textContent = tGrade;
-            isoStrip.classList.remove('hidden');
-          } else {
-            isoStrip.classList.add('hidden');
-          }
-        } else {
-          isoStrip.classList.add('hidden');
+      if (isoStrip && simEval.gradedPitches.length >= 2) {
+        const codeA = (appState.tunnelSelectedPitches.length === 2 ? appState.tunnelSelectedPitches[0] : (selA && selA.value)) || simEval.gradedPitches[0].code;
+        const codeB = (appState.tunnelSelectedPitches.length === 2 ? appState.tunnelSelectedPitches[1] : (selB && selB.value)) || simEval.gradedPitches[1].code;
+        const pA = simEval.gradedPitches.find((p) => p.code === codeA) || simEval.gradedPitches[0];
+        const pB = simEval.gradedPitches.find((p) => p.code === codeB) || simEval.gradedPitches[1];
+        if (pA && pB && pA.trajPoints && pB.trajPoints && pA.commitPos && pB.commitPos) {
+          const rA = pA.trajPoints[0];
+          const rB = pB.trajPoints[0];
+          const eA = pA.trajPoints[pA.trajPoints.length - 1];
+          const eB = pB.trajPoints[pB.trajPoints.length - 1];
+          const relSepIn = Math.hypot(rA.x - rB.x, rA.y - rB.y, rA.z - rB.z) * 12.0;
+          const decGapIn = Math.hypot(pA.commitPos.x - pB.commitPos.x, pA.commitPos.z - pB.commitPos.z) * 12.0;
+          const plateSepIn = Math.hypot(eA.x - eB.x, eA.z - eB.z) * 12.0;
+          const ratio = decGapIn > 0.05 ? (plateSepIn / decGapIn) : 0;
+          const tGrade = decGapIn <= 2.5 ? 'Plus Tunnel' : (decGapIn <= 4.0 ? 'Average' : 'Early Read');
+          const cue = decGapIn <= 2.5
+            ? `Tight Tunnel (${decGapIn.toFixed(1)}" at 23.8 ft) with ${plateSepIn.toFixed(1)}" late divergence`
+            : `Early visual separation (${decGapIn.toFixed(1)}" at 23.8 ft) — match release slot`;
+          document.getElementById('tunnelIsoRelVal').textContent = `${relSepIn.toFixed(1)}"`;
+          document.getElementById('tunnelIsoGapVal').textContent = `${decGapIn.toFixed(1)}"`;
+          document.getElementById('tunnelIsoBreakVal').textContent = `${plateSepIn.toFixed(1)}"`;
+          document.getElementById('tunnelIsoGradeVal').textContent = `${ratio.toFixed(1)}× • ${tGrade}`;
+          const cueEl = document.getElementById('tunnelScorecardCue');
+          if (cueEl) cueEl.textContent = cue;
+          isoStrip.classList.remove('hidden');
         }
       }
 
@@ -7201,8 +7267,10 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       document.getElementById('labSpinVal').textContent = `${d.spin >= 0 ? '+' : ''}${d.spin} rpm`;
       document.getElementById('labIvbVal').textContent = `${d.ivb >= 0 ? '+' : ''}${d.ivb.toFixed(1)} in`;
       document.getElementById('labHbVal').textContent = `${d.hb >= 0 ? '+' : ''}${d.hb.toFixed(1)} in`;
-      document.getElementById('labRelHVal').textContent = `${d.relH >= 0 ? '+' : ''}${d.relH.toFixed(1)} in`;
-      document.getElementById('labExtVal').textContent = `${d.ext >= 0 ? '+' : ''}${d.ext.toFixed(1)} in`;
+      const relHFt = d.relH / 12.0;
+      const extFt = d.ext / 12.0;
+      document.getElementById('labRelHVal').textContent = `${relHFt >= 0 ? '+' : ''}${relHFt.toFixed(1)} ft`;
+      document.getElementById('labExtVal').textContent = `${extFt >= 0 ? '+' : ''}${extFt.toFixed(1)} ft`;
     }
 
     function showToast(msg) {
@@ -8975,13 +9043,16 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         `;
       }
 
-      function triggerJSPBCPrint(htmlContent, toastMsg) {
-        const container = document.getElementById('jspbcPrintContainer');
+      function triggerJSPBCPrint(htmlContent, toastMsg, pdfTitle) {
+        const container = document.getElementById('printReportRoot');
         if (!container) return;
+        const origTitle = document.title;
+        if (pdfTitle) document.title = pdfTitle;
         container.innerHTML = htmlContent;
         document.body.classList.add('jspbc-print-packet');
         showToast(toastMsg || "Choose 'Save as PDF' or select your printer");
         const cleanup = () => {
+          document.title = origTitle;
           document.body.classList.remove('jspbc-print-packet');
           container.innerHTML = '';
           window.removeEventListener('afterprint', cleanup);
@@ -9002,7 +9073,8 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           const projEv = evaluateFullPipeline(prof, appState.pacingMode, emptyLab, appState.coupledSlotArc, 'projected');
           const qWins = computeLowestHangingFruit(prof, presEv);
           const cardHtml = buildJSPBCPrintCardHTML(prof, presEv, projEv, qWins);
-          triggerJSPBCPrint(cardHtml, `Formatted 1-Page Scout Card PDF for ${prof.name}`);
+          const safeTitle = `${String(prof.name || 'Prospect').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '')}_JSPBC_Scout_Card`;
+          triggerJSPBCPrint(cardHtml, `Formatted 1-Page Scout Card PDF for ${prof.name}`, safeTitle);
         });
       }
 
@@ -9076,7 +9148,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             return buildJSPBCPrintCardHTML(prof, presEv, projEv, qWins);
           }).join('');
 
-          triggerJSPBCPrint(page1 + athletePages, `Formatted ${roster.length + 1}-Page Staff Bullpen Packet`);
+          triggerJSPBCPrint(page1 + athletePages, `Formatted ${roster.length + 1}-Page Staff Bullpen Packet`, `JSPBC_Staff_Bullpen_Packet_${new Date().toISOString().slice(0, 10)}`);
         });
       }
 
@@ -9247,6 +9319,47 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         });
       }
 
+      const sandboxCollapseBtn = document.getElementById('toggleSandboxCollapseBtn');
+      const sandboxBodyEl = document.getElementById('pitchSandboxBody');
+      if (sandboxCollapseBtn && sandboxBodyEl) {
+        sandboxCollapseBtn.addEventListener('click', () => {
+          const collapsed = sandboxBodyEl.classList.toggle('hidden');
+          sandboxCollapseBtn.textContent = collapsed ? 'Expand' : 'Collapse';
+          sandboxCollapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        });
+      }
+
+      const applyQwTargetBtn = document.getElementById('applyQuickWinTargetBtn');
+      if (applyQwTargetBtn) {
+        applyQwTargetBtn.addEventListener('click', () => {
+          const top1 = (appState.baselineCache.quickWins || [])[0];
+          if (!top1) {
+            showToast('No Quick-Win target available for this profile');
+            return;
+          }
+          appState.pitchLabState = JSON.parse(JSON.stringify(top1.labMap));
+          appState.labTargetIdx = top1.targetIdx;
+          appState.gradeMode = 'present';
+          const gmEl = document.getElementById('gradeModeSelect');
+          if (gmEl) gmEl.value = 'present';
+          syncSlidersToUI();
+          renderAll();
+          showToast(`Applied Quick-Win Target: ${top1.title}`);
+        });
+      }
+
+      const tSelA = document.getElementById('tunnelPitchASelect');
+      const tSelB = document.getElementById('tunnelPitchBSelect');
+      [tSelA, tSelB].forEach((sel) => {
+        if (!sel) return;
+        sel.addEventListener('change', () => {
+          if (tSelA && tSelB && tSelA.value && tSelB.value) {
+            appState.tunnelSelectedPitches = [tSelA.value, tSelB.value];
+            renderAll();
+          }
+        });
+      });
+
       const backBatchBtn = document.getElementById('backToBatchRosterBtn');
       if (backBatchBtn) {
         backBatchBtn.addEventListener('click', () => {
@@ -9381,33 +9494,10 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const exportBtn = document.getElementById('exportDossierBtn');
       if (exportBtn) {
         exportBtn.addEventListener('click', () => {
-          const prevDepth = appState.timeDepth;
-          const tier3Host = document.getElementById('tier3MovementHost');
-          const mvContainer = document.getElementById('movementCanvasContainer');
-          if (tier3Host && mvContainer && mvContainer.parentElement !== tier3Host) {
-            tier3Host.appendChild(mvContainer);
+          const scoutCardBtn = document.getElementById('exportScoutCardPdfBtn');
+          if (scoutCardBtn) {
+            scoutCardBtn.click();
           }
-          ['section-tier1', 'section-tier2', 'section-tier3', 'section-tier4'].forEach((id) => {
-            const sec = document.getElementById(id);
-            if (sec) sec.classList.remove('hidden');
-          });
-          const dateEl = document.getElementById('dossierReportDate');
-          if (dateEl) {
-            const now = new Date();
-            dateEl.textContent = `Report Date: ${now.toLocaleDateString('en-US')}`;
-          }
-          renderAll();
-          showToast("Choose 'Save as PDF' or select your printer");
-          const restoreAfterPrint = () => {
-            appState.timeDepth = prevDepth;
-            applyTimeDepthVisibility();
-            renderAll();
-            window.removeEventListener('afterprint', restoreAfterPrint);
-          };
-          window.addEventListener('afterprint', restoreAfterPrint);
-          setTimeout(() => {
-            try { window.print(); } catch (e) {}
-          }, 180);
         });
       }
 
@@ -9735,7 +9825,8 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
     </div>
   </div>
 
+  </div><!-- /.no-print-shell -->
   <!-- Dedicated Print Container for JSPBC Scout Card & Staff Bullpen Packet -->
-  <div id="jspbcPrintContainer" aria-hidden="true"></div>
+  <div id="printReportRoot" aria-hidden="true"></div>
 </body>
 </html>
