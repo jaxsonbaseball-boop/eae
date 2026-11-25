@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.24 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.25b — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -541,10 +541,10 @@
         <p class="text-xs text-slate-400 mb-3">
           Automatically reads <span class="font-mono-num text-slate-300">Pitcher, Throws, TaggedPitchType, RelSpeed, SpinRate, SpinAxis, RelHeight, RelSide, Extension, InducedVertBreak, HorzBreak</span>
         </p>
-        <input id="trackmanFileInput" type="file" accept=".csv,.json,.txt,.pdf" class="hidden" />
+        <input id="trackmanFileInput" type="file" accept=".csv,.json,.txt,.pdf" multiple class="hidden" />
         <div class="flex flex-wrap items-center justify-center gap-2">
           <button id="browseTrackmanFileBtn" type="button" class="px-3.5 py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
-            Select CSV / JSON / PDF File
+            Select CSV / JSON / PDF File(s)
           </button>
           <button id="loadSampleCsvBtn" type="button" class="px-3.5 py-1.5 rounded-md bg-[#1e2530] hover:bg-[#262f3d] text-slate-200 border border-[#333c4a] text-xs font-semibold transition">
             Load Sample Showcase Bullpen CSV
@@ -953,6 +953,44 @@
         <div class="text-[10px] text-slate-400">Created by Jaxson Smith Peterson Baseball Consulting</div>
       </div>
     </div>
+
+    <!-- Sticky Batch Roster Switcher Pill (visible when 2+ files imported) -->
+    <div id="backToBatchRosterBar" class="hidden sticky top-2 md:top-12 z-30 flex items-center justify-between gap-2 rounded-md bg-[#151921] border border-[#3b82f6] px-3.5 py-2 no-print">
+      <button id="backToBatchRosterBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
+        ← Back to Batch Roster (0 Pitchers)
+      </button>
+      <span id="batchRosterActiveHint" class="text-xs font-mono-num text-slate-300 truncate">Staff Roster Mode Active</span>
+    </div>
+
+    <!-- Batch Multi-PDF Roster Leaderboard Card -->
+    <section id="batchRosterCard" class="hidden glass-card rounded-md p-4 sm:p-5 space-y-3 no-print">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#262c36]">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold text-white">Staff Roster Leaderboard</h2>
+          <p id="batchRosterMeta" class="text-xs font-mono-num text-slate-400 mt-0.5">Ranked by Overall Arsenal+ (100 = College D1 Avg)</p>
+        </div>
+        <button id="closeBatchRosterBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-semibold transition">
+          Hide Leaderboard
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-[13px] font-mono-num">
+          <thead>
+            <tr class="border-b border-[#262c36] text-slate-400 text-[11px]">
+              <th class="py-2 pr-2">Rank</th>
+              <th class="py-2 px-2">Pitcher</th>
+              <th class="py-2 px-2">Throws</th>
+              <th class="py-2 px-2 text-right">Pitches</th>
+              <th class="py-2 px-2 text-right">Primary FB Velo</th>
+              <th class="py-2 px-2 text-right">Best Pitch (Stuff+)</th>
+              <th class="py-2 px-2 text-right text-sky-300">Arsenal+</th>
+              <th class="py-2 pl-2 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="batchRosterTableBody" class="divide-y divide-[#262c36]"></tbody>
+        </table>
+      </div>
+    </section>
 
     <!-- 30 SEC HERO CARD (3 NUMBERS, 1 PICTURE, 1 THING TO WORK ON) -->
     <section id="section-311" class="hidden glass-card rounded-md p-4 sm:p-5 space-y-4">
@@ -1529,7 +1567,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.24 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.25b • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -2438,6 +2476,8 @@
       tunnelSelectedPitches: [],
       cameraPreset: 'catcher',
       dossierPreview: false,
+      batchRoster: [],
+      batchRosterVisible: false,
       get labDeltas() {
         if (!this.pitchLabState[this.labTargetIdx]) {
           this.pitchLabState[this.labTargetIdx] = { velo: 0.0, spin: 0, ivb: 0.0, hb: 0.0, relH: 0.0, ext: 0.0 };
@@ -4651,6 +4691,7 @@
     // =========================================================================
     function normalizePDFTextLine(str) {
       return String(str || '')
+        .replace(/[\uE000-\uF8FF]/g, ' ')
         .replace(/[\u2212\u2012\u2013]/g, '-')
         .replace(/[\u00A0\u2007\u202F]/g, ' ');
     }
@@ -4959,18 +5000,33 @@
     }
 
     function detectAndParseTrackManPowerBIPDF(normLines, fileName) {
-      const joined = normLines.join('\n');
-      const hasRelease = /RELEASE\s+SLOT(?:\s+AVG)?/i.test(joined);
-      const hasMovement = /MOVEMENT\s+AVG/i.test(joined);
-      const hasApproach = /APPROACH\s+ANGLE/i.test(joined);
-      if ([hasRelease, hasMovement, hasApproach].filter(Boolean).length < 2) {
+      const cleanedLines = normLines.map((l) =>
+        normalizePDFTextLine(l).replace(/\s+/g, ' ').trim()
+      ).filter(Boolean);
+      const joined = cleanedLines.join('\n');
+
+      const hasPortalTag = /Baseball\s+Team\s+Portal|teamportal\.trackmanbaseball\.com/i.test(joined);
+      const hasIvbHb = /\bIVB\b.*\bHB\b/i.test(joined);
+      const hasVeloSpinExt = /\bVelo\b.*\bSpin\b.*\bExt\b/i.test(joined);
+      const hasLegacyHeaders = [
+        /RELEASE\s+SLOT(?:\s+AVG)?/i.test(joined),
+        /MOVEMENT\s+AVG/i.test(joined),
+        /APPROACH\s+ANGLE/i.test(joined)
+      ].filter(Boolean).length >= 2;
+
+      if (!hasPortalTag && !(hasIvbHb && hasVeloSpinExt) && !hasLegacyHeaders) {
         return null;
       }
 
-      const meta = extractTrackManPDFMetadata(normLines, fileName);
-      const pitchTagRegex = /\b(Four-?Seam|4-?Seam|Fastball|Two-?Seam|2-?Seam|Sinker|Cutter|Sweeper|Slider|Curveball|Knuckle-?Curve|Change-?Up|Changeup|Change|Splitter|Split|FF|FA|SI|FT|FC|SW|ST|SL|CU|KC|CH|FS)\b/i;
+      const meta = extractTrackManPDFMetadata(cleanedLines, fileName);
+      const pitchNameGrp = '(Four-?Seam|4-?Seam|Fastball|Two-?Seam|2-?Seam|Sinker|Cutter|Sweeper|Slider|Curveball|Knuckle-?Curve|Change-?Up|Changeup|Splitter)';
+      const moveRowRe = new RegExp(`^${pitchNameGrp}\\s+(\\d+)\\s+(-?\\d+(?:\\.\\d+)?)\\s+(-?\\d+(?:\\.\\d+)?)(?:\\s+\\d{1,2}:\\d{2})*`, 'i');
+      const moveMissingRe = new RegExp(`^${pitchNameGrp}\\s+(\\d+)\\s+\\d{1,2}:\\d{2}`, 'i');
+      const veloRowRe = new RegExp(`^${pitchNameGrp}\\s+(\\d+)\\s+(\\d+(?:\\.\\d+)?)\\s+(\\d+(?:\\.\\d+)?)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+(?:\\.\\d+)?)`, 'i');
+      const approachRowRe = new RegExp(`^${pitchNameGrp}\\b(.*)$`, 'i');
+
       const byPitch = {};
-      let activeSection = null;
+      let activeTable = null;
 
       function ensurePitch(code) {
         if (!byPitch[code]) {
@@ -4992,74 +5048,83 @@
         return byPitch[code];
       }
 
-      for (const rawLine of normLines) {
-        const line = normalizePDFTextLine(rawLine).trim();
-        if (!line) continue;
+      for (const line of cleanedLines) {
+        // Stop table parsing when encountering plot footer / chart axis sections
+        if (/^(?:Note:\s*The\s+above\s+visuals|PITCH\s+SPEED|ACTIVE\s+SPIN)/i.test(line)) {
+          activeTable = null;
+          continue;
+        }
 
-        if (/RELEASE\s+SLOT(?:\s+AVG)?/i.test(line)) { activeSection = 'release'; continue; }
-        if (/MOVEMENT\s+AVG/i.test(line)) { activeSection = 'movement'; continue; }
-        if (/APPROACH\s+ANGLE/i.test(line)) { activeSection = 'approach'; continue; }
-        if (!activeSection) continue;
-
-        // Skip header rows and pure axis-tick lines (e.g. "20 10 0 -10 -20")
+        // Detect table headers
+        if ((/\bIVB\b/i.test(line) && /\bHB\b/i.test(line)) || /MOVEMENT\s+AVG/i.test(line)) {
+          activeTable = 'movement';
+          continue;
+        }
+        if ((/\bVelo\b/i.test(line) && /\bSpin\b/i.test(line) && /\bExt\b/i.test(line)) || /RELEASE\s+SLOT(?:\s+AVG)?/i.test(line)) {
+          activeTable = 'velocity';
+          continue;
+        }
+        if ((/\bStrike\b/i.test(line) && /\bVAA\b/i.test(line)) || /APPROACH\s+ANGLE/i.test(line)) {
+          activeTable = 'approach';
+          continue;
+        }
+        if (!activeTable) continue;
         if (/^(?:Pitch\s*Type|Total|All)\b/i.test(line)) continue;
-        const tagMatch = line.match(pitchTagRegex);
-        if (!tagMatch) continue;
 
-        const code = normalizePitchCode(tagMatch[1]);
-        const entry = ensurePitch(code);
-        const afterTag = line.slice(line.indexOf(tagMatch[0]) + tagMatch[0].length).trim();
-
-        if (activeSection === 'release') {
-          const clean = afterTag.replace(/\b(1[0-2]|[1-9]):[0-5]\d\b/g, ' ');
-          const nums = (clean.match(/-?\d+(?:\.\d+)?/g) || []).map(Number).filter(Number.isFinite);
-          if (nums.length < 2) continue;
-          let idx = 0;
-          if (Number.isInteger(nums[0]) && nums[0] >= 1 && nums[0] <= 150) {
-            entry.count = nums[0];
-            idx = 1;
+        if (activeTable === 'movement') {
+          const m = line.match(moveRowRe);
+          if (m) {
+            const code = normalizePitchCode(m[1]);
+            const entry = ensurePitch(code);
+            if (entry.count === null) entry.count = parseInt(m[2], 10);
+            entry.ivb = parseFloat(m[3]);
+            entry.hb = parseFloat(m[4]);
+            const tiltM = line.match(/\b(1[0-2]|0?[1-9]):([0-5]\d)\b/);
+            if (tiltM && !entry.tilt) entry.tilt = `${parseInt(tiltM[1], 10)}:${tiltM[2]}`;
+            continue;
           }
-          if (idx < nums.length && nums[idx] >= 50 && nums[idx] <= 105) {
-            entry.velo = nums[idx++];
+          // Single-pitch / missing IVB & HB row where HH:MM clock appears right after count (e.g. "Slider 2 6:00")
+          const mm = line.match(moveMissingRe);
+          if (mm) {
+            const code = normalizePitchCode(mm[1]);
+            const entry = ensurePitch(code);
+            if (entry.count === null) entry.count = parseInt(mm[2], 10);
+            const tiltM = line.match(/\b(1[0-2]|0?[1-9]):([0-5]\d)\b/);
+            if (tiltM && !entry.tilt) entry.tilt = `${parseInt(tiltM[1], 10)}:${tiltM[2]}`;
+            continue;
           }
-          if (idx < nums.length && nums[idx] >= 50 && nums[idx] <= 108) {
-            entry.maxVelo = nums[idx++];
+        } else if (activeTable === 'velocity') {
+          const vm = line.match(veloRowRe);
+          if (vm) {
+            const code = normalizePitchCode(vm[1]);
+            const entry = ensurePitch(code);
+            entry.count = parseInt(vm[2], 10);
+            entry.velo = parseFloat(vm[3]);
+            entry.maxVelo = parseFloat(vm[4]);
+            entry.spin = parseInt(vm[5], 10);
+            entry.maxSpin = parseInt(vm[6], 10);
+            entry.ext = parseFloat(vm[7]);
+            continue;
           }
-          if (idx < nums.length && nums[idx] >= 600 && nums[idx] <= 3600) {
-            entry.spin = nums[idx++];
-          }
-          if (idx < nums.length && nums[idx] >= 600 && nums[idx] <= 3800) {
-            entry.maxSpin = nums[idx++];
-          }
-          if (idx < nums.length && nums[idx] >= 3.5 && nums[idx] <= 8.5) {
-            entry.ext = nums[idx++];
-          }
-        } else if (activeSection === 'movement') {
-          const tilts = afterTag.match(/\b(1[0-2]|[1-9]):[0-5]\d\b/g) || [];
-          if (tilts.length > 0 && !entry.tilt) entry.tilt = tilts[0];
-          const clean = afterTag.replace(/\b(1[0-2]|[1-9]):[0-5]\d\b/g, ' ');
-          const nums = (clean.match(/-?\d+(?:\.\d+)?/g) || []).map(Number).filter(Number.isFinite);
-          if (nums.length < 2) continue;
-          let idx = 0;
-          if (Number.isInteger(nums[0]) && nums[0] >= 1 && nums[0] <= 150 && nums.length >= 3) {
-            if (entry.count === null) entry.count = nums[0];
-            idx = 1;
-          }
-          if (idx + 1 < nums.length) {
-            entry.ivb = nums[idx];
-            entry.hb = nums[idx + 1];
-          }
-        } else if (activeSection === 'approach') {
-          const pctMatches = afterTag.match(/\d+(?:\.\d+)?\s*%/g) || [];
-          if (pctMatches.length > 0) {
-            const firstPct = parseFloat(pctMatches[0]);
-            if (Number.isFinite(firstPct)) entry.strikePct = firstPct;
-          }
-          const noPct = afterTag.replace(/\d+(?:\.\d+)?\s*%/g, ' ');
-          const nums = (noPct.match(/-?\d+(?:\.\d+)?/g) || []).map(Number).filter(Number.isFinite);
-          const vaaCandidate = [...nums].reverse().find((v) => v >= -18.0 && v <= 2.0);
-          if (vaaCandidate !== undefined) {
-            entry.vaa = vaaCandidate;
+        } else if (activeTable === 'approach') {
+          const am = line.match(approachRowRe);
+          if (am) {
+            const code = normalizePitchCode(am[1]);
+            const entry = ensurePitch(code);
+            const rest = am[2] || '';
+            const pctMatches = rest.match(/\d+(?:\.\d+)?\s*%/g) || [];
+            if (pctMatches.length >= 3) {
+              const outPct = parseFloat(pctMatches[pctMatches.length - 1]);
+              if (Number.isFinite(outPct)) entry.strikePct = Math.max(0, Math.min(100, 100.0 - outPct));
+            } else if (pctMatches.length >= 1) {
+              const firstPct = parseFloat(pctMatches[0]);
+              if (Number.isFinite(firstPct)) entry.strikePct = firstPct;
+            }
+            const noPct = rest.replace(/\d+(?:\.\d+)?\s*%/g, ' ');
+            const negDecs = (noPct.match(/-\d+(?:\.\d+)?/g) || []).map(Number).filter((v) => Number.isFinite(v) && v >= -18.0 && v <= -0.5);
+            if (negDecs.length > 0) {
+              entry.vaa = negDecs[negDecs.length - 1];
+            }
           }
         }
       }
@@ -5067,23 +5132,41 @@
       const entries = Object.values(byPitch).filter((e) => Number.isFinite(e.velo) || Number.isFinite(e.ivb));
       if (!entries.length) return null;
 
+      // Infer LHP if primary Fastball HB < -3.0 (unless explicitly set in metadata)
+      let throws = meta.throwsExplicit ? meta.throws : null;
+      if (!throws) {
+        const fbEntry = entries.find((e) => e.code === 'FF' || e.code === 'SI') || entries[0];
+        throws = (fbEntry && Number.isFinite(fbEntry.hb) && fbEntry.hb < -3.0) ? 'L' : 'R';
+      }
+
+      const defaultMoveFor = (code, th) => {
+        const isL = th === 'L';
+        if (code === 'FF') return { ivb: 15.5, hb: isL ? -10.0 : 10.0, spin: 2150 };
+        if (code === 'SI') return { ivb: 8.5, hb: isL ? -15.0 : 15.0, spin: 2050 };
+        if (code === 'FC') return { ivb: 7.5, hb: isL ? 3.0 : -3.0, spin: 2250 };
+        if (code === 'CH' || code === 'FS') return { ivb: 5.5, hb: isL ? -14.0 : 14.0, spin: 1550 };
+        if (code === 'CU') return { ivb: -10.5, hb: isL ? 7.0 : -7.0, spin: 2300 };
+        return { ivb: 1.0, hb: isL ? 5.0 : -5.0, spin: 2200 };
+      };
+
       const expandedRows = [];
       entries.forEach((e) => {
+        const def = defaultMoveFor(e.code, throws);
         const repeatN = Math.min(120, Math.max(1, e.count || 1));
         const rowObj = {
           Pitcher: meta.pitcherName,
-          Throws: meta.throws,
+          Throws: throws,
           Date: meta.sessionDate,
           TaggedPitchType: e.code,
           _pdfIsSummary: true,
           RelSpeed: Number.isFinite(e.velo) ? e.velo : 84.0,
           MaxRelSpeed: Number.isFinite(e.maxVelo) ? e.maxVelo : undefined,
-          SpinRate: Number.isFinite(e.spin) ? e.spin : (e.code === 'CH' || e.code === 'FS' ? 1550 : 2150),
+          SpinRate: Number.isFinite(e.spin) ? e.spin : def.spin,
           SpinAxis: e.tilt || (e.code === 'FF' ? '1:15' : (e.code === 'CH' || e.code === 'FS' ? '2:15' : '8:45')),
-          InducedVertBreak: Number.isFinite(e.ivb) ? e.ivb : (e.code === 'FF' ? 15.8 : (e.code === 'CH' || e.code === 'FS' ? 5.5 : -2.5)),
-          HorzBreak: Number.isFinite(e.hb) ? e.hb : (e.code === 'FF' ? 10.5 : (e.code === 'CH' || e.code === 'FS' ? 14.5 : -6.5)),
+          InducedVertBreak: Number.isFinite(e.ivb) ? e.ivb : def.ivb,
+          HorzBreak: Number.isFinite(e.hb) ? e.hb : def.hb,
           RelHeight: 5.75,
-          RelSide: 1.85,
+          RelSide: throws === 'L' ? -1.85 : 1.85,
           Extension: Number.isFinite(e.ext) ? e.ext : 6.00,
           VertApprAngle: Number.isFinite(e.vaa) ? e.vaa : undefined,
           StrikePct: Number.isFinite(e.strikePct) ? e.strikePct : undefined
@@ -5099,12 +5182,176 @@
       return res;
     }
 
+    function detectAndParseJSPBCReportCardPDF(normLines, fileName) {
+      const joined = normLines.join('\n');
+      const isJSPBC = /PITCHING\s+BULLPEN\s+REPORT\s+CARD/i.test(joined)
+        || /METRICS\s+SUMMARY\s+TABLE\s*\(AGGREGATED\s+BY\s+PITCH\s+TYPE\)/i.test(joined)
+        || /Tracked\s+by\s+Jaxson\s+Smith\s+Peterson\s+BC/i.test(joined);
+      if (!isJSPBC) return null;
+
+      // 1. Extract Metadata: Pitcher Name, Session Date, Handedness
+      let pitcherName = fileName.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').trim() || 'Uploaded PDF Pitcher';
+      let sessionDate = '11/24/2026';
+      let explicitThrows = null;
+
+      for (let i = 0; i < normLines.length; i++) {
+        const line = normalizePDFTextLine(normLines[i]).trim();
+        if (!line) continue;
+
+        const nameSame = line.match(/PITCHER\s+NAME\s*[:\-]?\s*(.+)$/i);
+        if (nameSame) {
+          const val = nameSame[1].split(/SESSION\s+DATE|DATE|THROWS|\s{3,}/i)[0].trim();
+          if (val && val.length >= 2 && !/^SESSION\s+DATE/i.test(val)) {
+            pitcherName = val;
+          } else if (i + 1 < normLines.length) {
+            const nxt = normalizePDFTextLine(normLines[i + 1]).trim();
+            if (nxt && !/SESSION\s+DATE|METRICS\s+SUMMARY/i.test(nxt)) {
+              pitcherName = nxt.split(/\s{3,}|\d{1,2}\/\d{1,2}\/\d{2,4}/)[0].trim() || pitcherName;
+            }
+          }
+        }
+
+        const dateSame = line.match(/SESSION\s+DATE\s*[:\-]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}-\d{2}-\d{2})/i);
+        if (dateSame && dateSame[1]) {
+          sessionDate = dateSame[1];
+        } else if (/SESSION\s+DATE/i.test(line) && i + 1 < normLines.length) {
+          const dm = normalizePDFTextLine(normLines[i + 1]).match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}-\d{2}-\d{2})/);
+          if (dm && dm[1]) sessionDate = dm[1];
+        }
+
+        const handMatch = line.match(/\((RHP|LHP)\)/i);
+        if (handMatch && handMatch[1]) {
+          explicitThrows = handMatch[1].toUpperCase() === 'LHP' ? 'L' : 'R';
+        }
+      }
+
+      // 2. Isolate Summary Table between METRICS SUMMARY TABLE and Total / Avg (or Pitch Movement)
+      const startIdx = normLines.findIndex((l) => /METRICS\s+SUMMARY\s+TABLE/i.test(l));
+      if (startIdx === -1) return null;
+
+      let endIdx = normLines.length;
+      let hasExtCol = false;
+      for (let i = startIdx; i < normLines.length; i++) {
+        const l = normalizePDFTextLine(normLines[i]).trim();
+        if (i <= startIdx + 6 && /Avg\.?\s*Ext/i.test(l)) {
+          hasExtCol = true;
+        }
+        if (i > startIdx && (/^(?:Session\s+)?Total\s*\/\s*Avg/i.test(l) || /^Pitch\s+Movement\b/i.test(l))) {
+          endIdx = i;
+          break;
+        }
+      }
+
+      const pitchNameRe = /^\s*(Four-?Seam(?:\s+Fastball)?|4-?Seam(?:\s+Fastball)?|Fastball|Two-?Seam(?:\s+Fastball)?|2-?Seam|Sinker|Cutter|Sweeper|Slider|Curveball|Knuckle-?Curve|Change-?Up|Changeup|Splitter|Knuckleball|FF|SI|FC|SL|SW|CU|CH|FS)\b/i;
+      const rawEntries = [];
+
+      for (let i = startIdx + 1; i < endIdx; i++) {
+        const line = normalizePDFTextLine(normLines[i]).trim();
+        if (!line) continue;
+        if (/^(?:Pitch\s*Type|Count|Avg\s+Velo|Session\s+Total|Total\s*\/)/i.test(line)) continue;
+        const pm = line.match(pitchNameRe);
+        if (!pm) continue;
+
+        const rawPitchName = pm[1];
+        const code = /knuckleball/i.test(rawPitchName) ? 'CU' : normalizePitchCode(rawPitchName);
+        const rest = line.slice(pm[0].length).trim();
+
+        // Strip units (mph, rpm, in, ft, ") while preserving standalone "-" dashes
+        const cleaned = rest
+          .replace(/\b(?:mph|rpm|in|ft)\b/gi, ' ')
+          .replace(/["”]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        const toks = cleaned.split(' ').filter((t) => t === '-' || /^-?\d+(?:\.\d+)?$/.test(t));
+        if (toks.length < 3) continue;
+
+        const parseTok = (idx) => {
+          if (idx >= toks.length || toks[idx] === '-') return NaN;
+          const v = parseFloat(toks[idx]);
+          return Number.isFinite(v) ? v : NaN;
+        };
+
+        const countVal = Math.max(1, Math.round(parseTok(0) || 1));
+        const avgVelo = parseTok(1);
+        const maxVelo = parseTok(2);
+        const avgSpin = parseTok(3);
+        const avgIvb = parseTok(4);
+        const avgHb = parseTok(5);
+        const avgExt = hasExtCol || toks.length >= 7 ? parseTok(6) : NaN;
+
+        if (!Number.isFinite(avgVelo) || avgVelo < 45.0 || avgVelo > 108.0) continue;
+        rawEntries.push({ code, countVal, avgVelo, maxVelo, avgSpin, avgIvb, avgHb, avgExt });
+      }
+
+      if (!rawEntries.length) return null;
+
+      // 3. Resolve handedness: explicit (RHP)/(LHP) else infer LHP if primary Fastball Avg HB < -3.0
+      let throws = explicitThrows;
+      if (!throws) {
+        const fbEntry = rawEntries.find((e) => e.code === 'FF' || e.code === 'SI') || rawEntries[0];
+        throws = (fbEntry && Number.isFinite(fbEntry.avgHb) && fbEntry.avgHb < -3.0) ? 'L' : 'R';
+      }
+
+      const defaultExtUsed = !hasExtCol || rawEntries.every((e) => !Number.isFinite(e.avgExt));
+      const defaultMoveFor = (code, th) => {
+        const isL = th === 'L';
+        if (code === 'FF') return { ivb: 15.5, hb: isL ? -10.0 : 10.0, spin: 2150 };
+        if (code === 'SI') return { ivb: 8.5, hb: isL ? -15.0 : 15.0, spin: 2050 };
+        if (code === 'FC') return { ivb: 7.5, hb: isL ? 3.0 : -3.0, spin: 2250 };
+        if (code === 'CH' || code === 'FS') return { ivb: 5.5, hb: isL ? -14.0 : 14.0, spin: 1550 };
+        if (code === 'CU') return { ivb: -10.5, hb: isL ? 7.0 : -7.0, spin: 2300 };
+        return { ivb: 1.0, hb: isL ? 5.0 : -5.0, spin: 2200 }; // SL / SW default
+      };
+
+      const expandedRows = [];
+      rawEntries.forEach((e) => {
+        const def = defaultMoveFor(e.code, throws);
+        const ivbVal = Number.isFinite(e.avgIvb) ? e.avgIvb : def.ivb;
+        const hbRaw = Number.isFinite(e.avgHb) ? e.avgHb : def.hb;
+        // TrackMan Pitcher-view HB: for LHP, negative arm-side HB is preserved in CSV/JSON and normalized downstream
+        const spinVal = Number.isFinite(e.avgSpin) ? e.avgSpin : def.spin;
+        const extVal = Number.isFinite(e.avgExt) ? e.avgExt : 6.0;
+        const rowObj = {
+          Pitcher: pitcherName,
+          Throws: throws,
+          Date: sessionDate,
+          TaggedPitchType: e.code,
+          _pdfIsSummary: true,
+          RelSpeed: e.avgVelo,
+          MaxRelSpeed: Number.isFinite(e.maxVelo) ? e.maxVelo : e.avgVelo,
+          SpinRate: spinVal,
+          SpinAxis: e.code === 'FF' ? '1:15' : (e.code === 'CH' || e.code === 'FS' ? '2:15' : '8:45'),
+          InducedVertBreak: ivbVal,
+          HorzBreak: hbRaw,
+          RelHeight: 5.8,
+          RelSide: throws === 'L' ? -1.8 : 1.8,
+          Extension: extVal
+        };
+        const repeatN = Math.min(120, Math.max(1, e.countVal));
+        for (let k = 0; k < repeatN; k++) {
+          expandedRows.push(rowObj);
+        }
+      });
+
+      const res = parseTrackManCSVOrJSON(JSON.stringify(expandedRows), fileName);
+      res.layoutDetected = defaultExtUsed
+        ? 'JSPBC Bullpen Report Card (7-Col, Ext defaulted to 6.0 ft)'
+        : 'JSPBC Bullpen Report Card (8-Col)';
+      res.pitchTypesList = rawEntries.map((e) => e.code);
+      res.statusNote = defaultExtUsed ? 'Extension defaulted to 6.0 ft.' : '';
+      return res;
+    }
+
     function parseTrackManPDFLines(lines, fileName = 'TrackMan_Report.pdf') {
       if (!lines || !lines.length) {
         throw new Error('No selectable text found in this PDF. It appears to be a scanned image; please export a text-based TrackMan PDF or CSV.');
       }
 
       const normLines = lines.map(normalizePDFTextLine);
+
+      // Additive branch 0: Native JSPBC Bullpen Report Card (7-Col & 8-Col)
+      const jspbcRes = detectAndParseJSPBCReportCardPDF(normLines, fileName);
+      if (jspbcRes) return jspbcRes;
 
       // Additive branch 1: Tread Athletics "TrackMan Data Breakdown" Pitch Metrics summary table
       const treadHeader = detectTreadAthleticsHeader(normLines);
@@ -5622,7 +5869,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.24 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.25b R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -8193,9 +8440,155 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         }
       }
 
+      function renderBatchRosterLeaderboard() {
+        const card = document.getElementById('batchRosterCard');
+        const bar = document.getElementById('backToBatchRosterBar');
+        const backBtn = document.getElementById('backToBatchRosterBtn');
+        const metaEl = document.getElementById('batchRosterMeta');
+        const tbody = document.getElementById('batchRosterTableBody');
+        const roster = Array.isArray(appState.batchRoster) ? appState.batchRoster : [];
+        if (!roster.length) {
+          if (card) card.classList.add('hidden');
+          if (bar) bar.classList.add('hidden');
+          return;
+        }
+        if (backBtn) backBtn.textContent = `← Back to Batch Roster (${roster.length} Pitchers)`;
+        if (metaEl) metaEl.textContent = `${roster.length} Pitchers Imported • Ranked by Overall Arsenal+ (100 = College D1 Avg)`;
+        if (bar) bar.classList.toggle('hidden', appState.batchRosterVisible);
+        if (card) card.classList.toggle('hidden', !appState.batchRosterVisible);
+        if (tbody) {
+          tbody.innerHTML = roster.map((entry, i) => {
+            const isActive = appState.currentPitcherId === entry.profileId;
+            return `
+              <tr class="hover:bg-[#1e2530]/60 transition cursor-pointer ${isActive ? 'bg-[#1e2530]/40' : ''}" data-batch-pid="${entry.profileId}">
+                <td class="py-2 pr-2 font-bold text-slate-300">${i + 1}</td>
+                <td class="py-2 px-2 font-semibold text-white">${entry.name}</td>
+                <td class="py-2 px-2 text-slate-300">${entry.throws}HP</td>
+                <td class="py-2 px-2 text-right text-slate-300">${entry.totalPitches}</td>
+                <td class="py-2 px-2 text-right text-slate-100">${entry.fbVelo.toFixed(1)} mph</td>
+                <td class="py-2 px-2 text-right text-slate-200">${entry.bestPitchCode} (${entry.bestPitchStuff.toFixed(0)})</td>
+                <td class="py-2 px-2 text-right font-extrabold text-sky-300">${entry.arsenalPlus.toFixed(1)}</td>
+                <td class="py-2 pl-2 text-right">
+                  <button type="button" data-batch-inspect="${entry.profileId}" class="touch-target px-2.5 py-1 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
+                    Inspect Pitcher
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+          tbody.querySelectorAll('[data-batch-inspect], tr[data-batch-pid]').forEach((el) => {
+            el.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+              const pid = el.getAttribute('data-batch-inspect') || el.getAttribute('data-batch-pid');
+              if (!pid || !PITCHER_PROFILES[pid]) return;
+              appState.currentPitcherId = pid;
+              appState.labTargetIdx = 0;
+              appState.pitchLabState = createEmptyPitchLabState(PITCHER_PROFILES[pid].pitches.length + 2);
+              appState.batchRosterVisible = false;
+              const pSel = document.getElementById('pitcherSelect');
+              if (pSel) pSel.value = pid;
+              syncSlidersToUI();
+              renderAll();
+              renderBatchRosterLeaderboard();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+          });
+        }
+      }
+
+      const backBatchBtn = document.getElementById('backToBatchRosterBtn');
+      if (backBatchBtn) {
+        backBatchBtn.addEventListener('click', () => {
+          appState.batchRosterVisible = true;
+          renderBatchRosterLeaderboard();
+          const card = document.getElementById('batchRosterCard');
+          if (card && typeof card.scrollIntoView === 'function') {
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      }
+      const closeBatchBtn = document.getElementById('closeBatchRosterBtn');
+      if (closeBatchBtn) {
+        closeBatchBtn.addEventListener('click', () => {
+          appState.batchRosterVisible = false;
+          renderBatchRosterLeaderboard();
+        });
+      }
+
+      async function handleBatchTrackManFiles(filesArr) {
+        if (!filesArr || !filesArr.length) return;
+        if (!appState.currentUser) {
+          updateUploadGateUI();
+          if (statusBox) statusBox.textContent = 'Sign in or create a free account to upload custom TrackMan PDF, CSV, or JSON files.';
+          showToast('Please Sign In to upload custom TrackMan files');
+          return;
+        }
+        const results = [];
+        for (let i = 0; i < filesArr.length; i++) {
+          const f = filesArr[i];
+          if (statusBox) statusBox.textContent = `Batch import (${i + 1}/${filesArr.length}): Parsing ${f.name}...`;
+          try {
+            const isPdf = /\.pdf$/i.test(f.name) || f.type === 'application/pdf';
+            let res = null;
+            if (isPdf) {
+              const buf = await f.arrayBuffer();
+              res = await ingestTrackManPDF(buf, f.name);
+              uploadRawPdfToSupabaseStorage(f).catch(() => {});
+              await saveBullpenSessionToSupabase(res.profileObj, 'pdf');
+            } else {
+              const txt = await f.text();
+              const srcType = /\.json$/i.test(f.name) ? 'json' : 'csv';
+              res = parseTrackManCSVOrJSON(txt, f.name);
+              await saveBullpenSessionToSupabase(res.profileObj, srcType);
+            }
+            if (res && res.profileObj) {
+              const prof = res.profileObj;
+              const ev = evaluateFullPipeline(prof, appState.pacingMode, createEmptyPitchLabState(prof.pitches.length + 2), appState.coupledSlotArc, 'present');
+              const fb = ev.gradedPitches[0];
+              const bestP = [...ev.gradedPitches].sort((a, b) => b.shrunkStuff - a.shrunkStuff)[0];
+              results.push({
+                profileId: prof.id,
+                name: prof.name,
+                throws: prof.throws,
+                totalPitches: prof.totalPitches,
+                fbVelo: fb ? fb.velo : 0,
+                bestPitchCode: bestP ? bestP.code : 'FF',
+                bestPitchStuff: bestP ? bestP.shrunkStuff : 100,
+                arsenalPlus: ev.arsenalPlus
+              });
+            }
+          } catch (err) {
+            console.warn(`Batch skipped ${f.name}:`, err);
+          }
+        }
+        if (!results.length) {
+          if (statusBox) statusBox.textContent = 'Batch import failed: no valid TrackMan files parsed.';
+          showToast('No valid files parsed in batch');
+          return;
+        }
+        results.sort((a, b) => b.arsenalPlus - a.arsenalPlus);
+        appState.batchRoster = results;
+        appState.batchRosterVisible = true;
+        appState.currentPitcherId = results[0].profileId;
+        rebuildPitcherSelectDropdown();
+        syncSlidersToUI();
+        renderAll();
+        renderBatchRosterLeaderboard();
+        if (uploadModal) {
+          uploadModal.classList.add('hidden');
+          uploadModal.classList.remove('flex');
+        }
+        showToast(`Imported ${results.length} pitchers into Staff Roster Leaderboard`);
+      }
+
       if (fileInput) {
         fileInput.addEventListener('change', (e) => {
-          if (e.target.files && e.target.files[0]) handleTrackManFile(e.target.files[0]);
+          const files = e.target.files ? Array.from(e.target.files) : [];
+          if (files.length >= 2) {
+            handleBatchTrackManFiles(files);
+          } else if (files.length === 1) {
+            handleTrackManFile(files[0]);
+          }
         });
       }
 
@@ -8211,8 +8604,11 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         dropzone.addEventListener('drop', (e) => {
           e.preventDefault();
           dropzone.classList.remove('border-sky-300');
-          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-            handleTrackManFile(e.dataTransfer.files[0]);
+          const files = (e.dataTransfer && e.dataTransfer.files) ? Array.from(e.dataTransfer.files) : [];
+          if (files.length >= 2) {
+            handleBatchTrackManFiles(files);
+          } else if (files.length === 1) {
+            handleTrackManFile(files[0]);
           }
         });
       }

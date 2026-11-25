@@ -344,11 +344,11 @@ def load_trackman_v3_dataset(
         is_lhp = df["PitcherThrows"].eq("LHP")
         sign_hand = np.where(is_lhp, -1.0, 1.0)
         exp_vaa, exp_haa = compute_expected_vaa_and_haa(
-            rel_speed_mph=df["RelSpeed"].to_numpy(dtype=np.float64),
-            rel_height_ft=df["RelHeight"].to_numpy(dtype=np.float64),
-            rel_side_norm_ft=df["RelSide"].abs().to_numpy(dtype=np.float64),
-            plate_loc_height_ft=df["PlateLocHeight"].fillna(2.50).to_numpy(dtype=np.float64),
-            plate_loc_side_norm_ft=(df["PlateLocSide"].fillna(0.0).to_numpy(dtype=np.float64) * sign_hand),
+            rel_speed=df["RelSpeed"].to_numpy(dtype=np.float64),
+            rel_height=df["RelHeight"].to_numpy(dtype=np.float64),
+            rel_side_norm=df["RelSide"].abs().to_numpy(dtype=np.float64),
+            plate_z=df["PlateLocHeight"].fillna(2.50).to_numpy(dtype=np.float64),
+            plate_x_norm=(df["PlateLocSide"].fillna(0.0).to_numpy(dtype=np.float64) * sign_hand),
         )
         if "VertApprAngle" not in df.columns:
             df["VertApprAngle"] = exp_vaa
@@ -475,11 +475,11 @@ def load_statcast_milb_dataset(
 
     sign_hand = np.where(pitcher_throws.eq("LHP"), -1.0, 1.0)
     exp_vaa, exp_haa = compute_expected_vaa_and_haa(
-        rel_speed_mph=rel_speed.fillna(91.5).to_numpy(dtype=np.float64),
-        rel_height_ft=rel_height.to_numpy(dtype=np.float64),
-        rel_side_norm_ft=rel_side.abs().to_numpy(dtype=np.float64),
-        plate_loc_height_ft=plate_z.to_numpy(dtype=np.float64),
-        plate_loc_side_norm_ft=(plate_x.to_numpy(dtype=np.float64) * sign_hand),
+        rel_speed=rel_speed.fillna(91.5).to_numpy(dtype=np.float64),
+        rel_height=rel_height.to_numpy(dtype=np.float64),
+        rel_side_norm=rel_side.abs().to_numpy(dtype=np.float64),
+        plate_z=plate_z.to_numpy(dtype=np.float64),
+        plate_x_norm=(plate_x.to_numpy(dtype=np.float64) * sign_hand),
     )
 
     out = pd.DataFrame(
@@ -646,7 +646,7 @@ def train_college_anchored_candidate_model(
     anchor_baselines_strictly_to_college_cohort(engine, df_feat, college_cohort_value="college")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    payload = export_model_for_web(engine=engine, json_output_path=out_path, js_output_path=out_path.with_suffix(".js"))
+    payload = export_model_for_web(engine=engine, json_output_path=out_path, js_output_path=None)
     return engine, payload
 
 
