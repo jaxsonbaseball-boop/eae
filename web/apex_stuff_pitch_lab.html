@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.22 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.24 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -1529,7 +1529,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.22 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.24 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -1891,7 +1891,7 @@
             relHeight: 5.75, relSide: 1.85, ext: 6.10, plateHeight: 2.65, plateSide: 0.15,
             vaa: -5.8, havaa: -1.3, spinEff: 89.0, clockTilt: '1:30', clockDeg: 45,
             magnusIvb: 14.1, magnusHb: 11.2, rawXrv: 0.72, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
-            pSwing: 0.482, pWhiff: 0.194, pCs: 0.288, xwobacon: 0.376
+            pSwing: 0.482, pWhiff: 0.194, pCs: 0.288, xwobacon: 0.376, zonePct: 66, strikePct: 69
           },
           {
             code: 'CH', name: 'Changeup (Circle Fade)', color: '#34d399', count: 5,
@@ -1899,7 +1899,7 @@
             relHeight: 5.70, relSide: 1.92, ext: 6.10, plateHeight: 2.05, plateSide: 0.42,
             vaa: -8.0, havaa: -2.1, spinEff: 78.0, clockTilt: '2:30', clockDeg: 75,
             magnusIvb: 5.6, magnusHb: 14.1, rawXrv: -0.68, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
-            pSwing: 0.534, pWhiff: 0.362, pCs: 0.241, xwobacon: 0.278
+            pSwing: 0.534, pWhiff: 0.362, pCs: 0.241, xwobacon: 0.278, zonePct: 61, strikePct: 65
           },
           {
             code: 'SL', name: 'Slider (Gyro Depth)', color: '#fbbf24', count: 5,
@@ -1907,7 +1907,7 @@
             relHeight: 5.68, relSide: 1.95, ext: 5.80, plateHeight: 1.88, plateSide: -0.45,
             vaa: -9.7, havaa: 0.6, spinEff: 38.0, clockTilt: '8:15', clockDeg: 247,
             magnusIvb: -1.4, magnusHb: -5.8, rawXrv: -0.22, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
-            pSwing: 0.495, pWhiff: 0.318, pCs: 0.264, xwobacon: 0.312
+            pSwing: 0.495, pWhiff: 0.318, pCs: 0.264, xwobacon: 0.312, zonePct: 58, strikePct: 62
           }
         ]
       },
@@ -1926,7 +1926,7 @@
             relHeight: 5.65, relSide: 1.80, ext: 5.65, plateHeight: 2.55, plateSide: 0.12,
             vaa: -6.4, havaa: -1.4, spinEff: 88.0, clockTilt: '1:15', clockDeg: 38,
             magnusIvb: 14.5, magnusHb: 10.8, rawXrv: 1.35, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
-            pSwing: 0.490, pWhiff: 0.148, pCs: 0.272, xwobacon: 0.418
+            pSwing: 0.490, pWhiff: 0.148, pCs: 0.272, xwobacon: 0.418, zonePct: 61, strikePct: 65
           },
           {
             code: 'CU', name: 'Curveball (11-5 Depth)', color: '#a78bfa', count: 5,
@@ -1934,7 +1934,7 @@
             relHeight: 5.72, relSide: 1.75, ext: 5.50, plateHeight: 1.75, plateSide: -0.35,
             vaa: -11.4, havaa: 0.8, spinEff: 68.0, clockTilt: '7:30', clockDeg: 225,
             magnusIvb: -11.6, magnusHb: -6.5, rawXrv: 0.18, muCol: -0.18, sigCol: 0.70, sigWithin: 16.5, xrvSens: -0.070,
-            pSwing: 0.442, pWhiff: 0.285, pCs: 0.295, xwobacon: 0.334
+            pSwing: 0.442, pWhiff: 0.285, pCs: 0.295, xwobacon: 0.334, zonePct: 56, strikePct: 60
           },
           {
             code: 'CH', name: 'Changeup (Arm-Side Fade)', color: '#34d399', count: 3,
@@ -1942,7 +1942,7 @@
             relHeight: 5.60, relSide: 1.88, ext: 5.60, plateHeight: 2.15, plateSide: 0.38,
             vaa: -7.9, havaa: -1.8, spinEff: 82.0, clockTilt: '2:00', clockDeg: 60,
             magnusIvb: 12.2, magnusHb: 12.8, rawXrv: 0.25, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
-            pSwing: 0.478, pWhiff: 0.268, pCs: 0.252, xwobacon: 0.342
+            pSwing: 0.478, pWhiff: 0.268, pCs: 0.252, xwobacon: 0.342, zonePct: 54, strikePct: 58
           }
         ]
       },
@@ -1961,7 +1961,7 @@
             relHeight: 6.15, relSide: 1.55, ext: 6.35, plateHeight: 2.88, plateSide: 0.05,
             vaa: -4.1, havaa: -1.0, spinEff: 96.0, clockTilt: '12:30', clockDeg: 15,
             magnusIvb: 19.2, magnusHb: 6.8, rawXrv: -0.58, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
-            pSwing: 0.505, pWhiff: 0.295, pCs: 0.305, xwobacon: 0.302
+            pSwing: 0.505, pWhiff: 0.295, pCs: 0.305, xwobacon: 0.302, zonePct: 66, strikePct: 69
           },
           {
             code: 'CU', name: '12-6 Hammer Curveball', color: '#a78bfa', count: 5,
@@ -1969,7 +1969,7 @@
             relHeight: 6.20, relSide: 1.52, ext: 6.15, plateHeight: 1.72, plateSide: -0.22,
             vaa: -10.1, havaa: 0.5, spinEff: 84.0, clockTilt: '6:30', clockDeg: 195,
             magnusIvb: -14.1, magnusHb: -4.4, rawXrv: -0.62, muCol: -0.18, sigCol: 0.70, sigWithin: 16.5, xrvSens: -0.070,
-            pSwing: 0.472, pWhiff: 0.375, pCs: 0.312, xwobacon: 0.275
+            pSwing: 0.472, pWhiff: 0.375, pCs: 0.312, xwobacon: 0.275, zonePct: 61, strikePct: 65
           },
           {
             code: 'CH', name: 'Changeup (Vertical Drop)', color: '#34d399', count: 5,
@@ -1977,7 +1977,7 @@
             relHeight: 6.08, relSide: 1.62, ext: 6.28, plateHeight: 2.02, plateSide: 0.35,
             vaa: -7.1, havaa: -1.6, spinEff: 79.0, clockTilt: '2:15', clockDeg: 68,
             magnusIvb: 7.4, magnusHb: 11.9, rawXrv: -0.35, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
-            pSwing: 0.520, pWhiff: 0.340, pCs: 0.248, xwobacon: 0.290
+            pSwing: 0.520, pWhiff: 0.340, pCs: 0.248, xwobacon: 0.290, zonePct: 58, strikePct: 62
           }
         ]
       },
@@ -1996,7 +1996,7 @@
             relHeight: 4.95, relSide: 2.45, ext: 6.25, plateHeight: 2.28, plateSide: -0.25,
             vaa: -6.3, havaa: 1.9, spinEff: 91.0, clockTilt: '2:45', clockDeg: 82,
             magnusIvb: 8.1, magnusHb: 13.8, rawXrv: 0.12, muCol: 0.08, sigCol: 0.65, sigWithin: 12.0, xrvSens: -0.108,
-            pSwing: 0.515, pWhiff: 0.195, pCs: 0.285, xwobacon: 0.332
+            pSwing: 0.515, pWhiff: 0.195, pCs: 0.285, xwobacon: 0.332, zonePct: 66, strikePct: 69
           },
           {
             code: 'SW', name: 'Frisbee Sweeper', color: '#fb923c', count: 6,
@@ -2004,7 +2004,7 @@
             relHeight: 4.92, relSide: 2.48, ext: 6.10, plateHeight: 1.95, plateSide: 0.45,
             vaa: -7.8, havaa: -1.4, spinEff: 62.0, clockTilt: '9:15', clockDeg: 277,
             magnusIvb: 2.9, magnusHb: -14.2, rawXrv: -0.78, muCol: -0.38, sigCol: 0.76, sigWithin: 16.0, xrvSens: -0.078,
-            pSwing: 0.518, pWhiff: 0.398, pCs: 0.268, xwobacon: 0.268
+            pSwing: 0.518, pWhiff: 0.398, pCs: 0.268, xwobacon: 0.268, zonePct: 61, strikePct: 65
           },
           {
             code: 'CH', name: 'Changeup (Arm-Side Run)', color: '#34d399', count: 4,
@@ -2012,7 +2012,7 @@
             relHeight: 4.90, relSide: 2.42, ext: 6.20, plateHeight: 2.05, plateSide: -0.35,
             vaa: -7.2, havaa: 2.2, spinEff: 83.0, clockTilt: '2:45', clockDeg: 82,
             magnusIvb: 6.0, magnusHb: 14.9, rawXrv: -0.42, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
-            pSwing: 0.525, pWhiff: 0.345, pCs: 0.244, xwobacon: 0.288
+            pSwing: 0.525, pWhiff: 0.345, pCs: 0.244, xwobacon: 0.288, zonePct: 58, strikePct: 62
           }
         ]
       },
@@ -2031,7 +2031,7 @@
             relHeight: 5.55, relSide: 2.05, ext: 6.30, plateHeight: 2.35, plateSide: 0.18,
             vaa: -5.4, havaa: -1.7, spinEff: 92.0, clockTilt: '2:15', clockDeg: 68,
             magnusIvb: 10.2, magnusHb: 14.5, rawXrv: -0.35, muCol: 0.08, sigCol: 0.65, sigWithin: 12.0, xrvSens: -0.108,
-            pSwing: 0.520, pWhiff: 0.228, pCs: 0.295, xwobacon: 0.298
+            pSwing: 0.520, pWhiff: 0.228, pCs: 0.295, xwobacon: 0.298, zonePct: 66, strikePct: 69
           },
           {
             code: 'SW', name: '16" Horizontal Sweeper', color: '#fb923c', count: 6,
@@ -2039,7 +2039,7 @@
             relHeight: 5.52, relSide: 2.10, ext: 6.18, plateHeight: 1.98, plateSide: -0.52,
             vaa: -7.5, havaa: 1.2, spinEff: 64.0, clockTilt: '9:00', clockDeg: 270,
             magnusIvb: 2.6, magnusHb: -13.9, rawXrv: -1.08, muCol: -0.38, sigCol: 0.76, sigWithin: 16.0, xrvSens: -0.078,
-            pSwing: 0.542, pWhiff: 0.435, pCs: 0.274, xwobacon: 0.252
+            pSwing: 0.542, pWhiff: 0.435, pCs: 0.274, xwobacon: 0.252, zonePct: 61, strikePct: 65
           },
           {
             code: 'SL', name: 'Hard Bullet Slider', color: '#fbbf24', count: 5,
@@ -2047,7 +2047,7 @@
             relHeight: 5.56, relSide: 2.02, ext: 6.22, plateHeight: 2.12, plateSide: -0.28,
             vaa: -6.5, havaa: 0.4, spinEff: 32.0, clockTilt: '9:30', clockDeg: 285,
             magnusIvb: 3.1, magnusHb: -3.5, rawXrv: -0.74, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
-            pSwing: 0.528, pWhiff: 0.380, pCs: 0.282, xwobacon: 0.274
+            pSwing: 0.528, pWhiff: 0.380, pCs: 0.282, xwobacon: 0.274, zonePct: 58, strikePct: 62
           }
         ]
       },
@@ -2066,7 +2066,7 @@
             relHeight: 6.32, relSide: 1.38, ext: 6.18, plateHeight: 2.78, plateSide: -0.10,
             vaa: -4.7, havaa: 1.1, spinEff: 94.0, clockTilt: '12:30', clockDeg: 15,
             magnusIvb: 17.4, magnusHb: 6.9, rawXrv: -0.28, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
-            pSwing: 0.495, pWhiff: 0.258, pCs: 0.298, xwobacon: 0.318
+            pSwing: 0.495, pWhiff: 0.258, pCs: 0.298, xwobacon: 0.318, zonePct: 66, strikePct: 69
           },
           {
             code: 'CU', name: 'Hammer Curveball', color: '#a78bfa', count: 5,
@@ -2074,7 +2074,7 @@
             relHeight: 6.35, relSide: 1.35, ext: 6.02, plateHeight: 1.75, plateSide: 0.28,
             vaa: -10.5, havaa: -0.7, spinEff: 81.0, clockTilt: '6:45', clockDeg: 202,
             magnusIvb: -12.9, magnusHb: -5.6, rawXrv: -0.54, muCol: -0.18, sigCol: 0.70, sigWithin: 16.5, xrvSens: -0.070,
-            pSwing: 0.468, pWhiff: 0.358, pCs: 0.308, xwobacon: 0.282
+            pSwing: 0.468, pWhiff: 0.358, pCs: 0.308, xwobacon: 0.282, zonePct: 61, strikePct: 65
           },
           {
             code: 'CH', name: 'SSW Changeup', color: '#34d399', count: 5,
@@ -2082,7 +2082,7 @@
             relHeight: 6.26, relSide: 1.44, ext: 6.14, plateHeight: 2.02, plateSide: -0.35,
             vaa: -7.5, havaa: 1.8, spinEff: 76.0, clockTilt: '2:15', clockDeg: 68,
             magnusIvb: 7.1, magnusHb: 13.0, rawXrv: -0.48, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
-            pSwing: 0.526, pWhiff: 0.352, pCs: 0.250, xwobacon: 0.285
+            pSwing: 0.526, pWhiff: 0.352, pCs: 0.250, xwobacon: 0.285, zonePct: 58, strikePct: 62
           }
         ]
       },
@@ -2101,7 +2101,7 @@
             relHeight: 5.88, relSide: 1.72, ext: 6.22, plateHeight: 2.72, plateSide: 0.10,
             vaa: -5.0, havaa: -1.2, spinEff: 93.0, clockTilt: '1:00', clockDeg: 30,
             magnusIvb: 15.9, magnusHb: 8.4, rawXrv: 0.08, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
-            pSwing: 0.492, pWhiff: 0.224, pCs: 0.294, xwobacon: 0.342
+            pSwing: 0.492, pWhiff: 0.224, pCs: 0.294, xwobacon: 0.342, zonePct: 72, strikePct: 75
           },
           {
             code: 'FC', name: 'Tight Tunnel Cutter', color: '#f472b6', count: 6,
@@ -2109,7 +2109,7 @@
             relHeight: 5.86, relSide: 1.74, ext: 6.18, plateHeight: 2.38, plateSide: -0.32,
             vaa: -6.1, havaa: 0.3, spinEff: 48.0, clockTilt: '10:45', clockDeg: 322,
             magnusIvb: 7.8, magnusHb: -2.9, rawXrv: -0.38, muCol: -0.05, sigCol: 0.64, sigWithin: 13.0, xrvSens: -0.095,
-            pSwing: 0.515, pWhiff: 0.298, pCs: 0.286, xwobacon: 0.295
+            pSwing: 0.515, pWhiff: 0.298, pCs: 0.286, xwobacon: 0.295, zonePct: 72, strikePct: 75
           },
           {
             code: 'FS', name: 'Tumbling Splitter', color: '#2dd4bf', count: 6,
@@ -2117,7 +2117,7 @@
             relHeight: 5.85, relSide: 1.75, ext: 6.20, plateHeight: 1.88, plateSide: 0.25,
             vaa: -7.9, havaa: -1.5, spinEff: 69.0, clockTilt: '2:00', clockDeg: 60,
             magnusIvb: 4.4, magnusHb: 10.1, rawXrv: -0.64, muCol: -0.28, sigCol: 0.74, sigWithin: 16.8, xrvSens: -0.072,
-            pSwing: 0.535, pWhiff: 0.388, pCs: 0.242, xwobacon: 0.272
+            pSwing: 0.535, pWhiff: 0.388, pCs: 0.242, xwobacon: 0.272, zonePct: 65, strikePct: 68
           }
         ]
       },
@@ -2136,7 +2136,7 @@
             relHeight: 5.72, relSide: 1.82, ext: 5.75, plateHeight: 2.58, plateSide: -0.12,
             vaa: -6.0, havaa: 1.3, spinEff: 89.0, clockTilt: '1:15', clockDeg: 38,
             magnusIvb: 13.7, magnusHb: 9.4, rawXrv: 1.05, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
-            pSwing: 0.486, pWhiff: 0.165, pCs: 0.278, xwobacon: 0.398
+            pSwing: 0.486, pWhiff: 0.165, pCs: 0.278, xwobacon: 0.398, zonePct: 61, strikePct: 65
           },
           {
             code: 'SL', name: 'Sweeping Slurve', color: '#fbbf24', count: 4,
@@ -2144,7 +2144,7 @@
             relHeight: 5.68, relSide: 1.86, ext: 5.65, plateHeight: 1.85, plateSide: 0.38,
             vaa: -9.8, havaa: -0.9, spinEff: 52.0, clockTilt: '8:00', clockDeg: 240,
             magnusIvb: -3.6, magnusHb: -8.9, rawXrv: -0.12, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
-            pSwing: 0.475, pWhiff: 0.302, pCs: 0.272, xwobacon: 0.318
+            pSwing: 0.475, pWhiff: 0.302, pCs: 0.272, xwobacon: 0.318, zonePct: 56, strikePct: 60
           },
           {
             code: 'CH', name: 'Changeup (Arm-Side Fade)', color: '#34d399', count: 4,
@@ -2152,7 +2152,7 @@
             relHeight: 5.66, relSide: 1.88, ext: 5.72, plateHeight: 2.12, plateSide: -0.32,
             vaa: -8.1, havaa: 1.7, spinEff: 80.0, clockTilt: '2:15', clockDeg: 68,
             magnusIvb: 8.0, magnusHb: 12.1, rawXrv: 0.05, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
-            pSwing: 0.492, pWhiff: 0.288, pCs: 0.250, xwobacon: 0.325
+            pSwing: 0.492, pWhiff: 0.288, pCs: 0.250, xwobacon: 0.325, zonePct: 54, strikePct: 58
           }
         ]
       },
@@ -2171,7 +2171,7 @@
             relHeight: 5.78, relSide: 1.88, ext: 6.42, plateHeight: 2.75, plateSide: 0.12,
             vaa: -4.5, havaa: -1.2, spinEff: 93.0, clockTilt: '1:00', clockDeg: 30,
             magnusIvb: 16.3, magnusHb: 9.5, rawXrv: -0.52, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
-            pSwing: 0.504, pWhiff: 0.288, pCs: 0.298, xwobacon: 0.305
+            pSwing: 0.504, pWhiff: 0.288, pCs: 0.298, xwobacon: 0.305, zonePct: 72, strikePct: 75
           },
           {
             code: 'SL', name: 'Gyro Slider', color: '#fbbf24', count: 7,
@@ -2179,7 +2179,7 @@
             relHeight: 5.74, relSide: 1.92, ext: 6.32, plateHeight: 1.92, plateSide: -0.44,
             vaa: -7.6, havaa: 0.5, spinEff: 35.0, clockTilt: '8:45', clockDeg: 262,
             magnusIvb: 1.8, magnusHb: -5.0, rawXrv: -0.96, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
-            pSwing: 0.538, pWhiff: 0.408, pCs: 0.278, xwobacon: 0.266
+            pSwing: 0.538, pWhiff: 0.408, pCs: 0.278, xwobacon: 0.266, zonePct: 67, strikePct: 70
           },
           {
             code: 'FS', name: 'Hard Splitter', color: '#2dd4bf', count: 5,
@@ -2187,7 +2187,7 @@
             relHeight: 5.72, relSide: 1.90, ext: 6.38, plateHeight: 1.86, plateSide: 0.34,
             vaa: -7.2, havaa: -1.6, spinEff: 66.0, clockTilt: '2:15', clockDeg: 68,
             magnusIvb: 4.1, magnusHb: 10.8, rawXrv: -0.88, muCol: -0.28, sigCol: 0.74, sigWithin: 16.8, xrvSens: -0.072,
-            pSwing: 0.544, pWhiff: 0.412, pCs: 0.246, xwobacon: 0.262
+            pSwing: 0.544, pWhiff: 0.412, pCs: 0.246, xwobacon: 0.262, zonePct: 65, strikePct: 68
           }
         ]
       },
@@ -2206,7 +2206,7 @@
             relHeight: 3.95, relSide: 2.75, ext: 6.15, plateHeight: 2.15, plateSide: 0.28,
             vaa: -4.6, havaa: -2.4, spinEff: 91.0, clockTilt: '3:15', clockDeg: 98,
             magnusIvb: 0.8, magnusHb: 16.4, rawXrv: 0.14, muCol: 0.08, sigCol: 0.65, sigWithin: 12.0, xrvSens: -0.108,
-            pSwing: 0.518, pWhiff: 0.204, pCs: 0.288, xwobacon: 0.324
+            pSwing: 0.518, pWhiff: 0.204, pCs: 0.288, xwobacon: 0.324, zonePct: 66, strikePct: 69
           },
           {
             code: 'SW', name: 'Rising-Sweep Slider', color: '#fb923c', count: 6,
@@ -2214,7 +2214,7 @@
             relHeight: 3.92, relSide: 2.78, ext: 6.02, plateHeight: 2.18, plateSide: -0.46,
             vaa: -5.8, havaa: 1.5, spinEff: 65.0, clockTilt: '9:30', clockDeg: 285,
             magnusIvb: 5.4, magnusHb: -14.8, rawXrv: -0.82, muCol: -0.38, sigCol: 0.76, sigWithin: 16.0, xrvSens: -0.078,
-            pSwing: 0.525, pWhiff: 0.402, pCs: 0.270, xwobacon: 0.264
+            pSwing: 0.525, pWhiff: 0.402, pCs: 0.270, xwobacon: 0.264, zonePct: 61, strikePct: 65
           },
           {
             code: 'CH', name: 'Sinking Changeup', color: '#34d399', count: 4,
@@ -2222,7 +2222,7 @@
             relHeight: 4.02, relSide: 2.72, ext: 6.08, plateHeight: 1.92, plateSide: 0.42,
             vaa: -6.4, havaa: -2.5, spinEff: 80.0, clockTilt: '3:30', clockDeg: 105,
             magnusIvb: -0.4, magnusHb: 15.8, rawXrv: -0.44, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
-            pSwing: 0.522, pWhiff: 0.348, pCs: 0.246, xwobacon: 0.286
+            pSwing: 0.522, pWhiff: 0.348, pCs: 0.246, xwobacon: 0.286, zonePct: 58, strikePct: 62
           }
         ]
       },
@@ -2241,7 +2241,7 @@
             relHeight: 6.38, relSide: 1.48, ext: 6.45, plateHeight: 2.86, plateSide: -0.12,
             vaa: -4.2, havaa: 1.1, spinEff: 96.0, clockTilt: '12:30', clockDeg: 15,
             magnusIvb: 18.5, magnusHb: 7.4, rawXrv: -0.74, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
-            pSwing: 0.508, pWhiff: 0.308, pCs: 0.302, xwobacon: 0.296
+            pSwing: 0.508, pWhiff: 0.308, pCs: 0.302, xwobacon: 0.296, zonePct: 72, strikePct: 75
           },
           {
             code: 'SL', name: 'Power Gyro Slider', color: '#fbbf24', count: 7,
@@ -2249,7 +2249,7 @@
             relHeight: 6.32, relSide: 1.54, ext: 6.35, plateHeight: 1.96, plateSide: 0.44,
             vaa: -7.5, havaa: -0.6, spinEff: 36.0, clockTilt: '8:45', clockDeg: 262,
             magnusIvb: 2.6, magnusHb: -5.5, rawXrv: -1.04, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
-            pSwing: 0.542, pWhiff: 0.418, pCs: 0.280, xwobacon: 0.262
+            pSwing: 0.542, pWhiff: 0.418, pCs: 0.280, xwobacon: 0.262, zonePct: 67, strikePct: 70
           },
           {
             code: 'CH', name: 'Hard Fade Changeup', color: '#34d399', count: 5,
@@ -2257,7 +2257,7 @@
             relHeight: 6.30, relSide: 1.56, ext: 6.40, plateHeight: 2.04, plateSide: -0.38,
             vaa: -6.8, havaa: 1.8, spinEff: 78.0, clockTilt: '2:15', clockDeg: 68,
             magnusIvb: 8.4, magnusHb: 13.0, rawXrv: -0.78, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
-            pSwing: 0.534, pWhiff: 0.372, pCs: 0.252, xwobacon: 0.278
+            pSwing: 0.534, pWhiff: 0.372, pCs: 0.252, xwobacon: 0.278, zonePct: 65, strikePct: 68
           }
         ]
       },
@@ -2276,7 +2276,7 @@
             relHeight: 5.95, relSide: 1.65, ext: 6.25, plateHeight: 2.74, plateSide: 0.08,
             vaa: -4.8, havaa: -1.1, spinEff: 92.0, clockTilt: '1:00', clockDeg: 30,
             magnusIvb: 15.5, magnusHb: 8.9, rawXrv: -0.24, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
-            pSwing: 0.498, pWhiff: 0.256, pCs: 0.296, xwobacon: 0.322
+            pSwing: 0.498, pWhiff: 0.256, pCs: 0.296, xwobacon: 0.322, zonePct: 66, strikePct: 69
           },
           {
             code: 'FC', name: 'Hard Glove Cutter', color: '#f472b6', count: 6,
@@ -2284,7 +2284,7 @@
             relHeight: 5.92, relSide: 1.68, ext: 6.20, plateHeight: 2.42, plateSide: -0.34,
             vaa: -5.8, havaa: 0.4, spinEff: 50.0, clockTilt: '10:30', clockDeg: 315,
             magnusIvb: 8.6, magnusHb: -3.4, rawXrv: -0.56, muCol: -0.05, sigCol: 0.64, sigWithin: 13.0, xrvSens: -0.095,
-            pSwing: 0.520, pWhiff: 0.316, pCs: 0.288, xwobacon: 0.286
+            pSwing: 0.520, pWhiff: 0.316, pCs: 0.288, xwobacon: 0.286, zonePct: 66, strikePct: 69
           },
           {
             code: 'CU', name: 'Spiked Knuckle-Curve', color: '#a78bfa', count: 6,
@@ -2292,7 +2292,7 @@
             relHeight: 6.02, relSide: 1.60, ext: 6.08, plateHeight: 1.70, plateSide: -0.24,
             vaa: -10.3, havaa: 0.6, spinEff: 83.0, clockTilt: '6:45', clockDeg: 202,
             magnusIvb: -14.8, magnusHb: -5.2, rawXrv: -0.78, muCol: -0.18, sigCol: 0.70, sigWithin: 16.5, xrvSens: -0.070,
-            pSwing: 0.478, pWhiff: 0.388, pCs: 0.314, xwobacon: 0.270
+            pSwing: 0.478, pWhiff: 0.388, pCs: 0.314, xwobacon: 0.270, zonePct: 58, strikePct: 62
           }
         ]
       },
@@ -2311,7 +2311,7 @@
             relHeight: 5.45, relSide: 2.02, ext: 6.18, plateHeight: 2.24, plateSide: -0.20,
             vaa: -5.9, havaa: 1.8, spinEff: 91.0, clockTilt: '2:15', clockDeg: 68,
             magnusIvb: 9.2, magnusHb: 14.3, rawXrv: -0.06, muCol: 0.08, sigCol: 0.65, sigWithin: 12.0, xrvSens: -0.108,
-            pSwing: 0.516, pWhiff: 0.212, pCs: 0.290, xwobacon: 0.314
+            pSwing: 0.516, pWhiff: 0.212, pCs: 0.290, xwobacon: 0.314, zonePct: 66, strikePct: 69
           },
           {
             code: 'CH', name: 'Heavy-Fade Changeup', color: '#34d399', count: 6,
@@ -2319,7 +2319,7 @@
             relHeight: 5.42, relSide: 2.06, ext: 6.15, plateHeight: 1.98, plateSide: -0.40,
             vaa: -7.6, havaa: 2.1, spinEff: 77.0, clockTilt: '2:30', clockDeg: 75,
             magnusIvb: 6.0, magnusHb: 15.0, rawXrv: -0.72, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
-            pSwing: 0.538, pWhiff: 0.376, pCs: 0.244, xwobacon: 0.274
+            pSwing: 0.538, pWhiff: 0.376, pCs: 0.244, xwobacon: 0.274, zonePct: 61, strikePct: 65
           },
           {
             code: 'SL', name: 'Backdoor Slider', color: '#fbbf24', count: 4,
@@ -2327,7 +2327,7 @@
             relHeight: 5.48, relSide: 2.04, ext: 6.05, plateHeight: 1.92, plateSide: 0.36,
             vaa: -8.4, havaa: -0.8, spinEff: 42.0, clockTilt: '8:30', clockDeg: 255,
             magnusIvb: -0.4, magnusHb: -7.1, rawXrv: -0.42, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
-            pSwing: 0.506, pWhiff: 0.342, pCs: 0.274, xwobacon: 0.296
+            pSwing: 0.506, pWhiff: 0.342, pCs: 0.274, xwobacon: 0.296, zonePct: 58, strikePct: 62
           }
         ]
       },
@@ -2346,7 +2346,7 @@
             relHeight: 5.58, relSide: 1.76, ext: 6.85, plateHeight: 2.84, plateSide: 0.08,
             vaa: -4.0, havaa: -1.0, spinEff: 95.0, clockTilt: '12:45', clockDeg: 23,
             magnusIvb: 17.7, magnusHb: 8.0, rawXrv: -0.68, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
-            pSwing: 0.508, pWhiff: 0.304, pCs: 0.304, xwobacon: 0.298
+            pSwing: 0.508, pWhiff: 0.304, pCs: 0.304, xwobacon: 0.298, zonePct: 66, strikePct: 69
           },
           {
             code: 'SL', name: 'Tight Gyro Slider', color: '#fbbf24', count: 6,
@@ -2354,7 +2354,7 @@
             relHeight: 5.56, relSide: 1.80, ext: 6.72, plateHeight: 1.94, plateSide: -0.42,
             vaa: -7.5, havaa: 0.5, spinEff: 35.0, clockTilt: '8:45', clockDeg: 262,
             magnusIvb: 1.4, magnusHb: -4.5, rawXrv: -0.88, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
-            pSwing: 0.532, pWhiff: 0.396, pCs: 0.278, xwobacon: 0.270
+            pSwing: 0.532, pWhiff: 0.396, pCs: 0.278, xwobacon: 0.270, zonePct: 61, strikePct: 65
           },
           {
             code: 'CU', name: 'Depth Curveball', color: '#a78bfa', count: 5,
@@ -2362,7 +2362,7 @@
             relHeight: 5.62, relSide: 1.74, ext: 6.62, plateHeight: 1.74, plateSide: -0.30,
             vaa: -10.2, havaa: 0.7, spinEff: 80.0, clockTilt: '7:00', clockDeg: 210,
             magnusIvb: -12.5, magnusHb: -6.0, rawXrv: -0.64, muCol: -0.18, sigCol: 0.70, sigWithin: 16.5, xrvSens: -0.070,
-            pSwing: 0.474, pWhiff: 0.368, pCs: 0.310, xwobacon: 0.278
+            pSwing: 0.474, pWhiff: 0.368, pCs: 0.310, xwobacon: 0.278, zonePct: 58, strikePct: 62
           }
         ]
       },
@@ -2381,7 +2381,7 @@
             relHeight: 5.55, relSide: 1.95, ext: 6.55, plateHeight: 2.82, plateSide: 0.10,
             vaa: -4.2, havaa: -1.1, spinEff: 95.0, clockTilt: '12:45', clockDeg: 23,
             magnusIvb: 17.9, magnusHb: 8.6, rawXrv: -0.82, muCol: 0.05, sigCol: 0.68, sigWithin: 11.5, xrvSens: -0.115,
-            pSwing: 0.512, pWhiff: 0.315, pCs: 0.304, xwobacon: 0.292
+            pSwing: 0.512, pWhiff: 0.315, pCs: 0.304, xwobacon: 0.292, zonePct: 72, strikePct: 75
           },
           {
             code: 'SL', name: 'Gyro Slider', color: '#fbbf24', count: 8,
@@ -2389,7 +2389,7 @@
             relHeight: 5.52, relSide: 1.98, ext: 6.45, plateHeight: 1.95, plateSide: -0.48,
             vaa: -7.4, havaa: 0.5, spinEff: 34.0, clockTilt: '9:00', clockDeg: 270,
             magnusIvb: 2.5, magnusHb: -5.1, rawXrv: -1.18, muCol: -0.32, sigCol: 0.72, sigWithin: 15.2, xrvSens: -0.082,
-            pSwing: 0.548, pWhiff: 0.425, pCs: 0.282, xwobacon: 0.258
+            pSwing: 0.548, pWhiff: 0.425, pCs: 0.282, xwobacon: 0.258, zonePct: 67, strikePct: 70
           },
           {
             code: 'CH', name: 'Split-Changeup', color: '#34d399', count: 5,
@@ -2397,7 +2397,7 @@
             relHeight: 5.50, relSide: 2.00, ext: 6.50, plateHeight: 2.02, plateSide: 0.44,
             vaa: -6.9, havaa: -1.9, spinEff: 74.0, clockTilt: '2:30', clockDeg: 75,
             magnusIvb: 6.2, magnusHb: 13.4, rawXrv: -0.95, muCol: -0.12, sigCol: 0.66, sigWithin: 15.8, xrvSens: -0.065,
-            pSwing: 0.540, pWhiff: 0.388, pCs: 0.255, xwobacon: 0.271
+            pSwing: 0.540, pWhiff: 0.388, pCs: 0.255, xwobacon: 0.271, zonePct: 65, strikePct: 68
           }
         ]
       }
@@ -4553,7 +4553,10 @@
         const clockTilt = degToClockString(clockDeg);
 
         const dFlight = Math.max(48.0, 60.5 - ext - 1.417);
-        const vaa = -((Math.atan2(relHeight - 2.35 - (ivb / 12.0) * 0.48, dFlight * 0.62) * 180) / Math.PI);
+        const explicitVaas = grp.map((r) => parseFloat(getField(r, ['VertApprAngle', 'VAA', 'VertAppr'], NaN))).filter(Number.isFinite);
+        const vaa = explicitVaas.length
+          ? explicitVaas.reduce((a, b) => a + b, 0) / explicitVaas.length
+          : -((Math.atan2(relHeight - 2.35 - (ivb / 12.0) * 0.48, dFlight * 0.62) * 180) / Math.PI);
         const havaa = throws === 'R' ? -1.4 : 1.4;
 
         let rawXrv = meta.muCol;
@@ -4955,6 +4958,147 @@
       return res;
     }
 
+    function detectAndParseTrackManPowerBIPDF(normLines, fileName) {
+      const joined = normLines.join('\n');
+      const hasRelease = /RELEASE\s+SLOT(?:\s+AVG)?/i.test(joined);
+      const hasMovement = /MOVEMENT\s+AVG/i.test(joined);
+      const hasApproach = /APPROACH\s+ANGLE/i.test(joined);
+      if ([hasRelease, hasMovement, hasApproach].filter(Boolean).length < 2) {
+        return null;
+      }
+
+      const meta = extractTrackManPDFMetadata(normLines, fileName);
+      const pitchTagRegex = /\b(Four-?Seam|4-?Seam|Fastball|Two-?Seam|2-?Seam|Sinker|Cutter|Sweeper|Slider|Curveball|Knuckle-?Curve|Change-?Up|Changeup|Change|Splitter|Split|FF|FA|SI|FT|FC|SW|ST|SL|CU|KC|CH|FS)\b/i;
+      const byPitch = {};
+      let activeSection = null;
+
+      function ensurePitch(code) {
+        if (!byPitch[code]) {
+          byPitch[code] = {
+            code,
+            count: null,
+            velo: NaN,
+            maxVelo: NaN,
+            spin: NaN,
+            maxSpin: NaN,
+            ext: NaN,
+            ivb: NaN,
+            hb: NaN,
+            tilt: null,
+            strikePct: NaN,
+            vaa: NaN
+          };
+        }
+        return byPitch[code];
+      }
+
+      for (const rawLine of normLines) {
+        const line = normalizePDFTextLine(rawLine).trim();
+        if (!line) continue;
+
+        if (/RELEASE\s+SLOT(?:\s+AVG)?/i.test(line)) { activeSection = 'release'; continue; }
+        if (/MOVEMENT\s+AVG/i.test(line)) { activeSection = 'movement'; continue; }
+        if (/APPROACH\s+ANGLE/i.test(line)) { activeSection = 'approach'; continue; }
+        if (!activeSection) continue;
+
+        // Skip header rows and pure axis-tick lines (e.g. "20 10 0 -10 -20")
+        if (/^(?:Pitch\s*Type|Total|All)\b/i.test(line)) continue;
+        const tagMatch = line.match(pitchTagRegex);
+        if (!tagMatch) continue;
+
+        const code = normalizePitchCode(tagMatch[1]);
+        const entry = ensurePitch(code);
+        const afterTag = line.slice(line.indexOf(tagMatch[0]) + tagMatch[0].length).trim();
+
+        if (activeSection === 'release') {
+          const clean = afterTag.replace(/\b(1[0-2]|[1-9]):[0-5]\d\b/g, ' ');
+          const nums = (clean.match(/-?\d+(?:\.\d+)?/g) || []).map(Number).filter(Number.isFinite);
+          if (nums.length < 2) continue;
+          let idx = 0;
+          if (Number.isInteger(nums[0]) && nums[0] >= 1 && nums[0] <= 150) {
+            entry.count = nums[0];
+            idx = 1;
+          }
+          if (idx < nums.length && nums[idx] >= 50 && nums[idx] <= 105) {
+            entry.velo = nums[idx++];
+          }
+          if (idx < nums.length && nums[idx] >= 50 && nums[idx] <= 108) {
+            entry.maxVelo = nums[idx++];
+          }
+          if (idx < nums.length && nums[idx] >= 600 && nums[idx] <= 3600) {
+            entry.spin = nums[idx++];
+          }
+          if (idx < nums.length && nums[idx] >= 600 && nums[idx] <= 3800) {
+            entry.maxSpin = nums[idx++];
+          }
+          if (idx < nums.length && nums[idx] >= 3.5 && nums[idx] <= 8.5) {
+            entry.ext = nums[idx++];
+          }
+        } else if (activeSection === 'movement') {
+          const tilts = afterTag.match(/\b(1[0-2]|[1-9]):[0-5]\d\b/g) || [];
+          if (tilts.length > 0 && !entry.tilt) entry.tilt = tilts[0];
+          const clean = afterTag.replace(/\b(1[0-2]|[1-9]):[0-5]\d\b/g, ' ');
+          const nums = (clean.match(/-?\d+(?:\.\d+)?/g) || []).map(Number).filter(Number.isFinite);
+          if (nums.length < 2) continue;
+          let idx = 0;
+          if (Number.isInteger(nums[0]) && nums[0] >= 1 && nums[0] <= 150 && nums.length >= 3) {
+            if (entry.count === null) entry.count = nums[0];
+            idx = 1;
+          }
+          if (idx + 1 < nums.length) {
+            entry.ivb = nums[idx];
+            entry.hb = nums[idx + 1];
+          }
+        } else if (activeSection === 'approach') {
+          const pctMatches = afterTag.match(/\d+(?:\.\d+)?\s*%/g) || [];
+          if (pctMatches.length > 0) {
+            const firstPct = parseFloat(pctMatches[0]);
+            if (Number.isFinite(firstPct)) entry.strikePct = firstPct;
+          }
+          const noPct = afterTag.replace(/\d+(?:\.\d+)?\s*%/g, ' ');
+          const nums = (noPct.match(/-?\d+(?:\.\d+)?/g) || []).map(Number).filter(Number.isFinite);
+          const vaaCandidate = [...nums].reverse().find((v) => v >= -18.0 && v <= 2.0);
+          if (vaaCandidate !== undefined) {
+            entry.vaa = vaaCandidate;
+          }
+        }
+      }
+
+      const entries = Object.values(byPitch).filter((e) => Number.isFinite(e.velo) || Number.isFinite(e.ivb));
+      if (!entries.length) return null;
+
+      const expandedRows = [];
+      entries.forEach((e) => {
+        const repeatN = Math.min(120, Math.max(1, e.count || 1));
+        const rowObj = {
+          Pitcher: meta.pitcherName,
+          Throws: meta.throws,
+          Date: meta.sessionDate,
+          TaggedPitchType: e.code,
+          _pdfIsSummary: true,
+          RelSpeed: Number.isFinite(e.velo) ? e.velo : 84.0,
+          MaxRelSpeed: Number.isFinite(e.maxVelo) ? e.maxVelo : undefined,
+          SpinRate: Number.isFinite(e.spin) ? e.spin : (e.code === 'CH' || e.code === 'FS' ? 1550 : 2150),
+          SpinAxis: e.tilt || (e.code === 'FF' ? '1:15' : (e.code === 'CH' || e.code === 'FS' ? '2:15' : '8:45')),
+          InducedVertBreak: Number.isFinite(e.ivb) ? e.ivb : (e.code === 'FF' ? 15.8 : (e.code === 'CH' || e.code === 'FS' ? 5.5 : -2.5)),
+          HorzBreak: Number.isFinite(e.hb) ? e.hb : (e.code === 'FF' ? 10.5 : (e.code === 'CH' || e.code === 'FS' ? 14.5 : -6.5)),
+          RelHeight: 5.75,
+          RelSide: 1.85,
+          Extension: Number.isFinite(e.ext) ? e.ext : 6.00,
+          VertApprAngle: Number.isFinite(e.vaa) ? e.vaa : undefined,
+          StrikePct: Number.isFinite(e.strikePct) ? e.strikePct : undefined
+        };
+        for (let k = 0; k < repeatN; k++) {
+          expandedRows.push(rowObj);
+        }
+      });
+
+      const res = parseTrackManCSVOrJSON(JSON.stringify(expandedRows), fileName);
+      res.layoutDetected = 'TrackMan Team Portal / Power BI Report';
+      res.pitchTypesList = entries.map((e) => e.code);
+      return res;
+    }
+
     function parseTrackManPDFLines(lines, fileName = 'TrackMan_Report.pdf') {
       if (!lines || !lines.length) {
         throw new Error('No selectable text found in this PDF. It appears to be a scanned image; please export a text-based TrackMan PDF or CSV.');
@@ -4962,12 +5106,16 @@
 
       const normLines = lines.map(normalizePDFTextLine);
 
-      // Additive branch: Tread Athletics "TrackMan Data Breakdown" Pitch Metrics summary table
+      // Additive branch 1: Tread Athletics "TrackMan Data Breakdown" Pitch Metrics summary table
       const treadHeader = detectTreadAthleticsHeader(normLines);
       if (treadHeader) {
         const treadRes = parseTreadAthleticsPDFLines(normLines, fileName, treadHeader);
         if (treadRes) return treadRes;
       }
+
+      // Additive branch 2: TrackMan Team Portal / Power BI 3-Table Report (RELEASE SLOT AVG / MOVEMENT AVG / APPROACH ANGLE)
+      const powerBiRes = detectAndParseTrackManPowerBIPDF(normLines, fileName);
+      if (powerBiRes) return powerBiRes;
 
       const meta = extractTrackManPDFMetadata(normLines, fileName);
       const pitchTagRegex = /\b(Four-?Seam|4-?Seam|Fastball|Two-?Seam|2-?Seam|Sinker|Cutter|Sweeper|Slider|Curveball|Knuckle-?Curve|Changeup|Change|Splitter|Split|FF|FA|SI|FT|FC|SW|ST|SL|CU|KC|CH|FS)\b/i;
@@ -5474,7 +5622,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.22 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.24 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -5732,13 +5880,13 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           </div>
 
           <div class="grid grid-cols-2 gap-2 text-[13px] font-mono-num text-[#cbd5e1]">
-            <div class="rounded bg-[#10141b] border border-[#1f252e] px-2.5 py-1.5 flex items-center justify-between gap-1">
-              <span class="text-[#94a3b8]">${infoTipHTML('Vertical Ride (in)', 'Positive (+) means upward backspin carry that stays above the bat. Negative (-) means downward drop toward the dirt.')}</span>
-              <strong class="text-white">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}"</strong>
+            <div class="min-w-0 rounded bg-[#10141b] border border-[#1f252e] px-2.5 py-1.5 flex items-center justify-between gap-1.5">
+              <span class="text-[#94a3b8] text-xs truncate">${infoTipHTML('Vert. Ride', 'Positive (+) means upward backspin carry that stays above the bat. Negative (-) means downward drop toward the dirt.')}</span>
+              <strong class="text-white shrink-0 tabular-nums">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}"</strong>
             </div>
-            <div class="rounded bg-[#10141b] border border-[#1f252e] px-2.5 py-1.5 flex items-center justify-between gap-1">
-              <span class="text-[#94a3b8]">${infoTipHTML('Horizontal Break (in)', getHbTooltipText(profile.throws))}</span>
-              <strong class="text-white">${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}"</strong>
+            <div class="min-w-0 rounded bg-[#10141b] border border-[#1f252e] px-2.5 py-1.5 flex items-center justify-between gap-1.5">
+              <span class="text-[#94a3b8] text-xs truncate">${infoTipHTML('Horz. Break', getHbTooltipText(profile.throws))}</span>
+              <strong class="text-white shrink-0 tabular-nums">${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}"</strong>
             </div>
           </div>
 
@@ -5841,14 +5989,28 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           ? `Right now, ${profile.name}'s ${presFb.velo.toFixed(1)} mph fastball grades out below college average (${presFb.shrunkStuff.toFixed(0)} College Stuff+, ${presFb.scout2080.short} Grade) despite good lift (${presFb.ivb >= 0 ? '+' : ''}${presFb.ivb.toFixed(1)}" vertical ride and ${presFb.ext.toFixed(1)} ft of extension), because college hitters have ${presFb.reactionMarginMs.toFixed(0)} milliseconds to read and react to the pitch.`
           : `Right now, ${profile.name} attacks hitters with a college-ready ${presFb.velo.toFixed(1)} mph fastball (${presFb.shrunkStuff.toFixed(0)} College Stuff+, ${presFb.scout2080.short} Grade) that jumps out of a ${presFb.ext.toFixed(1)}-ft extension window and gives batters just ${presFb.reactionMarginMs.toFixed(0)} milliseconds to react.`;
 
-        // Sentence 2 (Best Secondary & Platoon Split)
+        // Sentence 2 (Best Pitch & Tunneling Pair — avoid fastball self-comparison)
         const bestSplitTarget = bestPitch.stuffVsLHB >= bestPitch.stuffVsRHB
           ? `left-handed hitters (${bestPitch.stuffVsLHB.toFixed(0)} College Stuff+ vs. Lefties)`
           : `right-handed hitters (${bestPitch.stuffVsRHB.toFixed(0)} College Stuff+ vs. Righties)`;
-        const s2 = `His standout weapon is his ${bestPitch.velo.toFixed(1)} mph ${bestPitch.name} (${bestPitch.shrunkStuff.toFixed(0)} College Stuff+, ${bestPitch.scout2080.short} Grade), which hides within ${tunnelDistStr} of his fastball at the hitter's decision point before breaking sharply to neutralize ${bestSplitTarget}.`;
+        const bestIsPrimaryFb = bestPitch.code === 'FF' || bestPitch.code === 'SI';
+        let s2 = '';
+        if (bestIsPrimaryFb) {
+          const bestSecondary = [...simEval.gradedPitches]
+            .filter((p) => p.code !== bestPitch.code)
+            .sort((a, b) => b.shrunkStuff - a.shrunkStuff)[0] || simEval.gradedPitches[1] || bestPitch;
+          const secTunnel = simEval.pairwise.find((pw) => pw.secondary === bestSecondary.code) || bestTunnel;
+          const secTunnelDistStr = secTunnel ? `${secTunnel.dDecIn.toFixed(1)} inches` : 'a tight window';
+          s2 = `His standout weapon is his ${bestPitch.velo.toFixed(1)} mph ${bestPitch.name} (${bestPitch.shrunkStuff.toFixed(0)} College Stuff+, ${bestPitch.scout2080.short} Grade), which tunnels within ${secTunnelDistStr} of his ${bestSecondary.name} at the hitter's decision point before diverging sharply to neutralize ${bestSplitTarget}.`;
+        } else {
+          s2 = `His standout weapon is his ${bestPitch.velo.toFixed(1)} mph ${bestPitch.name} (${bestPitch.shrunkStuff.toFixed(0)} College Stuff+, ${bestPitch.scout2080.short} Grade), which hides within ${tunnelDistStr} of his fastball at the hitter's decision point before breaking sharply to neutralize ${bestSplitTarget}.`;
+        }
 
-        // Sentence 3 (Neutral What-If +5 mph Simulation)
-        const s3 = `If fastball velocity reaches ${projFb.velo.toFixed(1)} mph (+5.0 mph simulation), the Fastball Setup Factor rises from ${presentBaselineEval.setupPct}% to ${projectedBaselineEval.setupPct}% and overall repertoire grades move from ${presentBaselineEval.arsenalPlus.toFixed(1)} Present Arsenal+ (${presentBaselineEval.arsenal2080.short} Grade) to ${projectedBaselineEval.arsenalPlus.toFixed(1)} Simulated Arsenal+ (${projectedBaselineEval.arsenal2080.short} Grade).`;
+        // Sentence 3 (Neutral What-If +5 mph Simulation — avoid "100% to 100%")
+        const setupPhrase = presentBaselineEval.setupPct >= 100
+          ? `the Fastball Setup Factor remains locked at 100% (maximizing secondary deception)`
+          : `the Fastball Setup Factor rises from ${presentBaselineEval.setupPct}% to ${projectedBaselineEval.setupPct}%`;
+        const s3 = `If fastball velocity reaches ${projFb.velo.toFixed(1)} mph (+5.0 mph simulation), ${setupPhrase} and overall repertoire grades move from ${presentBaselineEval.arsenalPlus.toFixed(1)} Present Arsenal+ (${presentBaselineEval.arsenal2080.short} Grade) to ${projectedBaselineEval.arsenalPlus.toFixed(1)} Simulated Arsenal+ (${projectedBaselineEval.arsenal2080.short} Grade).`;
 
         execText = `${s1} ${s2} ${s3}`;
       } else {
