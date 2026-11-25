@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.25b — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.26 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -214,6 +214,88 @@
         max-height: 205px !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+      }
+    }
+
+    /* Dedicated JSPBC 1-Page Scout Card & Multi-Page Staff Packet Print Engine */
+    #jspbcPrintContainer {
+      display: none;
+    }
+    @media print {
+      body.jspbc-print-packet > *:not(#jspbcPrintContainer) {
+        display: none !important;
+      }
+      body.jspbc-print-packet #jspbcPrintContainer {
+        display: block !important;
+        width: 7.6in !important;
+        max-width: 7.6in !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #0f172a !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+      }
+      .jspbc-print-page {
+        width: 7.6in;
+        background: #ffffff !important;
+        color: #0f172a !important;
+        page-break-after: always;
+        break-after: page;
+        padding-bottom: 4px;
+      }
+      .jspbc-print-page:last-child {
+        page-break-after: auto;
+        break-after: auto;
+      }
+      .jspbc-print-header {
+        border-bottom: 2px solid #0f172a;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .jspbc-print-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'JetBrains Mono', monospace;
+        font-variant-numeric: tabular-nums;
+        font-size: 7.8pt;
+        margin-bottom: 10px;
+      }
+      .jspbc-print-table th,
+      .jspbc-print-table td {
+        border: 1px solid #cbd5e1;
+        padding: 4px 4px;
+        text-align: right;
+        color: #0f172a !important;
+      }
+      .jspbc-print-table th {
+        background: #f1f5f9 !important;
+        font-weight: 700;
+        text-align: right;
+      }
+      .jspbc-print-table th:first-child,
+      .jspbc-print-table td:first-child {
+        text-align: left;
+      }
+      .jspbc-print-box {
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        padding: 8px 10px;
+        margin-bottom: 8px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .jspbc-print-footer {
+        border-top: 1px solid #cbd5e1;
+        padding-top: 6px;
+        margin-top: 10px;
+        font-size: 7.8pt;
+        color: #475569 !important;
+        display: flex;
+        justify-content: space-between;
       }
     }
 
@@ -969,9 +1051,14 @@
           <h2 class="text-lg sm:text-xl font-extrabold text-white">Staff Roster Leaderboard</h2>
           <p id="batchRosterMeta" class="text-xs font-mono-num text-slate-400 mt-0.5">Ranked by Overall Arsenal+ (100 = College D1 Avg)</p>
         </div>
-        <button id="closeBatchRosterBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-semibold transition">
-          Hide Leaderboard
-        </button>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="exportStaffPacketBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
+            Export Staff Packet
+          </button>
+          <button id="closeBatchRosterBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-semibold transition">
+            Hide Leaderboard
+          </button>
+        </div>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-[13px] font-mono-num">
@@ -1039,6 +1126,9 @@
             Showing: Present College Grade
           </span>
           <span id="pitcherHeaderMeta" class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">HS Showcase Bullpen • 10/20/2026 • 15 Pitches • Low-3/4 Slot</span>
+          <button id="exportScoutCardPdfBtn" type="button" class="no-print touch-target px-3 py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-sans font-semibold transition">
+            Export Scout Card PDF
+          </button>
         </div>
       </div>
 
@@ -1567,7 +1657,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.25b • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.26 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -5869,7 +5959,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.25b R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.26 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -8496,6 +8586,216 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         }
       }
 
+      function buildJSPBCPrintCardHTML(profile, presEval, projEval, quickWins) {
+        const totalP = presEval.gradedPitches.reduce((acc, p) => acc + (p.count || 0), 0) || profile.totalPitches || 1;
+        const rowsHtml = presEval.gradedPitches.map((p, idx) => {
+          const projP = (projEval && projEval.gradedPitches && projEval.gradedPitches[idx]) ? projEval.gradedPitches[idx] : p;
+          const usagePct = ((p.count || 0) / totalP) * 100.0;
+          const strPct = (typeof p.strikePct === 'number' && Number.isFinite(p.strikePct))
+            ? `${p.strikePct.toFixed(0)}%`
+            : ((typeof p.zonePct === 'number' && Number.isFinite(p.zonePct)) ? `${p.zonePct.toFixed(0)}%` : '—');
+          return `
+            <tr>
+              <td><strong>${p.code}</strong> · ${p.name}</td>
+              <td>${p.count}</td>
+              <td>${usagePct.toFixed(0)}%</td>
+              <td>${p.velo.toFixed(1)}</td>
+              <td>${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}"</td>
+              <td>${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}"</td>
+              <td>${Math.round(p.spin)}</td>
+              <td>${p.ext.toFixed(1)}</td>
+              <td>${p.vaa.toFixed(1)}°</td>
+              <td>${strPct}</td>
+              <td><strong>${p.shrunkStuff.toFixed(0)}</strong></td>
+              <td>${p.scout2080.short}</td>
+              <td>${p.stuffVsRHB.toFixed(0)} / ${p.stuffVsLHB.toFixed(0)}</td>
+              <td>${projP.shrunkStuff.toFixed(0)}</td>
+            </tr>
+          `;
+        }).join('');
+
+        const qwList = Array.isArray(quickWins) ? quickWins.slice(0, 2) : [];
+        const qwHtml = qwList.map((qw, i) => {
+          const gainPrefix = qw.arsenalGain >= 0 ? '+' : '';
+          const cue = qw.scoutCue || qw.playerCue || '';
+          return `
+            <div style="margin-bottom:${i === 0 ? '6px' : '0'};">
+              <div style="font-size:9pt;font-weight:700;color:#0f172a;">
+                ${i + 1}. ${qw.title}
+                <span style="font-family:'JetBrains Mono',monospace;font-size:8pt;border:1px solid #94a3b8;padding:1px 5px;border-radius:3px;margin-left:6px;">${gainPrefix}${qw.arsenalGain.toFixed(1)} Arsenal+</span>
+              </div>
+              <div style="font-size:8.5pt;color:#334155;margin-top:2px;line-height:1.35;">${cue}</div>
+            </div>
+          `;
+        }).join('') || '<div style="font-size:8.5pt;color:#334155;">Maintain current mechanical repeatability and in-zone execution.</div>';
+
+        return `
+          <div class="jspbc-print-page">
+            <div class="jspbc-print-header">
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:8pt;font-weight:700;letter-spacing:0.04em;color:#334155;">
+                  JAXSON SMITH PETERSON BASEBALL CONSULTING — ARSENAL EVALUATION &amp; STUFF+ REPORT
+                </div>
+                <div style="font-size:17pt;font-weight:800;color:#0f172a;margin-top:3px;">
+                  ${profile.name} <span style="font-size:11pt;font-weight:600;color:#475569;">(${profile.throws}HP)</span>
+                </div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:8.5pt;color:#475569;margin-top:2px;">
+                  Session Date: ${profile.date || '—'} &nbsp;|&nbsp; Total Pitches (N): ${totalP} &nbsp;|&nbsp; ${profile.team || 'TrackMan Bullpen'}
+                </div>
+              </div>
+              <div style="text-align:right;font-family:'JetBrains Mono',monospace;">
+                <div style="font-size:8pt;color:#475569;">OVERALL ARSENAL+</div>
+                <div style="font-size:20pt;font-weight:800;line-height:1.05;color:#0f172a;">${presEval.arsenalPlus.toFixed(1)}</div>
+                <div style="font-size:8pt;font-weight:700;color:#0f172a;">${presEval.arsenal2080.label}</div>
+                <div style="font-size:7pt;color:#475569;border:1px solid #cbd5e1;padding:2px 5px;border-radius:3px;margin-top:3px;display:inline-block;">
+                  NCAA D1 Calibrated • Empirical 4YR Post-Draft + D1 Baseline
+                </div>
+              </div>
+            </div>
+
+            <div style="font-size:9.5pt;font-weight:700;color:#0f172a;margin-bottom:4px;">Pitch-by-Pitch Metrics &amp; NCAA D1 Stuff+</div>
+            <table class="jspbc-print-table">
+              <thead>
+                <tr>
+                  <th>Pitch Type</th>
+                  <th>N</th>
+                  <th>Use%</th>
+                  <th>Velo</th>
+                  <th>IVB</th>
+                  <th>HB</th>
+                  <th>Spin</th>
+                  <th>Ext</th>
+                  <th>VAA</th>
+                  <th>Str%</th>
+                  <th>Stuff+</th>
+                  <th>Grade</th>
+                  <th>vs RHH/LHH</th>
+                  <th>+5 mph</th>
+                </tr>
+              </thead>
+              <tbody>${rowsHtml}</tbody>
+            </table>
+
+            <div class="jspbc-print-box">
+              <div style="font-size:9.5pt;font-weight:700;color:#0f172a;margin-bottom:5px;border-bottom:1px solid #e2e8f0;padding-bottom:3px;">
+                Top 2 Quick-Win Mechanical &amp; Pitch-Design Adjustments
+              </div>
+              ${qwHtml}
+            </div>
+
+            <div class="jspbc-print-footer">
+              <span>Tracked &amp; Evaluated by Jaxson Smith Peterson Baseball Consulting</span>
+              <span>NCAA D1 Stuff+ Scale (100 = D1 Avg, 10 SD)</span>
+            </div>
+          </div>
+        `;
+      }
+
+      function triggerJSPBCPrint(htmlContent, toastMsg) {
+        const container = document.getElementById('jspbcPrintContainer');
+        if (!container) return;
+        container.innerHTML = htmlContent;
+        document.body.classList.add('jspbc-print-packet');
+        showToast(toastMsg || "Choose 'Save as PDF' or select your printer");
+        const cleanup = () => {
+          document.body.classList.remove('jspbc-print-packet');
+          container.innerHTML = '';
+          window.removeEventListener('afterprint', cleanup);
+        };
+        window.addEventListener('afterprint', cleanup);
+        setTimeout(() => {
+          try { window.print(); } catch (e) { cleanup(); }
+        }, 120);
+      }
+
+      const exportScoutCardPdfBtn = document.getElementById('exportScoutCardPdfBtn');
+      if (exportScoutCardPdfBtn) {
+        exportScoutCardPdfBtn.addEventListener('click', () => {
+          const prof = PITCHER_PROFILES[appState.currentPitcherId];
+          if (!prof) return;
+          const emptyLab = createEmptyPitchLabState(prof.pitches.length + 2);
+          const presEv = evaluateFullPipeline(prof, appState.pacingMode, emptyLab, appState.coupledSlotArc, 'present');
+          const projEv = evaluateFullPipeline(prof, appState.pacingMode, emptyLab, appState.coupledSlotArc, 'projected');
+          const qWins = computeLowestHangingFruit(prof, presEv);
+          const cardHtml = buildJSPBCPrintCardHTML(prof, presEv, projEv, qWins);
+          triggerJSPBCPrint(cardHtml, `Formatted 1-Page Scout Card PDF for ${prof.name}`);
+        });
+      }
+
+      const exportStaffPacketBtn = document.getElementById('exportStaffPacketBtn');
+      if (exportStaffPacketBtn) {
+        exportStaffPacketBtn.addEventListener('click', () => {
+          const roster = Array.isArray(appState.batchRoster) ? appState.batchRoster : [];
+          if (!roster.length) {
+            showToast('Import 2+ pitchers first to export a Staff Bullpen Packet');
+            return;
+          }
+          const lbRows = roster.map((entry, idx) => `
+            <tr>
+              <td>${idx + 1}</td>
+              <td style="text-align:left;"><strong>${entry.name}</strong></td>
+              <td>${entry.throws}HP</td>
+              <td>${entry.totalPitches}</td>
+              <td>${entry.fbVelo.toFixed(1)} mph</td>
+              <td>${entry.bestPitchCode} (${entry.bestPitchStuff.toFixed(0)})</td>
+              <td><strong>${entry.arsenalPlus.toFixed(1)}</strong></td>
+            </tr>
+          `).join('');
+          const page1 = `
+            <div class="jspbc-print-page">
+              <div class="jspbc-print-header">
+                <div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:8pt;font-weight:700;letter-spacing:0.04em;color:#334155;">
+                    JAXSON SMITH PETERSON BASEBALL CONSULTING — STAFF BULLPEN PACKET
+                  </div>
+                  <div style="font-size:17pt;font-weight:800;color:#0f172a;margin-top:3px;">
+                    Staff Roster Leaderboard (${roster.length} Pitchers)
+                  </div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:8.5pt;color:#475569;margin-top:2px;">
+                    Ranked by Overall Arsenal+ &nbsp;|&nbsp; Generated ${new Date().toLocaleDateString('en-US')}
+                  </div>
+                </div>
+                <div style="text-align:right;font-family:'JetBrains Mono',monospace;">
+                  <div style="font-size:7.5pt;color:#475569;border:1px solid #cbd5e1;padding:3px 6px;border-radius:3px;">
+                    NCAA D1 Calibrated • Empirical 4YR Post-Draft + D1 Baseline
+                  </div>
+                </div>
+              </div>
+              <table class="jspbc-print-table" style="font-size:8.5pt;">
+                <thead>
+                  <tr>
+                    <th style="text-align:right;">Rank</th>
+                    <th style="text-align:left;">Pitcher</th>
+                    <th>Throws</th>
+                    <th>Pitches</th>
+                    <th>Primary FB Velo</th>
+                    <th>Best Pitch (Stuff+)</th>
+                    <th>Overall Arsenal+</th>
+                  </tr>
+                </thead>
+                <tbody>${lbRows}</tbody>
+              </table>
+              <div class="jspbc-print-footer">
+                <span>Tracked &amp; Evaluated by Jaxson Smith Peterson Baseball Consulting</span>
+                <span>NCAA D1 Stuff+ Scale (100 = D1 Avg, 10 SD)</span>
+              </div>
+            </div>
+          `;
+
+          const athletePages = roster.map((entry) => {
+            const prof = PITCHER_PROFILES[entry.profileId];
+            if (!prof) return '';
+            const emptyLab = createEmptyPitchLabState(prof.pitches.length + 2);
+            const presEv = evaluateFullPipeline(prof, appState.pacingMode, emptyLab, appState.coupledSlotArc, 'present');
+            const projEv = evaluateFullPipeline(prof, appState.pacingMode, emptyLab, appState.coupledSlotArc, 'projected');
+            const qWins = computeLowestHangingFruit(prof, presEv);
+            return buildJSPBCPrintCardHTML(prof, presEv, projEv, qWins);
+          }).join('');
+
+          triggerJSPBCPrint(page1 + athletePages, `Formatted ${roster.length + 1}-Page Staff Bullpen Packet`);
+        });
+      }
+
       const backBatchBtn = document.getElementById('backToBatchRosterBtn');
       if (backBatchBtn) {
         backBatchBtn.addEventListener('click', () => {
@@ -8934,5 +9234,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       }
     });
   </script>
+  <!-- Dedicated Print Container for JSPBC Scout Card & Staff Bullpen Packet -->
+  <div id="jspbcPrintContainer" aria-hidden="true"></div>
 </body>
 </html>
