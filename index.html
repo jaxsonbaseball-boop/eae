@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.26 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.27 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -1126,6 +1126,12 @@
             Showing: Present College Grade
           </span>
           <span id="pitcherHeaderMeta" class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">HS Showcase Bullpen • 10/20/2026 • 15 Pitches • Low-3/4 Slot</span>
+          <button id="saveVaultSessionBtn" type="button" class="no-print touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-emerald-300 border border-[#262c36] text-xs font-sans font-semibold transition">
+            Save Session to Vault
+          </button>
+          <button id="openVaultModalBtn" type="button" class="no-print touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-sans font-semibold transition">
+            Session Vault
+          </button>
           <button id="exportScoutCardPdfBtn" type="button" class="no-print touch-target px-3 py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-sans font-semibold transition">
             Export Scout Card PDF
           </button>
@@ -1598,6 +1604,46 @@
         <!-- Hitter Splits Table & Coaching Priorities -->
         <div class="lg:col-span-7 flex flex-col justify-between space-y-4">
           <div class="glass-card-subtle rounded-md p-3.5 overflow-x-auto">
+            <!-- Pre/Post Block Delta Comparison Bar (visible when active pitcher has 2+ sessions in Vault) -->
+            <div id="vaultCompareBar" class="hidden mb-3 rounded-md bg-[#10141b] border border-[#262c36] p-3 space-y-2.5 no-print">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <button id="toggleVaultCompareBtn" type="button" aria-pressed="false" class="touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-100 border border-[#3b82f6] text-xs font-semibold transition">
+                    Compare Sessions (Δ)
+                  </button>
+                  <span id="vaultCompareCountNote" class="text-[11px] font-mono-num text-slate-400">2 sessions in vault</span>
+                </div>
+                <div id="vaultCompareSelectors" class="hidden flex flex-wrap items-center gap-2 text-xs font-mono-num">
+                  <label class="text-slate-400">Baseline:
+                    <select id="vaultBaselineSelect" class="ml-1 bg-[#151921] border border-[#262c36] text-slate-100 rounded px-2 py-1 text-xs"></select>
+                  </label>
+                  <label class="text-slate-400">Compare:
+                    <select id="vaultComparisonSelect" class="ml-1 bg-[#151921] border border-[#262c36] text-slate-100 rounded px-2 py-1 text-xs"></select>
+                  </label>
+                </div>
+              </div>
+              <div id="vaultCompareBody" class="hidden space-y-2.5 pt-2 border-t border-[#262c36]">
+                <div id="vaultArsenalBanner" class="flex flex-wrap items-center justify-between gap-2 rounded bg-[#151921] border border-[#262c36] px-3 py-2 font-mono-num text-xs"></div>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse text-xs font-mono-num">
+                    <thead>
+                      <tr class="border-b border-[#262c36] text-slate-400 text-[11px]">
+                        <th class="py-1.5 pr-2">Pitch</th>
+                        <th class="py-1.5 px-1.5 text-right">Velo (Δ)</th>
+                        <th class="py-1.5 px-1.5 text-right">IVB Δ</th>
+                        <th class="py-1.5 px-1.5 text-right">HB Δ</th>
+                        <th class="py-1.5 px-1.5 text-right">Spin Δ</th>
+                        <th class="py-1.5 px-1.5 text-right">Ext Δ</th>
+                        <th class="py-1.5 px-1.5 text-right">Strike% Δ</th>
+                        <th class="py-1.5 pl-1.5 text-right text-sky-300">Stuff+ (Δ)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="vaultDeltaTableBody" class="divide-y divide-[#262c36]"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
             <div id="cascadeTableTopTitle" class="text-[13px] font-semibold text-slate-100 mb-2">Pitch Effectiveness vs. Right-Handed &amp; Left-Handed College Hitters</div>
             <div id="playerPitchCardsContainer" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
             <div id="cascadeTableWrapper" class="overflow-x-auto">
@@ -1657,7 +1703,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.26 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.27 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -2568,6 +2614,9 @@
       dossierPreview: false,
       batchRoster: [],
       batchRosterVisible: false,
+      vaultCompareActive: false,
+      vaultBaselineId: null,
+      vaultComparisonId: null,
       get labDeltas() {
         if (!this.pitchLabState[this.labTargetIdx]) {
           this.pitchLabState[this.labTargetIdx] = { velo: 0.0, spin: 0, ivb: 0.0, hb: 0.0, relH: 0.0, ext: 0.0 };
@@ -5959,7 +6008,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.26 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.27 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -6901,11 +6950,244 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       drawMovementMatrix(presentBaselineEval, simEval);
       drawSpinClock(simEval);
       drawBayesForestPlot(simEval);
+      if (typeof renderVaultDeltaUI === 'function') renderVaultDeltaUI(profile);
     }
 
     // =========================================================================
     // 7. EVENT LISTENERS & UI INTERACTIVITY WIRING
     // =========================================================================
+
+    // =========================================================================
+    // 6B. CLIENT-SIDE ATHLETE SESSION VAULT & PRE/POST BLOCK DELTA ENGINE (v5.27)
+    // =========================================================================
+    const EAE_VAULT_STORAGE_KEY = 'eae_athlete_vault_v1';
+
+    function normalizeVaultPitcherKey(name) {
+      return String(name || 'Unknown Pitcher').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function loadAthleteVault() {
+      try {
+        const raw = window.localStorage && window.localStorage.getItem(EAE_VAULT_STORAGE_KEY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
+      } catch (err) {
+        return {};
+      }
+    }
+
+    function saveAthleteVault(vaultObj) {
+      try {
+        if (window.localStorage) {
+          window.localStorage.setItem(EAE_VAULT_STORAGE_KEY, JSON.stringify(vaultObj));
+        }
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function saveProfileSessionToVault(profile, presEval, blockLabel = '') {
+      if (!profile || !presEval) return null;
+      const vault = loadAthleteVault();
+      const key = normalizeVaultPitcherKey(profile.name);
+      if (!Array.isArray(vault[key])) vault[key] = [];
+
+      const sessionDate = String(profile.date || new Date().toLocaleDateString('en-US')).trim();
+      const totalP = presEval.gradedPitches.reduce((acc, p) => acc + (p.count || 0), 0) || profile.totalPitches || 0;
+      const entry = {
+        id: `vs_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        pitcherName: String(profile.name || 'Uploaded Pitcher').trim(),
+        throws: profile.throws || 'R',
+        sessionDate,
+        blockLabel: String(blockLabel || '').trim() || sessionDate,
+        totalPitches: totalP,
+        arsenalPlus: Number(presEval.arsenalPlus.toFixed(2)),
+        pitches: presEval.gradedPitches.map((p) => ({
+          code: p.code,
+          name: p.name,
+          count: p.count,
+          velo: Number(p.velo.toFixed(2)),
+          ivb: Number(p.ivb.toFixed(2)),
+          hb: Number(p.hb.toFixed(2)),
+          spin: Math.round(p.spin),
+          ext: Number(p.ext.toFixed(2)),
+          vaa: Number(p.vaa.toFixed(2)),
+          strikePct: (typeof p.strikePct === 'number' && Number.isFinite(p.strikePct))
+            ? Number(p.strikePct.toFixed(1))
+            : ((typeof p.zonePct === 'number' && Number.isFinite(p.zonePct)) ? Number(p.zonePct.toFixed(1)) : null),
+          stuffPlus: Number(p.shrunkStuff.toFixed(1))
+        }))
+      };
+
+      // Deduplicate by pitcherName + sessionDate (+ blockLabel if custom label differs)
+      const existingIdx = vault[key].findIndex((s) =>
+        normalizeVaultPitcherKey(s.pitcherName) === key &&
+        String(s.sessionDate).trim() === sessionDate
+      );
+      if (existingIdx >= 0) {
+        entry.id = vault[key][existingIdx].id;
+        vault[key][existingIdx] = entry;
+      } else {
+        vault[key].push(entry);
+      }
+
+      saveAthleteVault(vault);
+      return entry;
+    }
+
+    function getVaultSessionsForPitcher(pitcherName) {
+      const vault = loadAthleteVault();
+      const key = normalizeVaultPitcherKey(pitcherName);
+      return Array.isArray(vault[key]) ? vault[key] : [];
+    }
+
+    function formatDeltaPill(val, suffix = '', decimals = 1) {
+      if (val === null || !Number.isFinite(val)) return '<span class="text-slate-500">—</span>';
+      const sign = val > 0 ? '+' : '';
+      const cls = val > 0.05
+        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+        : (val < -0.05 ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-slate-700/40 text-slate-300 border-slate-600/40');
+      return `<span class="px-1.5 py-0.5 rounded border text-[11px] font-bold ${cls}">${sign}${val.toFixed(decimals)}${suffix}</span>`;
+    }
+
+    function buildDeltaComparisonData(baseSess, compSess) {
+      if (!baseSess || !compSess) return null;
+      const arsDelta = Number((compSess.arsenalPlus - baseSess.arsenalPlus).toFixed(1));
+      const rows = [];
+      (compSess.pitches || []).forEach((cp) => {
+        const bp = (baseSess.pitches || []).find((x) => x.code === cp.code);
+        if (!bp) return;
+        const strDelta = (typeof cp.strikePct === 'number' && typeof bp.strikePct === 'number')
+          ? cp.strikePct - bp.strikePct
+          : null;
+        rows.push({
+          code: cp.code,
+          name: cp.name,
+          baseVelo: bp.velo,
+          compVelo: cp.velo,
+          veloDelta: cp.velo - bp.velo,
+          ivbDelta: cp.ivb - bp.ivb,
+          hbDelta: cp.hb - bp.hb,
+          spinDelta: cp.spin - bp.spin,
+          extDelta: cp.ext - bp.ext,
+          strikeDelta: strDelta,
+          baseStuff: bp.stuffPlus,
+          compStuff: cp.stuffPlus,
+          stuffDelta: cp.stuffPlus - bp.stuffPlus
+        });
+      });
+      return { baseSess, compSess, arsDelta, rows };
+    }
+
+    function renderVaultDeltaUI(profile) {
+      const bar = document.getElementById('vaultCompareBar');
+      const countNote = document.getElementById('vaultCompareCountNote');
+      const selectors = document.getElementById('vaultCompareSelectors');
+      const body = document.getElementById('vaultCompareBody');
+      const toggleBtn = document.getElementById('toggleVaultCompareBtn');
+      const baseSel = document.getElementById('vaultBaselineSelect');
+      const compSel = document.getElementById('vaultComparisonSelect');
+      const banner = document.getElementById('vaultArsenalBanner');
+      const tbody = document.getElementById('vaultDeltaTableBody');
+      if (!bar || !profile) return;
+
+      const sessions = getVaultSessionsForPitcher(profile.name);
+      if (sessions.length < 2) {
+        bar.classList.add('hidden');
+        return;
+      }
+      bar.classList.remove('hidden');
+      if (countNote) countNote.textContent = `${sessions.length} sessions in vault`;
+
+      // Populate dropdowns (default earliest vs latest)
+      const validIds = sessions.map((s) => s.id);
+      if (!appState.vaultBaselineId || !validIds.includes(appState.vaultBaselineId)) {
+        appState.vaultBaselineId = sessions[0].id;
+      }
+      if (!appState.vaultComparisonId || !validIds.includes(appState.vaultComparisonId)) {
+        appState.vaultComparisonId = sessions[sessions.length - 1].id;
+      }
+      const optsHtml = sessions.map((s) =>
+        `<option value="${s.id}">${s.blockLabel} (${s.sessionDate} • ${s.arsenalPlus.toFixed(1)})</option>`
+      ).join('');
+      if (baseSel) { baseSel.innerHTML = optsHtml; baseSel.value = appState.vaultBaselineId; }
+      if (compSel) { compSel.innerHTML = optsHtml; compSel.value = appState.vaultComparisonId; }
+
+      if (toggleBtn) toggleBtn.setAttribute('aria-pressed', appState.vaultCompareActive ? 'true' : 'false');
+      if (selectors) selectors.classList.toggle('hidden', !appState.vaultCompareActive);
+      if (body) body.classList.toggle('hidden', !appState.vaultCompareActive);
+      if (!appState.vaultCompareActive) return;
+
+      const baseSess = sessions.find((s) => s.id === appState.vaultBaselineId) || sessions[0];
+      const compSess = sessions.find((s) => s.id === appState.vaultComparisonId) || sessions[sessions.length - 1];
+      const cmp = buildDeltaComparisonData(baseSess, compSess);
+      if (!cmp) return;
+
+      if (banner) {
+        banner.innerHTML = `
+          <span class="text-slate-300">Arsenal+ Progression (${baseSess.blockLabel} → ${compSess.blockLabel}):</span>
+          <span class="flex items-center gap-2">
+            <strong class="text-white">${baseSess.arsenalPlus.toFixed(1)} → ${compSess.arsenalPlus.toFixed(1)}</strong>
+            ${formatDeltaPill(cmp.arsDelta, ' Arsenal+', 1)}
+          </span>
+        `;
+      }
+      if (tbody) {
+        tbody.innerHTML = cmp.rows.map((r) => `
+          <tr>
+            <td class="py-1.5 pr-2 font-bold text-white">${r.code}</td>
+            <td class="py-1.5 px-1.5 text-right text-slate-200">${r.baseVelo.toFixed(1)}→${r.compVelo.toFixed(1)} ${formatDeltaPill(r.veloDelta, '', 1)}</td>
+            <td class="py-1.5 px-1.5 text-right">${formatDeltaPill(r.ivbDelta, '"', 1)}</td>
+            <td class="py-1.5 px-1.5 text-right">${formatDeltaPill(r.hbDelta, '"', 1)}</td>
+            <td class="py-1.5 px-1.5 text-right">${formatDeltaPill(r.spinDelta, '', 0)}</td>
+            <td class="py-1.5 px-1.5 text-right">${formatDeltaPill(r.extDelta, ' ft', 1)}</td>
+            <td class="py-1.5 px-1.5 text-right">${r.strikeDelta !== null ? formatDeltaPill(r.strikeDelta, '%', 0) : '<span class="text-slate-500">—</span>'}</td>
+            <td class="py-1.5 pl-1.5 text-right font-bold text-sky-300">${r.baseStuff.toFixed(0)}→${r.compStuff.toFixed(0)} ${formatDeltaPill(r.stuffDelta, '', 1)}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="8" class="py-2 text-center text-slate-400">No matching pitch types between selected sessions.</td></tr>';
+      }
+    }
+
+    function buildPrintDeltaSectionHTML(profile) {
+      if (!appState.vaultCompareActive || !profile) return '';
+      const sessions = getVaultSessionsForPitcher(profile.name);
+      if (sessions.length < 2) return '';
+      const baseSess = sessions.find((s) => s.id === appState.vaultBaselineId) || sessions[0];
+      const compSess = sessions.find((s) => s.id === appState.vaultComparisonId) || sessions[sessions.length - 1];
+      const cmp = buildDeltaComparisonData(baseSess, compSess);
+      if (!cmp || !cmp.rows.length) return '';
+      const sign = (v, d = 1) => `${v > 0 ? '+' : ''}${v.toFixed(d)}`;
+      const rowsHtml = cmp.rows.map((r) => `
+        <tr>
+          <td><strong>${r.code}</strong></td>
+          <td>${r.baseVelo.toFixed(1)} → ${r.compVelo.toFixed(1)} (${sign(r.veloDelta, 1)})</td>
+          <td>${sign(r.ivbDelta, 1)}"</td>
+          <td>${sign(r.hbDelta, 1)}"</td>
+          <td>${sign(r.spinDelta, 0)}</td>
+          <td>${sign(r.extDelta, 1)} ft</td>
+          <td>${r.strikeDelta !== null ? sign(r.strikeDelta, 0) + '%' : '—'}</td>
+          <td><strong>${r.baseStuff.toFixed(0)} → ${r.compStuff.toFixed(0)} (${sign(r.stuffDelta, 1)})</strong></td>
+        </tr>
+      `).join('');
+      return `
+        <div class="jspbc-print-box">
+          <div style="font-size:9pt;font-weight:700;color:#0f172a;margin-bottom:4px;">
+            Pre/Post Block Delta (${baseSess.blockLabel} → ${compSess.blockLabel}) &nbsp;|&nbsp; Arsenal+: ${baseSess.arsenalPlus.toFixed(1)} → ${compSess.arsenalPlus.toFixed(1)} (${sign(cmp.arsDelta, 1)})
+          </div>
+          <table class="jspbc-print-table" style="margin-bottom:0;">
+            <thead>
+              <tr>
+                <th>Pitch</th><th>Velo (Δ)</th><th>IVB Δ</th><th>HB Δ</th><th>Spin Δ</th><th>Ext Δ</th><th>Str% Δ</th><th>Stuff+ (Δ)</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
     function syncSlidersToUI() {
       const d = appState.labDeltas;
       document.getElementById('labVeloSlider').value = d.velo;
@@ -8683,6 +8965,8 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
               ${qwHtml}
             </div>
 
+            ${buildPrintDeltaSectionHTML(profile)}
+
             <div class="jspbc-print-footer">
               <span>Tracked &amp; Evaluated by Jaxson Smith Peterson Baseball Consulting</span>
               <span>NCAA D1 Stuff+ Scale (100 = D1 Avg, 10 SD)</span>
@@ -8796,6 +9080,173 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         });
       }
 
+      function renderVaultModalList() {
+        const listEl = document.getElementById('vaultSessionsList');
+        const sumEl = document.getElementById('vaultSummaryCount');
+        const vault = loadAthleteVault();
+        const keys = Object.keys(vault).sort();
+        let totalSess = 0;
+        keys.forEach((k) => { totalSess += (vault[k] || []).length; });
+        if (sumEl) sumEl.textContent = `${totalSess} saved session(s) across ${keys.length} athlete(s)`;
+        if (!listEl) return;
+        if (!keys.length) {
+          listEl.innerHTML = '<div class="text-xs text-slate-400 py-4 text-center">No sessions saved in vault yet. Click "Save Session to Vault" or import a Batch Roster.</div>';
+          return;
+        }
+        listEl.innerHTML = keys.map((k) => {
+          const arr = vault[k] || [];
+          const displayName = arr[0] ? arr[0].pitcherName : k;
+          const rows = arr.map((s) => `
+            <div class="flex items-center justify-between gap-2 py-1.5 px-2.5 rounded bg-[#151921] border border-[#262c36] text-xs font-mono-num">
+              <div class="truncate">
+                <span class="text-white font-semibold">${s.blockLabel}</span>
+                <span class="text-slate-400 ml-1.5">${s.sessionDate} • ${s.totalPitches}p • Arsenal+ ${s.arsenalPlus.toFixed(1)}</span>
+              </div>
+              <button type="button" data-vault-del="${k}::${s.id}" class="text-rose-400 hover:text-rose-300 text-[11px] font-semibold shrink-0">Delete</button>
+            </div>
+          `).join('');
+          return `
+            <div class="rounded-md bg-[#10141b] border border-[#262c36] p-3 space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <strong class="text-white">${displayName}</strong>
+                <span class="font-mono-num text-slate-400">${arr.length} session(s)</span>
+              </div>
+              <div class="space-y-1">${rows}</div>
+            </div>
+          `;
+        }).join('');
+        listEl.querySelectorAll('[data-vault-del]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const [k, sid] = btn.getAttribute('data-vault-del').split('::');
+            const v = loadAthleteVault();
+            if (Array.isArray(v[k])) {
+              v[k] = v[k].filter((x) => x.id !== sid);
+              if (!v[k].length) delete v[k];
+              saveAthleteVault(v);
+              renderVaultModalList();
+              renderAll();
+            }
+          });
+        });
+      }
+
+      const vaultModalEl = document.getElementById('vaultModal');
+      const openVaultBtn = document.getElementById('openVaultModalBtn');
+      const saveVaultBtn = document.getElementById('saveVaultSessionBtn');
+      const closeVaultBtn = document.getElementById('closeVaultModalBtn');
+      const confirmSaveVaultBtn = document.getElementById('confirmSaveVaultBtn');
+      const blockLabelInput = document.getElementById('vaultBlockLabelInput');
+
+      if (openVaultBtn && vaultModalEl) {
+        openVaultBtn.addEventListener('click', () => {
+          renderVaultModalList();
+          vaultModalEl.classList.remove('hidden');
+          vaultModalEl.classList.add('flex');
+        });
+      }
+      if (saveVaultBtn && vaultModalEl) {
+        saveVaultBtn.addEventListener('click', () => {
+          const prof = PITCHER_PROFILES[appState.currentPitcherId];
+          if (blockLabelInput && prof) blockLabelInput.value = prof.date || 'Pre-Block Baseline';
+          renderVaultModalList();
+          vaultModalEl.classList.remove('hidden');
+          vaultModalEl.classList.add('flex');
+        });
+      }
+      if (closeVaultBtn && vaultModalEl) {
+        closeVaultBtn.addEventListener('click', () => {
+          vaultModalEl.classList.add('hidden');
+          vaultModalEl.classList.remove('flex');
+        });
+      }
+      if (confirmSaveVaultBtn) {
+        confirmSaveVaultBtn.addEventListener('click', () => {
+          const prof = PITCHER_PROFILES[appState.currentPitcherId];
+          if (!prof) return;
+          const emptyLab = createEmptyPitchLabState(prof.pitches.length + 2);
+          const presEv = evaluateFullPipeline(prof, appState.pacingMode, emptyLab, appState.coupledSlotArc, 'present');
+          const lbl = blockLabelInput ? blockLabelInput.value.trim() : '';
+          saveProfileSessionToVault(prof, presEv, lbl || prof.date);
+          renderVaultModalList();
+          renderVaultDeltaUI(prof);
+          showToast(`Saved ${prof.name} checkpoint to Session Vault`);
+        });
+      }
+
+      const exportVaultBtn = document.getElementById('exportVaultJsonBtn');
+      if (exportVaultBtn) {
+        exportVaultBtn.addEventListener('click', () => {
+          const blob = new Blob([JSON.stringify(loadAthleteVault(), null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `eae_athlete_vault_${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast('Exported Session Vault JSON backup');
+        });
+      }
+
+      const importVaultBtn = document.getElementById('importVaultJsonBtn');
+      const importVaultInput = document.getElementById('importVaultJsonInput');
+      if (importVaultBtn && importVaultInput) {
+        importVaultBtn.addEventListener('click', () => importVaultInput.click());
+        importVaultInput.addEventListener('change', (e) => {
+          const f = e.target.files && e.target.files[0];
+          if (!f) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            try {
+              const incoming = JSON.parse(ev.target.result);
+              if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
+                throw new Error('Invalid vault JSON structure');
+              }
+              const current = loadAthleteVault();
+              Object.keys(incoming).forEach((k) => {
+                if (!Array.isArray(incoming[k])) return;
+                if (!Array.isArray(current[k])) current[k] = [];
+                incoming[k].forEach((sess) => {
+                  const dupIdx = current[k].findIndex((x) => x.sessionDate === sess.sessionDate && x.blockLabel === sess.blockLabel);
+                  if (dupIdx >= 0) current[k][dupIdx] = sess;
+                  else current[k].push(sess);
+                });
+              });
+              saveAthleteVault(current);
+              renderVaultModalList();
+              renderAll();
+              showToast('Imported Session Vault JSON');
+            } catch (err) {
+              showToast(`Vault import failed: ${err.message}`);
+            }
+          };
+          reader.readAsText(f);
+        });
+      }
+
+      const toggleVaultCompareBtn = document.getElementById('toggleVaultCompareBtn');
+      if (toggleVaultCompareBtn) {
+        toggleVaultCompareBtn.addEventListener('click', () => {
+          appState.vaultCompareActive = !appState.vaultCompareActive;
+          renderVaultDeltaUI(PITCHER_PROFILES[appState.currentPitcherId]);
+        });
+      }
+      const vaultBaseSel = document.getElementById('vaultBaselineSelect');
+      if (vaultBaseSel) {
+        vaultBaseSel.addEventListener('change', (e) => {
+          appState.vaultBaselineId = e.target.value;
+          renderVaultDeltaUI(PITCHER_PROFILES[appState.currentPitcherId]);
+        });
+      }
+      const vaultCompSel = document.getElementById('vaultComparisonSelect');
+      if (vaultCompSel) {
+        vaultCompSel.addEventListener('change', (e) => {
+          appState.vaultComparisonId = e.target.value;
+          renderVaultDeltaUI(PITCHER_PROFILES[appState.currentPitcherId]);
+        });
+      }
+
       const backBatchBtn = document.getElementById('backToBatchRosterBtn');
       if (backBatchBtn) {
         backBatchBtn.addEventListener('click', () => {
@@ -8846,6 +9297,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
               const ev = evaluateFullPipeline(prof, appState.pacingMode, createEmptyPitchLabState(prof.pitches.length + 2), appState.coupledSlotArc, 'present');
               const fb = ev.gradedPitches[0];
               const bestP = [...ev.gradedPitches].sort((a, b) => b.shrunkStuff - a.shrunkStuff)[0];
+              saveProfileSessionToVault(prof, ev, prof.date || 'Batch Import');
               results.push({
                 profileId: prof.id,
                 name: prof.name,
@@ -9234,6 +9686,55 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       }
     });
   </script>
+  <!-- Client-Side Athlete Session Vault Modal (localStorage + JSON Backup) -->
+  <div id="vaultModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4 no-print">
+    <div class="glass-card rounded-md max-w-2xl w-full p-5 sm:p-6 space-y-4 max-h-[88vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-[#262c36] pb-3">
+        <div>
+          <h3 class="text-lg font-extrabold text-white">Athlete Session Vault</h3>
+          <p class="text-xs font-mono-num text-slate-400">Stored locally in browser (eae_athlete_vault_v1) • Backup &amp; transfer via JSON</p>
+        </div>
+        <button id="closeVaultModalBtn" type="button" class="touch-target px-2.5 py-1 rounded-md bg-[#1e2530] hover:bg-[#262f3d] text-slate-200 border border-[#262c36] text-xs font-semibold">
+          Close
+        </button>
+      </div>
+
+      <!-- Save Active Session Checkpoint -->
+      <div class="rounded-md bg-[#10141b] border border-[#262c36] p-3.5 space-y-2.5">
+        <div class="text-xs font-semibold text-slate-200">Save Active Pitcher Session Checkpoint</div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input id="vaultBlockLabelInput" type="text" list="vaultBlockPresets" placeholder="Checkpoint tag (e.g. Pre-Block Baseline, Post-Block)" class="touch-target flex-1 rounded-md bg-[#151921] border border-[#262c36] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#3b82f6]" />
+          <datalist id="vaultBlockPresets">
+            <option value="Pre-Block Baseline"></option>
+            <option value="Mid-Winter Check"></option>
+            <option value="Post-Block"></option>
+            <option value="Pre-Season Bullpen"></option>
+          </datalist>
+          <button id="confirmSaveVaultBtn" type="button" class="touch-target px-4 py-2 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
+            Save Checkpoint
+          </button>
+        </div>
+      </div>
+
+      <!-- Backup / Restore JSON -->
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <span id="vaultSummaryCount" class="text-xs font-mono-num text-slate-400">0 saved sessions</span>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="exportVaultJsonBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-slate-200 border border-[#262c36] text-xs font-semibold transition">
+            Export Vault JSON
+          </button>
+          <button id="importVaultJsonBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-sky-300 border border-[#262c36] text-xs font-semibold transition">
+            Import Vault JSON
+          </button>
+          <input id="importVaultJsonInput" type="file" accept=".json" class="hidden" />
+        </div>
+      </div>
+
+      <!-- Saved Athletes & Sessions List -->
+      <div id="vaultSessionsList" class="space-y-2"></div>
+    </div>
+  </div>
+
   <!-- Dedicated Print Container for JSPBC Scout Card & Staff Bullpen Packet -->
   <div id="jspbcPrintContainer" aria-hidden="true"></div>
 </body>
