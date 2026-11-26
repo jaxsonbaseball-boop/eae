@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.30 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.31 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -1767,7 +1767,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.30 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.31 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -6103,7 +6103,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.30 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.31 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -6254,8 +6254,26 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         sessHeightEl.value = profile.pitcherHeightIn ? String(profile.pitcherHeightIn) : '';
       }
 
+      const fbPitchesForExt = (simEval.gradedPitches || []).filter((p) => (p.code === 'FF' || p.code === 'SI') && Number.isFinite(Number(p.ext)));
+      const extSourcePitches = fbPitchesForExt.length
+        ? fbPitchesForExt
+        : (simEval.gradedPitches || []).filter((p) => Number.isFinite(Number(p.ext)));
+      let extWeightedSum = 0;
+      let extWeightTotal = 0;
+      extSourcePitches.forEach((p) => {
+        const w = Math.max(1, Number(p.count) || 1);
+        extWeightedSum += Number(p.ext) * w;
+        extWeightTotal += w;
+      });
+      const avgHeaderExt = extWeightTotal > 0 ? (extWeightedSum / extWeightTotal) : (Number(fb && fb.ext) || 6.0);
+      const extImputed = Boolean(
+        profile.isCustomSession &&
+        (profile.pitches || []).some((p) => Array.isArray(p._fallbackFields) && p._fallbackFields.includes('Extension'))
+      );
+      const extMetaBit = ` • ${avgHeaderExt.toFixed(1)} ft Ext${extImputed ? ' (Est.)' : ''}`;
+
       const fullHeaderTitle = `${profile.name} • ${profile.throws}HP`;
-      const fullHeaderMeta = `${profile.team} • ${profile.date} • ${profile.totalPitches} Pitches • ${fb.slot} Slot${bioSuffix}`;
+      const fullHeaderMeta = `${profile.team} • ${profile.date} • ${profile.totalPitches} Pitches • ${fb.slot} Slot${extMetaBit}${bioSuffix}`;
       document.getElementById('pitcherHeaderName').textContent = fullHeaderTitle;
       document.getElementById('pitcherHeaderMeta').textContent = fullHeaderMeta;
       const missingBadge = document.getElementById('missingMetricsBadge');
@@ -6383,6 +6401,37 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
               <strong class="text-white shrink-0 tabular-nums">${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}"</strong>
             </div>
           </div>
+
+          ${(() => {
+            const pExt = Number.isFinite(Number(p.ext)) ? Number(p.ext) : 6.0;
+            const rawPitchMatch = (profile.pitches || []).find((rp) => rp.code === p.code);
+            const pExtImputed = Boolean(
+              profile.isCustomSession &&
+              rawPitchMatch &&
+              Array.isArray(rawPitchMatch._fallbackFields) &&
+              rawPitchMatch._fallbackFields.includes('Extension')
+            );
+            const extDiff = pExt - 6.0;
+            const extSubLabel = pExtImputed
+              ? 'Baseline Default (6.00 ft)'
+              : (pExt >= 6.05
+                  ? `+${extDiff.toFixed(2)} ft vs. D1 Avg`
+                  : (pExt <= 5.95 ? `${extDiff.toFixed(2)} ft vs. D1 Avg` : 'At D1 Avg (6.00 ft)'));
+            const extDiffCls = pExtImputed
+              ? 'text-amber-300'
+              : (pExt >= 6.05 ? 'text-emerald-300' : (pExt <= 5.95 ? 'text-slate-300' : 'text-[#60a5fa]'));
+            return `
+          <div class="rounded bg-[#10141b] border border-[#1f252e] px-2.5 py-2 space-y-1">
+            <div class="flex items-center justify-between gap-2 font-mono-num text-[13px]">
+              <span class="text-[#94a3b8] text-xs">${infoTipHTML('Extension', 'Distance in feet from the pitching rubber toward home plate where the ball leaves the hand. NCAA D1 average is 6.00 ft.')}</span>
+              <div class="flex items-baseline gap-2 shrink-0 tabular-nums">
+                <strong class="text-white">${pExt.toFixed(2)} ft</strong>
+                <span class="text-[11px] font-semibold ${extDiffCls}">${extSubLabel}</span>
+              </div>
+            </div>
+            <p class="text-xs text-[#94a3b8] leading-snug">Extension measures how close to home plate the ball is released, adding perceived velocity through lower-half drive and posture.</p>
+          </div>`;
+          })()}
 
           <p class="text-[13px] text-[#cbd5e1] leading-relaxed">${takeaway}</p>
         </div>
