@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.32 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.33 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -1767,7 +1767,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.32 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.33 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -1776,7 +1776,7 @@
   <!-- ========================================================================= -->
   <script>
 /**
- * Project Apex Phase 2 — Pure-JavaScript 4-Head XGBoost Stuff+ Browser Inference Engine
+ * EAE (Easy Arsenal Evaluation) — Pure-JavaScript 4-Head XGBoost Stuff+ Browser Inference Engine
  * Zero external dependencies. Evaluates a 10x10 location-neutralized pitch across
  * 4 XGBoost heads (RHB + LHB splits) in < 2ms with < 0.01 Stuff+ parity vs. Python xgboost.
  */
@@ -2113,6 +2113,24 @@
     // =========================================================================
     // 1. 15 ANONYMIZED PITCHER ARCHETYPES (HS SHOWCASE TO NCAA D1 ACE BENCHMARK)
     // =========================================================================
+    function escapeHTML(str) {
+      return String(str === undefined || str === null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function cleanPitcherName(raw) {
+      return String(raw || '')
+        .replace(/\.(pdf|csv|json|txt)$/i, '')
+        .replace(/[\s_-]+(?:\d{4}[-_\/]\d{1,2}[-_\/]\d{1,2}|\d{1,2}[-_\/]\d{1,2}[-_\/]\d{2,4})\s*$/g, '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim() || 'Uploaded Pitcher';
+    }
+
     const PITCHER_PROFILES = {
       prospect_01: {
         id: 'prospect_01',
@@ -4012,18 +4030,21 @@
         isDragging3D = true;
         prevMouse = { x: e.clientX, y: e.clientY };
       });
-      window.addEventListener('mouseup', () => {
-        isDragging3D = false;
-      });
-      window.addEventListener('mousemove', (e) => {
-        if (!isDragging3D) return;
-        const dx = e.clientX - prevMouse.x;
-        const dy = e.clientY - prevMouse.y;
-        prevMouse = { x: e.clientX, y: e.clientY };
-        sphericalCam.theta -= dx * 0.007;
-        sphericalCam.phi = Math.max(0.25, Math.min(1.52, sphericalCam.phi - dy * 0.006));
-        updateCameraPosition();
-      });
+      if (!window.__eaeThreeWindowListenersBound) {
+        window.__eaeThreeWindowListenersBound = true;
+        window.addEventListener('mouseup', () => {
+          isDragging3D = false;
+        });
+        window.addEventListener('mousemove', (e) => {
+          if (!isDragging3D) return;
+          const dx = e.clientX - prevMouse.x;
+          const dy = e.clientY - prevMouse.y;
+          prevMouse = { x: e.clientX, y: e.clientY };
+          sphericalCam.theta -= dx * 0.007;
+          sphericalCam.phi = Math.max(0.25, Math.min(1.52, sphericalCam.phi - dy * 0.006));
+          updateCameraPosition();
+        });
+      }
       domElem.addEventListener('wheel', (e) => {
         e.preventDefault();
         sphericalCam.radius = Math.max(6, Math.min(75, sphericalCam.radius + e.deltaY * 0.02));
@@ -4105,7 +4126,7 @@
         sphericalCam = { radius: 16.0, theta: Math.PI, phi: 1.36, target: makeTargetVec(0, 2.5, 22) };
       } else if (presetName === 'batter') {
         const isLhbCam = appState.batterStance === 'LHB';
-        sphericalCam = { radius: 54.5, theta: isLhbCam ? 0.04 : -0.04, phi: 1.56, target: makeTargetVec(0, 4.1, 55.5) };
+        sphericalCam = { radius: 54.5, theta: isLhbCam ? -0.04 : 0.04, phi: 1.56, target: makeTargetVec(0, 4.1, 55.5) };
       }
       updateCameraPosition();
     }
@@ -4705,15 +4726,6 @@
         return fallback;
       }
 
-      function cleanPitcherName(raw) {
-        return String(raw || '')
-          .replace(/\.(pdf|csv|json|txt)$/i, '')
-          .replace(/[\s_-]+(?:\d{4}[-_\/]\d{1,2}[-_\/]\d{1,2}|\d{1,2}[-_\/]\d{1,2}[-_\/]\d{2,4})\s*$/g, '')
-          .replace(/[_-]+/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim() || 'Uploaded Pitcher';
-      }
-
       const firstRow = rows[0];
       const pitcherName = cleanPitcherName(getField(firstRow, ['Pitcher', 'PitcherName', 'Player', 'Name'], fileName));
       const rawThrows = String(getField(firstRow, ['Throws', 'PitcherThrows', 'Hand', 'Handedness'], 'R')).toUpperCase();
@@ -4759,7 +4771,8 @@
         const hasExt = grp.some((r) => Number.isFinite(parseFloat(getField(r, ['Extension', 'RelExtension', 'Ext'], NaN))));
         const spin = meanOf(grp, (r) => parseFloat(getField(r, ['SpinRate', 'Spin', 'TotalSpin'], NaN)), code === 'CH' ? 1550 : 2150);
         const ivb = ivbs.length ? ivbs.reduce((a, b) => a + b, 0) / ivbs.length : (code === 'FF' ? 16.0 : code === 'CH' ? 5.5 : -3.5);
-        const hb = hbs.length ? hbs.reduce((a, b) => a + b, 0) / hbs.length : (code === 'FF' ? 11.0 : code === 'CH' ? 15.0 : -6.5);
+        const hbHandSign = throws === 'L' ? -1.0 : 1.0;
+        const hb = hbs.length ? (hbs.reduce((a, b) => a + b, 0) / hbs.length) * hbHandSign : (code === 'FF' ? 11.0 : code === 'CH' ? 15.0 : -6.5);
         const relHeight = meanOf(grp, (r) => parseFloat(getField(r, ['RelHeight', 'ReleaseHeight', 'z0'], NaN)), 5.75);
         const relSide = meanOf(grp, (r) => parseFloat(getField(r, ['RelSide', 'ReleaseSide', 'x0'], NaN)), 1.85);
         const ext = meanOf(grp, (r) => parseFloat(getField(r, ['Extension', 'RelExtension', 'Ext'], NaN)), 6.00);
@@ -4961,13 +4974,8 @@
     }
 
     function extractTrackManPDFMetadata(lines, fileName) {
-      const stripTrailingDate = (s) => String(s || '')
-        .replace(/\.pdf$/i, '')
-        .replace(/[\s_-]+(?:\d{4}[-_\/]\d{1,2}[-_\/]\d{1,2}|\d{1,2}[-_\/]\d{1,2}[-_\/]\d{2,4})\s*$/g, '')
-        .replace(/[_-]+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-      let pitcherName = stripTrailingDate(fileName) || 'Uploaded PDF Pitcher';
+      const stripTrailingDate = cleanPitcherName;
+      let pitcherName = cleanPitcherName(fileName);
       let throws = 'R';
       let throwsExplicit = false;
       let sessionDate = '11/18/2026';
@@ -5395,13 +5403,13 @@
           _pdfIsSummary: true,
           RelSpeed: Number.isFinite(e.velo) ? e.velo : 84.0,
           MaxRelSpeed: Number.isFinite(e.maxVelo) ? e.maxVelo : undefined,
-          SpinRate: Number.isFinite(e.spin) ? e.spin : def.spin,
+          SpinRate: Number.isFinite(e.spin) ? e.spin : undefined,
           SpinAxis: e.tilt || (e.code === 'FF' ? '1:15' : (e.code === 'CH' || e.code === 'FS' ? '2:15' : '8:45')),
           InducedVertBreak: Number.isFinite(e.ivb) ? e.ivb : def.ivb,
           HorzBreak: Number.isFinite(e.hb) ? e.hb : def.hb,
-          RelHeight: 5.75,
+          RelHeight: undefined,
           RelSide: throws === 'L' ? -1.85 : 1.85,
-          Extension: Number.isFinite(e.ext) ? e.ext : 6.00,
+          Extension: Number.isFinite(e.ext) ? e.ext : undefined,
           VertApprAngle: Number.isFinite(e.vaa) ? e.vaa : undefined,
           StrikePct: Number.isFinite(e.strikePct) ? e.strikePct : undefined
         };
@@ -5424,7 +5432,7 @@
       if (!isJSPBC) return null;
 
       // 1. Extract Metadata: Pitcher Name, Session Date, Handedness
-      let pitcherName = fileName.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').trim() || 'Uploaded PDF Pitcher';
+      let pitcherName = cleanPitcherName(fileName);
       let sessionDate = '11/24/2026';
       let explicitThrows = null;
 
@@ -5553,13 +5561,13 @@
           _pdfIsSummary: true,
           RelSpeed: e.avgVelo,
           MaxRelSpeed: Number.isFinite(e.maxVelo) ? e.maxVelo : e.avgVelo,
-          SpinRate: spinVal,
+          SpinRate: Number.isFinite(e.avgSpin) ? e.avgSpin : undefined,
           SpinAxis: e.code === 'FF' ? '1:15' : (e.code === 'CH' || e.code === 'FS' ? '2:15' : '8:45'),
           InducedVertBreak: ivbVal,
           HorzBreak: hbRaw,
-          RelHeight: 5.8,
+          RelHeight: undefined,
           RelSide: throws === 'L' ? -1.8 : 1.8,
-          Extension: extVal
+          Extension: Number.isFinite(e.avgExt) ? e.avgExt : undefined
         };
         const repeatN = Math.min(120, Math.max(1, e.countVal));
         for (let k = 0; k < repeatN; k++) {
@@ -6103,7 +6111,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.32 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.33 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -6782,15 +6790,24 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       }
       const selA = document.getElementById('tunnelPitchASelect');
       const selB = document.getElementById('tunnelPitchBSelect');
-      if (selA && selB && simEval.gradedPitches.length >= 2) {
-        const opts = simEval.gradedPitches.map((p) => `<option value="${p.code}">${p.code}</option>`).join('');
-        const prevA = selA.value;
-        const prevB = selB.value;
-        selA.innerHTML = opts;
-        selB.innerHTML = opts;
-        selA.value = availableCodes.includes(prevA) ? prevA : simEval.gradedPitches[0].code;
-        const defaultB = simEval.gradedPitches.find((p) => p.code !== selA.value)?.code || simEval.gradedPitches[1].code;
-        selB.value = (availableCodes.includes(prevB) && prevB !== selA.value) ? prevB : defaultB;
+      if (selA && selB) {
+        if (simEval.gradedPitches.length >= 2) {
+          selA.disabled = false;
+          selB.disabled = false;
+          const opts = simEval.gradedPitches.map((p) => `<option value="${escapeHTML(p.code)}">${escapeHTML(p.code)}</option>`).join('');
+          const prevA = selA.value;
+          const prevB = selB.value;
+          selA.innerHTML = opts;
+          selB.innerHTML = opts;
+          selA.value = availableCodes.includes(prevA) ? prevA : simEval.gradedPitches[0].code;
+          const defaultB = simEval.gradedPitches.find((p) => p.code !== selA.value)?.code || simEval.gradedPitches[1].code;
+          selB.value = (availableCodes.includes(prevB) && prevB !== selA.value) ? prevB : defaultB;
+        } else {
+          selA.innerHTML = '';
+          selB.innerHTML = '';
+          selA.disabled = true;
+          selB.disabled = true;
+        }
       }
       const isoStrip = document.getElementById('tunnelPairMetricStrip');
       if (isoStrip && simEval.gradedPitches.length >= 2) {
@@ -6819,6 +6836,8 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           if (cueEl) cueEl.textContent = cue;
           isoStrip.classList.remove('hidden');
         }
+      } else if (isoStrip) {
+        isoStrip.classList.add('hidden');
       }
 
       document.getElementById('tunnelPairCardsContainer').innerHTML = simEval.pairwise.map((pw) => {
@@ -7314,7 +7333,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         appState.vaultComparisonId = sessions[sessions.length - 1].id;
       }
       const optsHtml = sessions.map((s) =>
-        `<option value="${s.id}">${s.blockLabel} (${s.sessionDate} • ${s.arsenalPlus.toFixed(1)})</option>`
+        `<option value="${escapeHTML(s.id)}">${escapeHTML(s.blockLabel)} (${escapeHTML(s.sessionDate)} • ${s.arsenalPlus.toFixed(1)})</option>`
       ).join('');
       if (baseSel) { baseSel.innerHTML = optsHtml; baseSel.value = appState.vaultBaselineId; }
       if (compSel) { compSel.innerHTML = optsHtml; compSel.value = appState.vaultComparisonId; }
@@ -7331,7 +7350,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       if (banner) {
         banner.innerHTML = `
-          <span class="text-slate-300">Arsenal+ Progression (${baseSess.blockLabel} → ${compSess.blockLabel}):</span>
+          <span class="text-slate-300">Arsenal+ Progression (${escapeHTML(baseSess.blockLabel)} → ${escapeHTML(compSess.blockLabel)}):</span>
           <span class="flex items-center gap-2">
             <strong class="text-white">${baseSess.arsenalPlus.toFixed(1)} → ${compSess.arsenalPlus.toFixed(1)}</strong>
             ${formatDeltaPill(cmp.arsDelta, ' Arsenal+', 1)}
@@ -8995,7 +9014,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
                 renderAll();
               }
               const typesStr = (res.pitchTypesList || []).join(', ');
-              uploadRawPdfToSupabaseStorage(file).catch(() => {});
+              uploadRawPdfToSupabaseStorage(file).catch((err) => { console.warn('PDF archive upload failed:', err); showToast('PDF parsed locally — cloud archive skipped'); });
               await saveBullpenSessionToSupabase(res.profileObj, 'pdf');
               if (statusBox) {
                 const saveNote = appState.currentUser ? 'Saved to your private account.' : 'Guest Mode (local only) — Sign In to save.';
@@ -9077,10 +9096,10 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           tbody.innerHTML = roster.map((entry, i) => {
             const isActive = appState.currentPitcherId === entry.profileId;
             return `
-              <tr class="hover:bg-[#1e2530]/60 transition cursor-pointer ${isActive ? 'bg-[#1e2530]/40' : ''}" data-batch-pid="${entry.profileId}">
+              <tr class="hover:bg-[#1e2530]/60 transition cursor-pointer ${isActive ? 'bg-[#1e2530]/40' : ''}" data-batch-pid="${escapeHTML(entry.profileId)}">
                 <td class="py-2 pr-2 font-bold text-slate-300">${i + 1}</td>
-                <td class="py-2 px-2 font-semibold text-white">${entry.name}</td>
-                <td class="py-2 px-2 text-slate-300">${entry.throws}HP</td>
+                <td class="py-2 px-2 font-semibold text-white">${escapeHTML(entry.name)}</td>
+                <td class="py-2 px-2 text-slate-300">${escapeHTML(entry.throws)}HP</td>
                 <td class="py-2 px-2 text-right text-slate-300">${entry.totalPitches}</td>
                 <td class="py-2 px-2 text-right text-slate-100">${entry.fbVelo.toFixed(1)} mph</td>
                 <td class="py-2 px-2 text-right text-slate-200">${entry.bestPitchCode} (${entry.bestPitchStuff.toFixed(0)})</td>
@@ -9164,10 +9183,10 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
                   JAXSON SMITH PETERSON BASEBALL CONSULTING — ARSENAL EVALUATION &amp; STUFF+ REPORT
                 </div>
                 <div style="font-size:17pt;font-weight:800;color:#0f172a;margin-top:3px;">
-                  ${profile.name} <span style="font-size:11pt;font-weight:600;color:#475569;">(${profile.throws}HP)</span>
+                  ${escapeHTML(profile.name)} <span style="font-size:11pt;font-weight:600;color:#475569;">(${escapeHTML(profile.throws)}HP)</span>
                 </div>
                 <div style="font-family:'JetBrains Mono',monospace;font-size:8.5pt;color:#475569;margin-top:2px;">
-                  Session Date: ${profile.date || '—'} &nbsp;|&nbsp; Total Pitches (N): ${totalP} &nbsp;|&nbsp; ${profile.team || 'TrackMan Bullpen'}
+                  Session Date: ${escapeHTML(profile.date || '—')} &nbsp;|&nbsp; Total Pitches (N): ${totalP} &nbsp;|&nbsp; ${escapeHTML(profile.team || 'TrackMan Bullpen')}
                 </div>
               </div>
               <div style="text-align:right;font-family:'JetBrains Mono',monospace;">
@@ -9380,21 +9399,31 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             (p) => p && normalizeVaultPitcherKey(p.name) === pitcherKey && String(p.date || '') === String(targetSess.sessionDate || '')
           );
           matchingProfiles.forEach((p) => { p.athleteFolder = cleanFolder; });
+          let cloudSyncError = null;
           const client = initSupabaseClient();
           if (client && appState.currentUser) {
             const cloudRow = matchingProfiles.find((p) => p.supabaseRowId);
             if (cloudRow && cloudRow.supabaseRowId) {
               try {
-                await client
+                const { error } = await client
                   .from('bullpen_sessions')
                   .update({ athlete_folder: cleanFolder })
                   .eq('id', cloudRow.supabaseRowId)
                   .eq('user_id', appState.currentUser.id);
+                if (error) cloudSyncError = error.message || 'Cloud update rejected';
               } catch (err) {
-                console.warn('Could not sync folder update to Supabase:', err);
+                cloudSyncError = (err && err.message) || 'Network error';
               }
             }
           }
+          refreshAthleteFolderDatalist();
+          renderVaultModalList();
+          if (cloudSyncError) {
+            showToast(`Moved locally to "${cleanFolder}" — cloud sync failed (${cloudSyncError})`);
+          } else {
+            showToast(`Moved session to folder "${cleanFolder}"`);
+          }
+          return;
         }
         refreshAthleteFolderDatalist();
         renderVaultModalList();
@@ -9439,22 +9468,23 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
         listEl.innerHTML = sortedFolders.map((folderName) => {
           const items = byFolder[folderName];
+          const safeFolder = escapeHTML(folderName);
           const rows = items.map(({ pitcherKey, sess }) => `
             <div class="flex flex-wrap items-center justify-between gap-2 py-2 px-3 rounded-md bg-[#10141b] border border-[#262c36] text-[13px] font-mono-num">
               <div class="min-w-0 flex-1">
-                <div class="text-white font-semibold truncate">${sess.pitcherName} <span class="text-slate-400 font-normal">(${sess.throws || 'R'}HP)</span></div>
-                <div class="text-xs text-slate-400 truncate">${sess.blockLabel} • ${sess.sessionDate} • ${sess.totalPitches}p • Arsenal+ ${Number(sess.arsenalPlus || 0).toFixed(1)}</div>
+                <div class="text-white font-semibold truncate">${escapeHTML(sess.pitcherName)} <span class="text-slate-400 font-normal">(${escapeHTML(sess.throws || 'R')}HP)</span></div>
+                <div class="text-xs text-slate-400 truncate">${escapeHTML(sess.blockLabel)} • ${escapeHTML(sess.sessionDate)} • ${Number(sess.totalPitches || 0)}p • Arsenal+ ${Number(sess.arsenalPlus || 0).toFixed(1)}</div>
               </div>
               <div class="flex items-center gap-1.5 shrink-0">
-                <button type="button" data-vault-move="${pitcherKey}::${sess.id}::${folderName.replace(/"/g, '&quot;')}" class="touch-target px-2.5 py-1 rounded-md bg-[#151921] hover:bg-[#1e2530] text-[#60a5fa] border border-[#262c36] text-xs font-sans font-semibold transition">Move</button>
-                <button type="button" data-vault-del="${pitcherKey}::${sess.id}" class="touch-target px-2.5 py-1 rounded-md bg-[#151921] hover:bg-[#1e2530] text-rose-400 border border-[#262c36] text-xs font-sans font-semibold transition">Delete</button>
+                <button type="button" data-vault-move="${escapeHTML(pitcherKey)}::${escapeHTML(sess.id)}::${safeFolder}" class="touch-target px-2.5 py-1 rounded-md bg-[#151921] hover:bg-[#1e2530] text-[#60a5fa] border border-[#262c36] text-xs font-sans font-semibold transition">Move</button>
+                <button type="button" data-vault-del="${escapeHTML(pitcherKey)}::${escapeHTML(sess.id)}" class="touch-target px-2.5 py-1 rounded-md bg-[#151921] hover:bg-[#1e2530] text-rose-400 border border-[#262c36] text-xs font-sans font-semibold transition">Delete</button>
               </div>
             </div>
           `).join('');
           return `
             <div class="rounded-md bg-[#151921] border border-[#262c36] p-3 space-y-2">
               <div class="flex items-center justify-between pb-1.5 border-b border-[#262c36]">
-                <strong class="text-[13px] font-semibold text-white">${folderName}</strong>
+                <strong class="text-[13px] font-semibold text-white">${safeFolder}</strong>
                 <span class="font-mono-num text-xs text-slate-400">${items.length} session(s)</span>
               </div>
               <div class="space-y-1.5">${rows}</div>
@@ -9689,7 +9719,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             if (isPdf) {
               const buf = await f.arrayBuffer();
               res = await ingestTrackManPDF(buf, f.name);
-              uploadRawPdfToSupabaseStorage(f).catch(() => {});
+              uploadRawPdfToSupabaseStorage(f).catch((err) => { console.warn('Batch PDF archive upload failed:', err); });
               await saveBullpenSessionToSupabase(res.profileObj, 'pdf');
             } else {
               const txt = await f.text();
