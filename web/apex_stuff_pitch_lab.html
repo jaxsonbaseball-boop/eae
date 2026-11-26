@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.28 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.29 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -1037,6 +1037,29 @@
       </div>
     </div>
 
+    <!-- First-Time User Onboarding & Interactive Sample Bullpen Banner -->
+    <section id="onboardingBanner" class="hidden rounded-md bg-[#151921] border border-[#262c36] p-4 space-y-3 no-print">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="space-y-0.5">
+          <h2 class="text-[15px] font-semibold text-white">New to EAE? Load Sample Bullpen</h2>
+          <p class="text-[13px] text-slate-300">Preview a realistic 3-pitch TrackMan bullpen in the 30-second summary view with zero setup.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="onboardingLoadSampleBtn" type="button" class="touch-target px-3.5 py-2 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
+            Load Sample Bullpen
+          </button>
+          <button id="onboardingDismissBtn" type="button" class="touch-target px-3 py-2 rounded-md bg-[#10141b] hover:bg-[#1e2530] text-slate-300 border border-[#262c36] text-xs font-semibold transition">
+            Dismiss
+          </button>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2.5 border-t border-[#262c36] text-[13px] text-slate-300">
+        <div><strong class="text-white">Stuff+</strong>: Pitch quality grade anchored to <span class="font-mono-num">100 = NCAA D1 Avg (10 SD)</span>.</div>
+        <div><strong class="text-white">Arsenal+</strong>: Weighted repertoire grade combining Stuff+, tunneling, and platoon mix.</div>
+        <div><strong class="text-white">Top 2 Quick Wins</strong>: Highest-ROI mechanical and pitch-design levers ranked for your bullpen.</div>
+      </div>
+    </section>
+
     <!-- Sticky Batch Roster Switcher Pill (visible when 2+ files imported) -->
     <div id="backToBatchRosterBar" class="hidden sticky top-2 md:top-12 z-30 flex items-center justify-between gap-2 rounded-md bg-[#151921] border border-[#3b82f6] px-3.5 py-2 no-print">
       <button id="backToBatchRosterBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
@@ -1127,6 +1150,7 @@
             Showing: Present College Grade
           </span>
           <span id="pitcherHeaderMeta" class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800">HS Showcase Bullpen • 10/20/2026 • 15 Pitches • Low-3/4 Slot</span>
+          <span id="missingMetricsBadge" class="hidden px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-200 border border-amber-500/40 text-xs font-mono-num font-medium"></span>
           <button id="saveVaultSessionBtn" type="button" class="no-print touch-target px-3 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-emerald-300 border border-[#262c36] text-xs font-sans font-semibold transition">
             Save Session to Vault
           </button>
@@ -1736,7 +1760,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.28 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.29 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -3832,9 +3856,15 @@
       addLimbSegment(backFoot, hipPos, 0.17 * scale, 0.13 * scale);
       addLimbSegment(leadFoot, hipPos, 0.18 * scale, 0.14 * scale);
 
-      // Torso & Head
+      // Torso & Head (oriented toward home plate at -Z across all camera presets)
       addLimbSegment(hipPos, chestPos, 0.40 * scale, 0.33 * scale);
-      addWirePart(new THREE.SphereGeometry(0.34 * scale, 12, 12), headPos, null);
+      addWirePart(new THREE.SphereGeometry(0.34 * scale, 12, 12), headPos, [0, Math.PI, 0]);
+      // Forward cap visor pointing directly toward home plate (-Z)
+      const visorGeo = new THREE.BoxGeometry(0.42 * scale, 0.06 * scale, 0.34 * scale);
+      addWirePart(visorGeo, [headPos[0], headPos[1] + 0.14 * scale, headPos[2] - 0.34 * scale], null);
+      // Forward chest-plate orientation cue facing home plate (-Z)
+      const chestFrontGeo = new THREE.BoxGeometry(0.55 * scale, 0.65 * scale, 0.08 * scale);
+      addWirePart(chestFrontGeo, [chestPos[0], chestPos[1] - 0.25 * scale, chestPos[2] - 0.28 * scale], null);
 
       // Glove Arm & Throwing Arm aligned directly to (handX, handY, handZ)
       addLimbSegment(gloveShoulder, gloveHand, 0.11 * scale, 0.09 * scale);
@@ -4668,8 +4698,17 @@
         return fallback;
       }
 
+      function cleanPitcherName(raw) {
+        return String(raw || '')
+          .replace(/\.(pdf|csv|json|txt)$/i, '')
+          .replace(/[\s_-]+(?:\d{4}[-_\/]\d{1,2}[-_\/]\d{1,2}|\d{1,2}[-_\/]\d{1,2}[-_\/]\d{2,4})\s*$/g, '')
+          .replace(/[_-]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim() || 'Uploaded Pitcher';
+      }
+
       const firstRow = rows[0];
-      const pitcherName = String(getField(firstRow, ['Pitcher', 'PitcherName', 'Player', 'Name'], fileName.replace(/\.(csv|json|txt)$/i, '')));
+      const pitcherName = cleanPitcherName(getField(firstRow, ['Pitcher', 'PitcherName', 'Player', 'Name'], fileName));
       const rawThrows = String(getField(firstRow, ['Throws', 'PitcherThrows', 'Hand', 'Handedness'], 'R')).toUpperCase();
       const throws = rawThrows.startsWith('L') ? 'L' : 'R';
       const sessionDate = String(getField(firstRow, ['Date', 'PitchDate', 'SessionDate'], '11/05/2026'));
@@ -4708,6 +4747,9 @@
         const velo = velos.length ? velos.reduce((a, b) => a + b, 0) / velos.length : (code === 'FF' ? 85.0 : 75.0);
         const explicitMaxVelos = grp.map((r) => parseFloat(getField(r, ['MaxVelo', 'MaxRelSpeed'], NaN))).filter(Number.isFinite);
         const maxVelo = explicitMaxVelos.length ? Math.max(...explicitMaxVelos) : (velos.length ? Math.max(...velos) : velo + 1.1);
+        const hasSpin = grp.some((r) => Number.isFinite(parseFloat(getField(r, ['SpinRate', 'Spin', 'TotalSpin'], NaN))));
+        const hasRelH = grp.some((r) => Number.isFinite(parseFloat(getField(r, ['RelHeight', 'ReleaseHeight', 'z0'], NaN))));
+        const hasExt = grp.some((r) => Number.isFinite(parseFloat(getField(r, ['Extension', 'RelExtension', 'Ext'], NaN))));
         const spin = meanOf(grp, (r) => parseFloat(getField(r, ['SpinRate', 'Spin', 'TotalSpin'], NaN)), code === 'CH' ? 1550 : 2150);
         const ivb = ivbs.length ? ivbs.reduce((a, b) => a + b, 0) / ivbs.length : (code === 'FF' ? 16.0 : code === 'CH' ? 5.5 : -3.5);
         const hb = hbs.length ? hbs.reduce((a, b) => a + b, 0) / hbs.length : (code === 'FF' ? 11.0 : code === 'CH' ? 15.0 : -6.5);
@@ -4820,7 +4862,13 @@
           strikePct,
           veloSd,
           ivbSd,
-          hbSd
+          hbSd,
+          _fallbackFields: [
+            !hasSpin ? 'Spin Rate' : null,
+            !hasExt ? 'Extension' : null,
+            !hasRelH ? 'RelHeight' : null,
+            zonePct === null ? 'Zone%' : null
+          ].filter(Boolean)
         };
       });
 
@@ -4906,7 +4954,13 @@
     }
 
     function extractTrackManPDFMetadata(lines, fileName) {
-      let pitcherName = fileName.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').trim() || 'Uploaded PDF Pitcher';
+      const stripTrailingDate = (s) => String(s || '')
+        .replace(/\.pdf$/i, '')
+        .replace(/[\s_-]+(?:\d{4}[-_\/]\d{1,2}[-_\/]\d{1,2}|\d{1,2}[-_\/]\d{1,2}[-_\/]\d{2,4})\s*$/g, '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      let pitcherName = stripTrailingDate(fileName) || 'Uploaded PDF Pitcher';
       let throws = 'R';
       let throwsExplicit = false;
       let sessionDate = '11/18/2026';
@@ -4928,6 +4982,7 @@
           sessionDate = dateMatch[1];
         }
       }
+      pitcherName = stripTrailingDate(pitcherName) || 'Uploaded PDF Pitcher';
       return { pitcherName, throws, throwsExplicit, sessionDate };
     }
 
@@ -6041,7 +6096,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.28 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.29 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -6196,6 +6251,19 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const fullHeaderMeta = `${profile.team} • ${profile.date} • ${profile.totalPitches} Pitches • ${fb.slot} Slot${bioSuffix}`;
       document.getElementById('pitcherHeaderName').textContent = fullHeaderTitle;
       document.getElementById('pitcherHeaderMeta').textContent = fullHeaderMeta;
+      const missingBadge = document.getElementById('missingMetricsBadge');
+      if (missingBadge) {
+        const fbSet = new Set();
+        if (profile.isCustomSession) {
+          (profile.pitches || []).forEach((p) => (p._fallbackFields || []).forEach((f) => fbSet.add(f)));
+        }
+        if (fbSet.size > 0) {
+          missingBadge.textContent = `Baseline defaults used: ${Array.from(fbSet).join(', ')}`;
+          missingBadge.classList.remove('hidden');
+        } else {
+          missingBadge.classList.add('hidden');
+        }
+      }
       document.getElementById('dossierTitleName').textContent = fullHeaderTitle;
       const dossierVaaNote = (heightStr && fb && typeof fb.vaaVsExpected === 'number')
         ? ` • ${fb.code} Height-Adj VAA: ${fb.vaaTier.label} (${fb.vaaVsExpected >= 0 ? '+' : ''}${fb.vaaVsExpected.toFixed(1)}°)`
@@ -7065,6 +7133,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const entry = {
         id: `vs_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         pitcherName: String(profile.name || 'Uploaded Pitcher').trim(),
+        athleteFolder: (profile.athleteFolder && String(profile.athleteFolder).trim()) || 'Unassigned',
         throws: profile.throws || 'R',
         sessionDate,
         blockLabel: String(blockLabel || '').trim() || sessionDate,
@@ -7916,6 +7985,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             birthDate: savedMeta.birthDate || null,
             isHighSchool: true,
             isCustomSession: true,
+            athleteFolder: (row.athlete_folder && String(row.athlete_folder).trim()) || 'Unassigned',
             sourceType: row.source_type || 'csv',
             pitches: pitchesArr
           };
@@ -7944,6 +8014,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         const payload = {
           user_id: appState.currentUser.id,
           pitcher_name: profileObj.name,
+          athlete_folder: (profileObj.athleteFolder && String(profileObj.athleteFolder).trim()) || 'Unassigned',
           throws: profileObj.throws,
           session_date: profileObj.date,
           source_type: sourceType,
@@ -8455,6 +8526,34 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         appState.viewMode = savedManualMode;
       }
       appState.timeDepth = defaultTimeDepthForViewMode(appState.viewMode);
+
+      // First-Time Onboarding Banner (eae_onboarding_dismissed_v1)
+      const onboardEl = document.getElementById('onboardingBanner');
+      const onboardLoadBtn = document.getElementById('onboardingLoadSampleBtn');
+      const onboardDismissBtn = document.getElementById('onboardingDismissBtn');
+      const isDismissed = (() => {
+        try { return window.localStorage && window.localStorage.getItem('eae_onboarding_dismissed_v1') === '1'; } catch (e) { return false; }
+      })();
+      if (onboardEl && !isDismissed) onboardEl.classList.remove('hidden');
+      if (onboardDismissBtn && onboardEl) {
+        onboardDismissBtn.addEventListener('click', () => {
+          onboardEl.classList.add('hidden');
+          try { if (window.localStorage) window.localStorage.setItem('eae_onboarding_dismissed_v1', '1'); } catch (e) {}
+        });
+      }
+      if (onboardLoadBtn && onboardEl) {
+        onboardLoadBtn.addEventListener('click', () => {
+          parseTrackManCSVOrJSON(SAMPLE_TRACKMAN_CSV, 'Marcus_Vance_TrackMan_B1.csv');
+          appState.viewMode = 'player';
+          appState.timeDepth = '30sec';
+          const vmEl = document.getElementById('viewModeSelect');
+          if (vmEl) vmEl.value = 'player';
+          renderAll();
+          onboardEl.classList.add('hidden');
+          try { if (window.localStorage) window.localStorage.setItem('eae_onboarding_dismissed_v1', '1'); } catch (e) {}
+          showToast('Loaded sample 3-pitch bullpen into 30-second summary view');
+        });
+      }
 
       const discBtn = document.getElementById('progressiveDisclosureBtn');
       if (discBtn) {
