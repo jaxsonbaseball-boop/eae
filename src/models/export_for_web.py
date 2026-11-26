@@ -613,11 +613,13 @@ def export_model_for_web(
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, separators=(",", ":"))
 
-    js_path = Path(js_output_path)
-    js_path.parent.mkdir(parents=True, exist_ok=True)
+    js_path = Path(js_output_path) if js_output_path is not None else None
+    if js_path is not None:
+        js_path.parent.mkdir(parents=True, exist_ok=True)
     js_code = generate_js_inference_helper_code()
-    with open(js_path, "w", encoding="utf-8") as f:
-        f.write(js_code)
+    if js_path is not None:
+        with open(js_path, "w", encoding="utf-8") as f:
+            f.write(js_code)
 
     logger.info(
         f"Exported browser-ready NCAA D1 Stuff+ JSON ({json_path.stat().st_size / 1024:.1f} KB) "
