@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.31 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.32 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -1767,7 +1767,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.31 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.32 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -6103,7 +6103,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.31 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.32 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -6489,13 +6489,26 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-[#1f252e] text-[11px] font-mono-num text-slate-300">
+          ${(() => {
+            const rawPitchMatch = (profile.pitches || []).find((rp) => rp.code === p.code);
+            const pExtVal = Number.isFinite(Number(p.ext)) ? Number(p.ext) : 6.0;
+            const pExtEst = Boolean(
+              profile.isCustomSession &&
+              rawPitchMatch &&
+              Array.isArray(rawPitchMatch._fallbackFields) &&
+              rawPitchMatch._fallbackFields.includes('Extension')
+            );
+            return `
+          <div class="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-[#1f252e] text-[11px] font-mono-num tabular-nums text-slate-300">
             <div>Velo: <span class="text-white font-semibold">${p.velo.toFixed(1)}</span></div>
             <div>Plate: <span class="text-slate-200 font-semibold">${p.plateSpeedMph.toFixed(1)}</span></div>
             <div>Angle: <span class="text-white font-semibold">${p.vaa.toFixed(1)}°</span></div>
-            <div class="col-span-2">Break: <span class="text-[#60a5fa] font-semibold">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}" V / ${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}" H</span></div>
+            <div>Ext: <span class="text-white font-semibold">${pExtVal.toFixed(1)} ft${pExtEst ? ' (Est.)' : ''}</span></div>
             <div>Time: <span class="font-semibold" style="color:${p.reactionMeta.colorHex}">${p.reactionMarginMs.toFixed(0)}ms</span></div>
-          </div>
+            <div>Spin: <span class="text-slate-200 font-semibold">${Math.round(p.spin)}</span></div>
+            <div class="col-span-3">Break: <span class="text-[#60a5fa] font-semibold">${p.ivb >= 0 ? '+' : ''}${p.ivb.toFixed(1)}" V / ${p.hb >= 0 ? '+' : ''}${p.hb.toFixed(1)}" H</span></div>
+          </div>`;
+          })()}
           ${(typeof p.zonePct === 'number' || typeof p.strikePct === 'number' || typeof p.veloSd === 'number' || typeof p.ivbSd === 'number' || typeof p.hbSd === 'number') ? `
           <div class="pt-1.5 border-t border-[#1f252e] space-y-1">
             ${(typeof p.zonePct === 'number' || typeof p.strikePct === 'number') ? `
