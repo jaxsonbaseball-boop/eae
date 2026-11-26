@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.29 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.30 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -582,6 +582,13 @@
           <option value="__new__">+ Create New Athlete Folder...</option>
         </select>
         <input id="newAthleteFolderInput" type="text" placeholder="Enter new athlete folder name (e.g., Marcus Vance)" class="hidden touch-target w-full rounded-md bg-[#151921] border border-[#3b82f6] px-3 py-2 text-xs text-white focus:outline-none" />
+        <div class="pt-1.5 border-t border-[#1f252e] space-y-1">
+          <label for="uploadFolderInput" class="block text-[11px] font-semibold text-slate-300">Athlete Folder (Optional)</label>
+          <input id="uploadFolderInput" type="text" list="athleteFolderOptions" placeholder="Unassigned (or choose / type a folder name)" class="touch-target w-full rounded-md bg-[#151921] border border-[#262c36] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#3b82f6]" />
+          <datalist id="athleteFolderOptions">
+            <option value="Unassigned"></option>
+          </datalist>
+        </div>
       </div>
 
       <!-- Optional Athlete Context (Height & Birth Date) -->
@@ -1760,7 +1767,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.29 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.30 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -6096,7 +6103,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.29 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.30 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -8837,6 +8844,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         openUploadBtn.addEventListener('click', () => {
           updateUploadGateUI();
           populateAthleteFolderDropdowns();
+          if (typeof refreshAthleteFolderDatalist === 'function') refreshAthleteFolderDatalist();
           uploadModal.classList.remove('hidden');
           uploadModal.classList.add('flex');
         });
@@ -8910,10 +8918,14 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
                   res.profileObj.name = folderOverride;
                   res.pitcherName = folderOverride;
                 }
+                const upFolderEl = document.getElementById('uploadFolderInput');
+                const upFolderVal = (upFolderEl && upFolderEl.value.trim()) || 'Unassigned';
+                res.profileObj.athleteFolder = upFolderVal;
                 if (upHeightVal) res.profileObj.pitcherHeightIn = upHeightVal;
                 if (upDobVal) res.profileObj.birthDate = upDobVal;
                 if (PITCHER_PROFILES[res.profileObj.id]) {
                   PITCHER_PROFILES[res.profileObj.id].name = res.profileObj.name;
+                  PITCHER_PROFILES[res.profileObj.id].athleteFolder = upFolderVal;
                   PITCHER_PROFILES[res.profileObj.id].pitcherHeightIn = res.profileObj.pitcherHeightIn || null;
                   PITCHER_PROFILES[res.profileObj.id].birthDate = res.profileObj.birthDate || null;
                 }
@@ -8952,10 +8964,14 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
                   res.profileObj.name = folderOverride;
                   res.pitcherName = folderOverride;
                 }
+                const upFolderEl = document.getElementById('uploadFolderInput');
+                const upFolderVal = (upFolderEl && upFolderEl.value.trim()) || 'Unassigned';
+                res.profileObj.athleteFolder = upFolderVal;
                 if (upHeightVal) res.profileObj.pitcherHeightIn = upHeightVal;
                 if (upDobVal) res.profileObj.birthDate = upDobVal;
                 if (PITCHER_PROFILES[res.profileObj.id]) {
                   PITCHER_PROFILES[res.profileObj.id].name = res.profileObj.name;
+                  PITCHER_PROFILES[res.profileObj.id].athleteFolder = upFolderVal;
                   PITCHER_PROFILES[res.profileObj.id].pitcherHeightIn = res.profileObj.pitcherHeightIn || null;
                   PITCHER_PROFILES[res.profileObj.id].birthDate = res.profileObj.birthDate || null;
                 }
@@ -9251,41 +9267,156 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         });
       }
 
+      function getAllAthleteFolderNames() {
+        const set = new Set(['Unassigned']);
+        Object.values(PITCHER_PROFILES).forEach((p) => {
+          if (p && p.athleteFolder && String(p.athleteFolder).trim()) {
+            set.add(String(p.athleteFolder).trim());
+          }
+        });
+        const vault = loadAthleteVault();
+        Object.values(vault).forEach((arr) => {
+          (arr || []).forEach((s) => {
+            if (s && s.athleteFolder && String(s.athleteFolder).trim()) {
+              set.add(String(s.athleteFolder).trim());
+            }
+          });
+        });
+        return Array.from(set).sort((a, b) => {
+          if (a === 'Unassigned') return 1;
+          if (b === 'Unassigned') return -1;
+          return a.localeCompare(b);
+        });
+      }
+
+      function refreshAthleteFolderDatalist() {
+        const dl = document.getElementById('athleteFolderOptions');
+        if (!dl) return;
+        dl.innerHTML = getAllAthleteFolderNames()
+          .map((f) => `<option value="${f.replace(/"/g, '&quot;')}"></option>`)
+          .join('');
+      }
+
+      async function moveSessionToFolder(pitcherKey, sessionId, newFolderName) {
+        const cleanFolder = String(newFolderName || '').trim() || 'Unassigned';
+        const vault = loadAthleteVault();
+        let targetSess = null;
+        if (Array.isArray(vault[pitcherKey])) {
+          vault[pitcherKey] = vault[pitcherKey].map((s) => {
+            if (s.id === sessionId) {
+              targetSess = { ...s, athleteFolder: cleanFolder };
+              return targetSess;
+            }
+            return s;
+          });
+          saveAthleteVault(vault);
+        }
+
+        // Sync to matching PITCHER_PROFILES entry & Supabase bullpen_sessions if signed in
+        if (targetSess) {
+          const matchingProfiles = Object.values(PITCHER_PROFILES).filter(
+            (p) => p && normalizeVaultPitcherKey(p.name) === pitcherKey && String(p.date || '') === String(targetSess.sessionDate || '')
+          );
+          matchingProfiles.forEach((p) => { p.athleteFolder = cleanFolder; });
+          const client = initSupabaseClient();
+          if (client && appState.currentUser) {
+            const cloudRow = matchingProfiles.find((p) => p.supabaseRowId);
+            if (cloudRow && cloudRow.supabaseRowId) {
+              try {
+                await client
+                  .from('bullpen_sessions')
+                  .update({ athlete_folder: cleanFolder })
+                  .eq('id', cloudRow.supabaseRowId)
+                  .eq('user_id', appState.currentUser.id);
+              } catch (err) {
+                console.warn('Could not sync folder update to Supabase:', err);
+              }
+            }
+          }
+        }
+        refreshAthleteFolderDatalist();
+        renderVaultModalList();
+        showToast(`Moved session to folder "${cleanFolder}"`);
+      }
+
       function renderVaultModalList() {
+        refreshAthleteFolderDatalist();
         const listEl = document.getElementById('vaultSessionsList');
         const sumEl = document.getElementById('vaultSummaryCount');
         const vault = loadAthleteVault();
-        const keys = Object.keys(vault).sort();
-        let totalSess = 0;
-        keys.forEach((k) => { totalSess += (vault[k] || []).length; });
-        if (sumEl) sumEl.textContent = `${totalSess} saved session(s) across ${keys.length} athlete(s)`;
+        const keys = Object.keys(vault);
+        const flatSessions = [];
+        keys.forEach((k) => {
+          (vault[k] || []).forEach((s) => {
+            flatSessions.push({
+              pitcherKey: k,
+              folder: (s.athleteFolder && String(s.athleteFolder).trim()) || 'Unassigned',
+              sess: s
+            });
+          });
+        });
+
+        if (sumEl) sumEl.textContent = `${flatSessions.length} saved session(s) across ${keys.length} athlete(s)`;
         if (!listEl) return;
-        if (!keys.length) {
+        if (!flatSessions.length) {
           listEl.innerHTML = '<div class="text-xs text-slate-400 py-4 text-center">No sessions saved in vault yet. Click "Save Session to Vault" or import a Batch Roster.</div>';
           return;
         }
-        listEl.innerHTML = keys.map((k) => {
-          const arr = vault[k] || [];
-          const displayName = arr[0] ? arr[0].pitcherName : k;
-          const rows = arr.map((s) => `
-            <div class="flex items-center justify-between gap-2 py-1.5 px-2.5 rounded bg-[#151921] border border-[#262c36] text-xs font-mono-num">
-              <div class="truncate">
-                <span class="text-white font-semibold">${s.blockLabel}</span>
-                <span class="text-slate-400 ml-1.5">${s.sessionDate} • ${s.totalPitches}p • Arsenal+ ${s.arsenalPlus.toFixed(1)}</span>
+
+        // Group sessions cleanly by athlete_folder (Unassigned at bottom)
+        const byFolder = {};
+        flatSessions.forEach((item) => {
+          if (!byFolder[item.folder]) byFolder[item.folder] = [];
+          byFolder[item.folder].push(item);
+        });
+        const sortedFolders = Object.keys(byFolder).sort((a, b) => {
+          if (a === 'Unassigned') return 1;
+          if (b === 'Unassigned') return -1;
+          return a.localeCompare(b);
+        });
+
+        listEl.innerHTML = sortedFolders.map((folderName) => {
+          const items = byFolder[folderName];
+          const rows = items.map(({ pitcherKey, sess }) => `
+            <div class="flex flex-wrap items-center justify-between gap-2 py-2 px-3 rounded-md bg-[#10141b] border border-[#262c36] text-[13px] font-mono-num">
+              <div class="min-w-0 flex-1">
+                <div class="text-white font-semibold truncate">${sess.pitcherName} <span class="text-slate-400 font-normal">(${sess.throws || 'R'}HP)</span></div>
+                <div class="text-xs text-slate-400 truncate">${sess.blockLabel} • ${sess.sessionDate} • ${sess.totalPitches}p • Arsenal+ ${Number(sess.arsenalPlus || 0).toFixed(1)}</div>
               </div>
-              <button type="button" data-vault-del="${k}::${s.id}" class="text-rose-400 hover:text-rose-300 text-[11px] font-semibold shrink-0">Delete</button>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button type="button" data-vault-move="${pitcherKey}::${sess.id}::${folderName.replace(/"/g, '&quot;')}" class="touch-target px-2.5 py-1 rounded-md bg-[#151921] hover:bg-[#1e2530] text-[#60a5fa] border border-[#262c36] text-xs font-sans font-semibold transition">Move</button>
+                <button type="button" data-vault-del="${pitcherKey}::${sess.id}" class="touch-target px-2.5 py-1 rounded-md bg-[#151921] hover:bg-[#1e2530] text-rose-400 border border-[#262c36] text-xs font-sans font-semibold transition">Delete</button>
+              </div>
             </div>
           `).join('');
           return `
-            <div class="rounded-md bg-[#10141b] border border-[#262c36] p-3 space-y-1.5">
-              <div class="flex items-center justify-between text-xs">
-                <strong class="text-white">${displayName}</strong>
-                <span class="font-mono-num text-slate-400">${arr.length} session(s)</span>
+            <div class="rounded-md bg-[#151921] border border-[#262c36] p-3 space-y-2">
+              <div class="flex items-center justify-between pb-1.5 border-b border-[#262c36]">
+                <strong class="text-[13px] font-semibold text-white">${folderName}</strong>
+                <span class="font-mono-num text-xs text-slate-400">${items.length} session(s)</span>
               </div>
-              <div class="space-y-1">${rows}</div>
+              <div class="space-y-1.5">${rows}</div>
             </div>
           `;
         }).join('');
+
+        listEl.querySelectorAll('[data-vault-move]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const parts = btn.getAttribute('data-vault-move').split('::');
+            const pKey = parts[0];
+            const sid = parts[1];
+            const curFolder = parts[2] || 'Unassigned';
+            const existingList = getAllAthleteFolderNames().join(', ');
+            const nextFolder = window.prompt(
+              `Move session to Athlete Folder (existing: ${existingList}):`,
+              curFolder
+            );
+            if (nextFolder !== null) {
+              moveSessionToFolder(pKey, sid, nextFolder);
+            }
+          });
+        });
+
         listEl.querySelectorAll('[data-vault-del]').forEach((btn) => {
           btn.addEventListener('click', () => {
             const [k, sid] = btn.getAttribute('data-vault-del').split('::');
@@ -9506,6 +9637,8 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
             }
             if (res && res.profileObj) {
               const prof = res.profileObj;
+              const upFolderEl = document.getElementById('uploadFolderInput');
+              prof.athleteFolder = (upFolderEl && upFolderEl.value.trim()) || prof.athleteFolder || 'Unassigned';
               const ev = evaluateFullPipeline(prof, appState.pacingMode, createEmptyPitchLabState(prof.pitches.length + 2), appState.coupledSlotArc, 'present');
               const fb = ev.gradedPitches[0];
               const bestP = [...ev.gradedPitches].sort((a, b) => b.shrunkStuff - a.shrunkStuff)[0];
