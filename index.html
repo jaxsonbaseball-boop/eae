@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.33 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.34 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -564,7 +564,7 @@
       <!-- Guest Account Gate Banner (shown when signed out) -->
       <div id="uploadGuestGateBox" class="rounded-md bg-[#10141b] border border-[#333c4a] p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div class="text-xs text-slate-300 leading-snug">
-          <strong class="text-white">Account Required for Custom Uploads:</strong> Sign in or create a free account to upload TrackMan PDF, CSV, or JSON files. Guests can test the sample CSV below or browse all 15 built-in demo profiles.
+          <strong class="text-white">Account Required for Custom Uploads:</strong> Sign in or create a free account to upload TrackMan PDF, CSV, or JSON files. Guests can explore all 15 built-in NCAA D1 pitcher archetypes immediately.
         </div>
         <button id="uploadGateSignInBtn" type="button" class="touch-target shrink-0 px-3 py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
           Sign In / Sign Up
@@ -635,9 +635,6 @@
         <div class="flex flex-wrap items-center justify-center gap-2">
           <button id="browseTrackmanFileBtn" type="button" class="px-3.5 py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
             Select CSV / JSON / PDF File(s)
-          </button>
-          <button id="loadSampleCsvBtn" type="button" class="px-3.5 py-1.5 rounded-md bg-[#1e2530] hover:bg-[#262f3d] text-slate-200 border border-[#333c4a] text-xs font-semibold transition">
-            Load Sample Showcase Bullpen CSV
           </button>
         </div>
       </div>
@@ -1044,16 +1041,16 @@
       </div>
     </div>
 
-    <!-- First-Time User Onboarding & Interactive Sample Bullpen Banner -->
+    <!-- First-Time User Onboarding Banner -->
     <section id="onboardingBanner" class="hidden rounded-md bg-[#151921] border border-[#262c36] p-4 space-y-3 no-print">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="space-y-0.5">
-          <h2 class="text-[15px] font-semibold text-white">New to EAE? Load Sample Bullpen</h2>
-          <p class="text-[13px] text-slate-300">Preview a realistic 3-pitch TrackMan bullpen in the 30-second summary view with zero setup.</p>
+          <h2 class="text-[15px] font-semibold text-white">New to EAE? Explore 15 Built-In Archetypes or Upload Data</h2>
+          <p class="text-[13px] text-slate-300">Switch between 15 built-in NCAA D1 pitcher archetypes in the Bullpen Session menu or upload a TrackMan CSV, JSON, or PDF report.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <button id="onboardingLoadSampleBtn" type="button" class="touch-target px-3.5 py-2 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
-            Load Sample Bullpen
+          <button id="onboardingUploadBtn" type="button" class="touch-target px-3.5 py-2 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
+            Upload Data
           </button>
           <button id="onboardingDismissBtn" type="button" class="touch-target px-3 py-2 rounded-md bg-[#10141b] hover:bg-[#1e2530] text-slate-300 border border-[#262c36] text-xs font-semibold transition">
             Dismiss
@@ -1767,7 +1764,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.33 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.34 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -2785,7 +2782,8 @@
       const yStart = Math.max(48.0, 60.5 - pitch.ext);
       const dy = -yStart / N_STEPS;
 
-      const throwsSign = handedness === 'L' ? -1.0 : 1.0;
+      const isLefty = String(handedness || '').trim().toUpperCase().startsWith('L');
+      const throwsSign = isLefty ? -1.0 : 1.0;
       const absRelSide = Math.abs(Number(pitch.relSide) || 1.85);
       // Catcher view (+Z toward mound): +X = catcher-left / 3B side (RHP), -X = catcher-right / 1B side (LHP)
       const xStart = throwsSign * absRelSide;
@@ -3799,10 +3797,9 @@
 
       const rawRelSideNum = Number(relSide);
       const explicitHand = String(throwsHand || '').trim().toUpperCase();
-      const effectiveThrows = (explicitHand === 'L' || explicitHand === 'R')
-        ? explicitHand
-        : ((Number.isFinite(rawRelSideNum) && rawRelSideNum < 0) ? 'L' : 'R');
-      const throwsSign = effectiveThrows === 'L' ? -1.0 : 1.0;
+      const isLhp = explicitHand.startsWith('L')
+        || (!explicitHand.startsWith('R') && Number.isFinite(rawRelSideNum) && rawRelSideNum < 0);
+      const throwsSign = isLhp ? -1.0 : 1.0;
       // Catcher view (+Z looking toward mound): +X = catcher-left / 3B side (RHP), -X = catcher-right / 1B side (LHP)
       const absRelSide = (Number.isFinite(rawRelSideNum) && Math.abs(rawRelSideNum) > 0.05) ? Math.abs(rawRelSideNum) : 1.85;
       const handX = throwsSign * absRelSide;
@@ -6111,7 +6108,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.33 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.34 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -7164,9 +7161,10 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const meanRelSide = totW > 0 ? (sumSide / totW) : fb.relSide;
       const meanRelHeight = totW > 0 ? (sumHeight / totW) : fb.relHeight;
       const meanExt = totW > 0 ? (sumExt / totW) : (Number.isFinite(Number(fb.ext)) ? Number(fb.ext) : 6.0);
-      const sessionThrows = (profile.throws === 'L' || profile.throws === 'R')
-        ? profile.throws
-        : (meanRelSide < 0 ? 'L' : 'R');
+      const normThrows = String(profile.throws || '').trim().toUpperCase();
+      const sessionThrows = normThrows.startsWith('L')
+        ? 'L'
+        : (normThrows.startsWith('R') ? 'R' : (meanRelSide < 0 ? 'L' : 'R'));
       update3DPitcherSilhouette(sessionThrows, meanRelHeight, meanRelSide, meanExt, profile.pitcherHeightIn);
       rebuild3DTrajectories(presentBaselineEval, simEval);
       drawMovementMatrix(presentBaselineEval, simEval);
@@ -8617,7 +8615,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       // First-Time Onboarding Banner (eae_onboarding_dismissed_v1)
       const onboardEl = document.getElementById('onboardingBanner');
-      const onboardLoadBtn = document.getElementById('onboardingLoadSampleBtn');
+      const onboardUploadBtn = document.getElementById('onboardingUploadBtn');
       const onboardDismissBtn = document.getElementById('onboardingDismissBtn');
       const isDismissed = (() => {
         try { return window.localStorage && window.localStorage.getItem('eae_onboarding_dismissed_v1') === '1'; } catch (e) { return false; }
@@ -8629,17 +8627,12 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
           try { if (window.localStorage) window.localStorage.setItem('eae_onboarding_dismissed_v1', '1'); } catch (e) {}
         });
       }
-      if (onboardLoadBtn && onboardEl) {
-        onboardLoadBtn.addEventListener('click', () => {
-          parseTrackManCSVOrJSON(SAMPLE_TRACKMAN_CSV, 'Marcus_Vance_TrackMan_B1.csv');
-          appState.viewMode = 'player';
-          appState.timeDepth = '30sec';
-          const vmEl = document.getElementById('viewModeSelect');
-          if (vmEl) vmEl.value = 'player';
-          renderAll();
+      if (onboardUploadBtn && onboardEl) {
+        onboardUploadBtn.addEventListener('click', () => {
           onboardEl.classList.add('hidden');
           try { if (window.localStorage) window.localStorage.setItem('eae_onboarding_dismissed_v1', '1'); } catch (e) {}
-          showToast('Loaded sample 3-pitch bullpen into 30-second summary view');
+          const openUpBtn = document.getElementById('openUploadModalBtn');
+          if (openUpBtn) openUpBtn.click();
         });
       }
 
@@ -9802,18 +9795,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         });
       }
 
-      const loadSampleBtn = document.getElementById('loadSampleCsvBtn');
-      if (loadSampleBtn) {
-        loadSampleBtn.addEventListener('click', () => {
-          const res = parseTrackManCSVOrJSON(SAMPLE_TRACKMAN_CSV, 'Marcus_Vance_TrackMan_B1.csv');
-          if (statusBox) statusBox.textContent = `Loaded sample bullpen (${res.pitcherName}, ${res.totalRows} pitches).`;
-          if (uploadModal) {
-            uploadModal.classList.add('hidden');
-            uploadModal.classList.remove('flex');
-          }
-          showToast(`Loaded ${res.pitcherName} sample TrackMan bullpen!`);
-        });
-      }
+      // Sample CSV button removed in v5.34 (15 built-in archetypes + Upload Data)
 
       const exportBtn = document.getElementById('exportDossierBtn');
       if (exportBtn) {
