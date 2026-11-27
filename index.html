@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.35 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.36 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -1764,7 +1764,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.35 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.36 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -4983,8 +4983,11 @@
         if (nameMatch && nameMatch[1]) {
           pitcherName = nameMatch[1].split(/\s{2,}|Throws|Hand|Date/i)[0].trim();
         }
-        const throwsMatch = line.match(/(?:Throws|Hand|Arm)\s*[:\-]?\s*(Left|Right|LHP|RHP|\bL\b|\bR\b)/i) ||
-                            line.match(/\b(LHP|RHP)\b/i);
+        const isBatterContext = /\b(?:Batter|Hitter)\s*(?:Side|Hand|Throws)\b/i.test(line);
+        const throwsMatch = !isBatterContext && (
+          line.match(/\b(?:Pitcher\s+)?(?:Throws|Handedness|Throwing\s+Hand)\s*[:\-]\s*(Left|Right|LHP|RHP|L|R)\b/i) ||
+          line.match(/\b(LHP|RHP)\b/i)
+        );
         if (throwsMatch && throwsMatch[1]) {
           throws = throwsMatch[1].trim().toUpperCase().startsWith('L') ? 'L' : 'R';
           throwsExplicit = true;
@@ -5248,23 +5251,38 @@
         const v = e && (e.hb !== undefined ? e.hb : (e.avgHb !== undefined ? e.avgHb : e.HorzBreak));
         return Number.isFinite(Number(v)) ? Number(v) : NaN;
       };
-      const getCode = (e) => String((e && (e.code || e.TaggedPitchType)) || '').toUpperCase();
-      const getTilt = (e) => String((e && (e.tilt || e.SpinAxis)) || '').trim();
+      const getCode = (e) => normalizePitchCode(e && (e.code || e.TaggedPitchType || e.pitchType || ''));
+      const getTilt = (e) => String((e && (e.tilt || e.clockTilt || e.SpinAxis)) || '').trim();
 
-      const fbEntry = list.find((e) => getCode(e) === 'FF' || getCode(e) === 'SI') || list[0];
-      const chEntry = list.find((e) => getCode(e) === 'CH' || getCode(e) === 'FS');
-      const fbHb = getHb(fbEntry);
-      const chHb = getHb(chEntry);
+      const fbEntries = list.filter((e) => {
+        const c = getCode(e);
+        return c === 'FF' || c === 'SI';
+      });
+      const chEntries = list.filter((e) => {
+        const c = getCode(e);
+        return c === 'CH' || c === 'FS';
+      });
+
+      const fbHbEntry = fbEntries.find((e) => Number.isFinite(getHb(e))) || fbEntries[0];
+      const chHbEntry = chEntries.find((e) => Number.isFinite(getHb(e))) || chEntries[0];
+      const fbHb = getHb(fbHbEntry);
+      const chHb = getHb(chHbEntry);
 
       if (Number.isFinite(fbHb)) {
         if (fbHb < -3.0) return 'L';
         if (fbHb < 0 && Number.isFinite(chHb) && chHb < fbHb) return 'L';
       }
-      const fbTilt = getTilt(fbEntry);
+      if (Number.isFinite(chHb) && chHb < -3.0 && !(Number.isFinite(fbHb) && fbHb > 3.0)) {
+        return 'L';
+      }
+
+      const fbTiltEntry = fbEntries.find((e) => /^(1[0-2]|0?[1-9]):([0-5]\d)$/.test(getTilt(e)));
+      const fbTilt = getTilt(fbTiltEntry);
       const tiltMatch = fbTilt.match(/^(1[0-2]|0?[1-9]):([0-5]\d)$/);
       if (tiltMatch) {
         const hr = parseInt(tiltMatch[1], 10);
-        if (hr === 10 || hr === 11) return 'L';
+        const min = parseInt(tiltMatch[2], 10);
+        if (hr === 10 || (hr === 11 && min <= 45)) return 'L';
       }
       return 'R';
     }
@@ -5290,7 +5308,7 @@
 
       const meta = extractTrackManPDFMetadata(cleanedLines, fileName);
       const pitchNameGrp = '(Four-?Seam|4-?Seam|Fastball|Two-?Seam|2-?Seam|Sinker|Cutter|Sweeper|Slider|Curveball|Knuckle-?Curve|Change-?Up|Changeup|Splitter)';
-      const moveRowRe = new RegExp(`^${pitchNameGrp}\\s+(\\d+)\\s+(-?\\d+(?:\\.\\d+)?)\\s+(-?\\d+(?:\\.\\d+)?)(?:\\s+\\d{1,2}:\\d{2})*`, 'i');
+      const moveRowRe = new RegExp(`^${pitchNameGrp}\\s+(\\d+)\\s+(-?\\d+(?:\\.\\d+)?)(?:\\s+|(?=-))(-?\\d+(?:\\.\\d+)?)(?:\\s+\\d{1,2}:\\d{2})*`, 'i');
       const moveMissingRe = new RegExp(`^${pitchNameGrp}\\s+(\\d+)\\s+\\d{1,2}:\\d{2}`, 'i');
       const veloRowRe = new RegExp(`^${pitchNameGrp}\\s+(\\d+)\\s+(\\d+(?:\\.\\d+)?)\\s+(\\d+(?:\\.\\d+)?)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+(?:\\.\\d+)?)`, 'i');
       const approachRowRe = new RegExp(`^${pitchNameGrp}\\b(.*)$`, 'i');
@@ -5342,24 +5360,25 @@
         if (/^(?:Pitch\s*Type|Total|All)\b/i.test(line)) continue;
 
         if (activeTable === 'movement') {
-          const m = line.match(moveRowRe);
+          const moveLine = line.replace(/(\d)(-\d)/g, '$1 $2');
+          const m = moveLine.match(moveRowRe);
           if (m) {
             const code = normalizePitchCode(m[1]);
             const entry = ensurePitch(code);
             if (entry.count === null) entry.count = parseInt(m[2], 10);
             entry.ivb = parseFloat(m[3]);
             entry.hb = parseFloat(m[4]);
-            const tiltM = line.match(/\b(1[0-2]|0?[1-9]):([0-5]\d)\b/);
+            const tiltM = moveLine.match(/\b(1[0-2]|0?[1-9]):([0-5]\d)\b/);
             if (tiltM && !entry.tilt) entry.tilt = `${parseInt(tiltM[1], 10)}:${tiltM[2]}`;
             continue;
           }
           // Single-pitch / missing IVB & HB row where HH:MM clock appears right after count (e.g. "Slider 2 6:00")
-          const mm = line.match(moveMissingRe);
+          const mm = moveLine.match(moveMissingRe);
           if (mm) {
             const code = normalizePitchCode(mm[1]);
             const entry = ensurePitch(code);
             if (entry.count === null) entry.count = parseInt(mm[2], 10);
-            const tiltM = line.match(/\b(1[0-2]|0?[1-9]):([0-5]\d)\b/);
+            const tiltM = moveLine.match(/\b(1[0-2]|0?[1-9]):([0-5]\d)\b/);
             if (tiltM && !entry.tilt) entry.tilt = `${parseInt(tiltM[1], 10)}:${tiltM[2]}`;
             continue;
           }
@@ -5522,10 +5541,11 @@
         const code = /knuckleball/i.test(rawPitchName) ? 'CU' : normalizePitchCode(rawPitchName);
         const rest = line.slice(pm[0].length).trim();
 
-        // Strip units (mph, rpm, in, ft, ") while preserving standalone "-" dashes
+        // Strip units (mph, rpm, in, ft, ") while preserving standalone "-" dashes and splitting merged negatives
         const cleaned = rest
           .replace(/\b(?:mph|rpm|in|ft)\b/gi, ' ')
           .replace(/["”]/g, ' ')
+          .replace(/(\d)(-\d)/g, '$1 $2')
           .replace(/\s+/g, ' ')
           .trim();
         const toks = cleaned.split(' ').filter((t) => t === '-' || /^-?\d+(?:\.\d+)?$/.test(t));
@@ -6140,7 +6160,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.35 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.36 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
