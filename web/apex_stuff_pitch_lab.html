@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.36 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.37 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -550,16 +550,17 @@
   </div>
 
   <!-- TrackMan B1 CSV / JSON Ingestion Modal -->
-  <div id="uploadModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
-    <div class="glass-card rounded-md max-w-xl w-full p-5 sm:p-6 space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <div>
-          <h3 class="text-lg font-extrabold text-white">Upload TrackMan B1 CSV, JSON, or PDF Report</h3>
+  <div id="uploadModal" class="fixed inset-0 z-50 hidden items-start sm:items-center justify-center overflow-y-auto bg-black/75 px-3 sm:px-4 pb-24 sm:pb-6" style="padding-top: max(1rem, env(safe-area-inset-top));">
+    <div class="glass-card rounded-md max-w-xl w-full max-h-[calc(100dvh-5rem)] overflow-y-auto">
+      <div class="sticky top-0 z-20 flex items-center justify-between gap-2 bg-[#151921] border-b border-[#262c36] px-4 sm:px-6 py-3.5">
+        <div class="min-w-0">
+          <h3 class="text-base sm:text-lg font-extrabold text-white leading-snug">Upload TrackMan B1 CSV, JSON, or PDF Report</h3>
         </div>
-        <button id="closeUploadModalBtn" type="button" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
-          Close
+        <button id="closeUploadModalBtn" type="button" aria-label="Close upload modal" class="touch-target shrink-0 px-3 py-1.5 rounded-md bg-[#1e2530] hover:bg-[#262f3d] border border-[#333c4a] text-slate-200 text-xs font-semibold">
+          × Close
         </button>
       </div>
+      <div class="p-4 sm:p-6 space-y-4">
 
       <!-- Guest Account Gate Banner (shown when signed out) -->
       <div id="uploadGuestGateBox" class="rounded-md bg-[#10141b] border border-[#333c4a] p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
@@ -645,6 +646,7 @@
 
       <div id="uploadStatusBox" class="text-xs font-mono-num text-slate-400 bg-slate-950/80 p-3 rounded-md border border-slate-800">
         Ready to load TrackMan B1 CSV, JSON, or text-based TrackMan PDF reports (pitch-by-pitch or pitch-type summary tables). Missing fields use standard high school and college defaults.
+      </div>
       </div>
     </div>
   </div>
@@ -1764,7 +1766,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.36 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.37 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -6160,7 +6162,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.36 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.37 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -8985,10 +8987,17 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
         });
       }
       const closeUploadBtn = document.getElementById('closeUploadModalBtn');
+      const closeUploadModal = () => {
+        if (!uploadModal) return;
+        uploadModal.classList.add('hidden');
+        uploadModal.classList.remove('flex');
+      };
       if (closeUploadBtn && uploadModal) {
-        closeUploadBtn.addEventListener('click', () => {
-          uploadModal.classList.add('hidden');
-          uploadModal.classList.remove('flex');
+        closeUploadBtn.addEventListener('click', closeUploadModal);
+      }
+      if (uploadModal) {
+        uploadModal.addEventListener('click', (e) => {
+          if (e.target === uploadModal) closeUploadModal();
         });
       }
       const uploadGateSignInBtn = document.getElementById('uploadGateSignInBtn');
