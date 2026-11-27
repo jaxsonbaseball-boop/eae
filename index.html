@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.34 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.35 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -1764,7 +1764,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.34 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.35 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -5238,6 +5238,37 @@
       return res;
     }
 
+    function inferThrowsFromPitchMovement(entries, explicitThrows) {
+      const exp = String(explicitThrows || '').trim().toUpperCase();
+      if (exp.startsWith('L')) return 'L';
+      if (exp.startsWith('R')) return 'R';
+
+      const list = Array.isArray(entries) ? entries : [];
+      const getHb = (e) => {
+        const v = e && (e.hb !== undefined ? e.hb : (e.avgHb !== undefined ? e.avgHb : e.HorzBreak));
+        return Number.isFinite(Number(v)) ? Number(v) : NaN;
+      };
+      const getCode = (e) => String((e && (e.code || e.TaggedPitchType)) || '').toUpperCase();
+      const getTilt = (e) => String((e && (e.tilt || e.SpinAxis)) || '').trim();
+
+      const fbEntry = list.find((e) => getCode(e) === 'FF' || getCode(e) === 'SI') || list[0];
+      const chEntry = list.find((e) => getCode(e) === 'CH' || getCode(e) === 'FS');
+      const fbHb = getHb(fbEntry);
+      const chHb = getHb(chEntry);
+
+      if (Number.isFinite(fbHb)) {
+        if (fbHb < -3.0) return 'L';
+        if (fbHb < 0 && Number.isFinite(chHb) && chHb < fbHb) return 'L';
+      }
+      const fbTilt = getTilt(fbEntry);
+      const tiltMatch = fbTilt.match(/^(1[0-2]|0?[1-9]):([0-5]\d)$/);
+      if (tiltMatch) {
+        const hr = parseInt(tiltMatch[1], 10);
+        if (hr === 10 || hr === 11) return 'L';
+      }
+      return 'R';
+    }
+
     function detectAndParseTrackManPowerBIPDF(normLines, fileName) {
       const cleanedLines = normLines.map((l) =>
         normalizePDFTextLine(l).replace(/\s+/g, ' ').trim()
@@ -5371,12 +5402,8 @@
       const entries = Object.values(byPitch).filter((e) => Number.isFinite(e.velo) || Number.isFinite(e.ivb));
       if (!entries.length) return null;
 
-      // Infer LHP if primary Fastball HB < -3.0 (unless explicitly set in metadata)
-      let throws = meta.throwsExplicit ? meta.throws : null;
-      if (!throws) {
-        const fbEntry = entries.find((e) => e.code === 'FF' || e.code === 'SI') || entries[0];
-        throws = (fbEntry && Number.isFinite(fbEntry.hb) && fbEntry.hb < -3.0) ? 'L' : 'R';
-      }
+      // Infer LHP from Fastball/ChangeUp HB or Tilt when not explicitly set in PDF metadata
+      const throws = inferThrowsFromPitchMovement(entries, meta.throwsExplicit ? meta.throws : null);
 
       const defaultMoveFor = (code, th) => {
         const isL = th === 'L';
@@ -5524,12 +5551,8 @@
 
       if (!rawEntries.length) return null;
 
-      // 3. Resolve handedness: explicit (RHP)/(LHP) else infer LHP if primary Fastball Avg HB < -3.0
-      let throws = explicitThrows;
-      if (!throws) {
-        const fbEntry = rawEntries.find((e) => e.code === 'FF' || e.code === 'SI') || rawEntries[0];
-        throws = (fbEntry && Number.isFinite(fbEntry.avgHb) && fbEntry.avgHb < -3.0) ? 'L' : 'R';
-      }
+      // 3. Resolve handedness: explicit (RHP)/(LHP) else infer LHP from Fastball/ChangeUp HB or Tilt
+      const throws = inferThrowsFromPitchMovement(rawEntries, explicitThrows);
 
       const defaultExtUsed = !hasExtCol || rawEntries.every((e) => !Number.isFinite(e.avgExt));
       const defaultMoveFor = (code, th) => {
@@ -5738,6 +5761,15 @@
       if (!parsedRows.length) {
         throw new Error('Could not detect TrackMan pitch tables in this PDF. Ensure the PDF contains selectable text with Pitch Type, Velocity, Spin, and Break columns.');
       }
+
+      // Infer LHP from Fastball/ChangeUp HB or Tilt when PDF has no explicit handedness label
+      const resolvedPdfThrows = inferThrowsFromPitchMovement(parsedRows, meta.throwsExplicit ? meta.throws : null);
+      parsedRows.forEach((r) => {
+        r.Throws = resolvedPdfThrows;
+        if (resolvedPdfThrows === 'L' && Number.isFinite(r.RelSide) && r.RelSide > 0) {
+          r.RelSide = -r.RelSide;
+        }
+      });
 
       // Detect pitch-type summary table (1 row per pitch type with Count > 1) vs pitch-by-pitch rows
       const typeCounts = {};
@@ -6108,7 +6140,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.34 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.35 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
