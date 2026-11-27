@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0d1015" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230d1015'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='170' fill='%23ffffff'%3EEAE%3C/text%3E%3C/svg%3E" />
-  <title>EAE v5.37 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
+  <title>EAE v5.38 — Easy Arsenal Evaluation &amp; 3D Pitch Lab</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -876,9 +876,20 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-1.5">
-          <div class="hidden md:flex flex-wrap items-center gap-1.5">
-            <button id="openUploadModalBtn" type="button" class="touch-target px-3 py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
+        <div class="flex flex-wrap items-center gap-1.5 w-full md:w-auto justify-end">
+          <!-- Mobile Direct Upload + Drawer Toggle (< 768px) -->
+          <div class="flex md:hidden items-center gap-1.5 w-full">
+            <button id="mobileUploadModalBtn" type="button" class="touch-target flex-1 px-3 py-2 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
+              Upload Data
+            </button>
+            <button id="mobileDrawerBtn" type="button" aria-expanded="false" class="touch-target shrink-0 px-3 py-2 rounded-md bg-[#151921] hover:bg-[#1e2530] border border-[#262c36] text-slate-200 text-xs font-semibold flex items-center gap-1.5">
+              <span>Controls / Menu</span>
+              <span id="mobileDrawerChevron" class="text-[10px]">▼</span>
+            </button>
+          </div>
+
+          <div id="headerActionsPanel" class="hidden md:flex flex-wrap items-center gap-1.5 w-full md:w-auto pt-1 md:pt-0">
+            <button id="openUploadModalBtn" type="button" class="hidden md:inline-flex touch-target items-center justify-center px-3 py-1.5 rounded-md bg-[#3b82f6] hover:bg-blue-500 text-white text-xs font-semibold transition">
               Upload TrackMan
             </button>
             <button id="renameSavedSessionBtn" type="button" class="hidden touch-target px-2.5 py-1.5 rounded-md bg-[#151921] hover:bg-[#1e2530] text-[#60a5fa] border border-[#262c36] text-xs font-semibold transition">
@@ -911,11 +922,6 @@
             </button>
           </div>
 
-          <!-- Mobile Drawer Toggle Button (< 768px) -->
-          <button id="mobileDrawerBtn" type="button" aria-expanded="false" class="md:hidden touch-target shrink-0 px-3 py-2 rounded-md bg-[#151921] hover:bg-[#1e2530] border border-[#262c36] text-slate-200 text-xs font-semibold flex items-center gap-1.5">
-            <span>Controls / Upload</span>
-            <span id="mobileDrawerChevron" class="text-[10px]">▼</span>
-          </button>
         </div>
       </div>
 
@@ -1766,7 +1772,7 @@
   </nav>
 
   <footer class="hidden md:flex max-w-7xl w-full mx-auto px-4 py-4 border-t border-slate-900 text-xs text-slate-500 flex-wrap justify-between gap-2 no-print">
-    <span>EAE v5.37 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
+    <span>EAE v5.38 • Easy Arsenal Evaluation — NCAA D1 4-Head XGBoost (10×10 Grid), TrackMan PDF/CSV &amp; Supabase Cloud • Created by Jaxson Smith Peterson Baseball Consulting</span>
     <span id="footerRightText" class="font-mono-num">Switch between Player / Parent / HS Coach, College Coach / Pro Scout, and R&amp;D / Quant in the top bar</span>
   </footer>
 
@@ -6162,7 +6168,7 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       setLabelText('headerBadgeVersion', isPlayer
         ? 'Player / Parent / HS Coach'
-        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.37 R&D / Quant Telemetry (10×10 Grid)'));
+        : (mode === 'scout' ? 'College Coach / Pro Scout' : 'v5.38 R&D / Quant Telemetry (10×10 Grid)'));
       setLabelText('quickWinsHeaderTitle', isPlayer
         ? 'What to Work On Next'
         : 'Lowest-Hanging Fruit: Top 2 Quick Wins');
@@ -8879,12 +8885,17 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
 
       const mobileDrawerBtn = document.getElementById('mobileDrawerBtn');
       const headerControlsPanel = document.getElementById('headerControlsPanel');
+      const headerActionsPanel = document.getElementById('headerActionsPanel');
       const mobileDrawerChevron = document.getElementById('mobileDrawerChevron');
       if (mobileDrawerBtn && headerControlsPanel) {
         mobileDrawerBtn.addEventListener('click', () => {
           appState.mobileDrawerOpen = !appState.mobileDrawerOpen;
           headerControlsPanel.classList.toggle('hidden', !appState.mobileDrawerOpen);
           headerControlsPanel.classList.toggle('flex', appState.mobileDrawerOpen);
+          if (headerActionsPanel) {
+            headerActionsPanel.classList.toggle('hidden', !appState.mobileDrawerOpen);
+            headerActionsPanel.classList.toggle('flex', appState.mobileDrawerOpen);
+          }
           mobileDrawerBtn.setAttribute('aria-expanded', String(appState.mobileDrawerOpen));
           if (mobileDrawerChevron) mobileDrawerChevron.textContent = appState.mobileDrawerOpen ? '▲' : '▼';
         });
@@ -8967,16 +8978,19 @@ Marcus Vance,R,10/28/2026,ChangeUp,BallCalled,80.1,1485,2:30,5.71,1.89,6.28,3.8,
       const fileInput = document.getElementById('trackmanFileInput');
       const statusBox = document.getElementById('uploadStatusBox');
 
+      const openUploadModal = () => {
+        if (!uploadModal) return;
+        updateUploadGateUI();
+        populateAthleteFolderDropdowns();
+        if (typeof refreshAthleteFolderDatalist === 'function') refreshAthleteFolderDatalist();
+        uploadModal.classList.remove('hidden');
+        uploadModal.classList.add('flex');
+        uploadModal.scrollTop = 0;
+      };
       const openUploadBtn = document.getElementById('openUploadModalBtn');
-      if (openUploadBtn && uploadModal) {
-        openUploadBtn.addEventListener('click', () => {
-          updateUploadGateUI();
-          populateAthleteFolderDropdowns();
-          if (typeof refreshAthleteFolderDatalist === 'function') refreshAthleteFolderDatalist();
-          uploadModal.classList.remove('hidden');
-          uploadModal.classList.add('flex');
-        });
-      }
+      if (openUploadBtn) openUploadBtn.addEventListener('click', openUploadModal);
+      const mobileUploadBtn = document.getElementById('mobileUploadModalBtn');
+      if (mobileUploadBtn) mobileUploadBtn.addEventListener('click', openUploadModal);
       const uploadFolderSel = document.getElementById('uploadAthleteFolderSelect');
       const newFolderInp = document.getElementById('newAthleteFolderInput');
       if (uploadFolderSel && newFolderInp) {
